@@ -1,0 +1,16 @@
+# WorkBuddy 本地工作数据（记忆 / 会话 / 缓存）——不入库
+.workbuddy/
+
+# 系统文件
+Thumbs.db
+Desktop.ini
+.DS_Store
+
+# 编辑器
+.vscode/
+.idea/
+*.swp
+
+# 临时
+*.tmp
+*.bak
