@@ -1,8 +1,10 @@
 # 虬渊大陆 · 多 Agent 协作开发方案
 
-> 版本 v0.5（草案，待大人裁决）
+> 版本 v0.6（草案，待大人裁决）
 > 日期 2026-09-27
 > **文档归属**：`F:/zxc/Project/qiuyuan-guild`（协作规范中枢）　|　**描述对象**：`F:/zxc/Project/qiuyuan-dalu`（游戏本体）
+>
+> **v0.6 变更**（开放生态）：`AGENTS.md` 与 Agent Skills 均已成**开放标准**；扩 §11.5 规则统一分发（import 桥接，非软链）、§11.6「上下文不是配置，强制项落门禁」；新增 §12 多源 skill 准入（Snyk 实测 36% 含缺陷）、§13 云电脑与多环境。
 >
 > **v0.5 变更**：新增 §11「跨工具可移植性」——实测 Codex / Qoder 机制，确认方案可跨工具运行，并定下「`AGENTS.md` 为唯一锚点」纪律。
 >
@@ -594,9 +596,113 @@ grep -rnE "=\s*[0-9]+\s*$" scripts/ --include=*.gd | grep -v "// data-ref"
 - **Qoder 的 `Always Apply` / `Specific Files` 正好对应两级规则**：铁律用 Always Apply，`contracts/**` 用 Specific Files 挂审核要求。
 - **L2 自建 skill 零改写复用**：WorkBuddy 与 Codex 共用 `SKILL.md` 格式，屋顶提示词系列等 L2 资产可直接拿去。
 
+### 11.5 规则文件的统一与分发（N 个工具）
+
+工具越多，越不能维护 N 份漂移的规则文件。**真源只有 `AGENTS.md` 一份**，各工具按需桥接：
+
+| 工具 | 原生文件 | 原生读 `AGENTS.md` |
+|---|---|---|
+| Codex / Cursor / Copilot / Gemini CLI / Windsurf / Cline / Zed / Aider | 各自原生文件 | ✅ 原生读 |
+| **Claude Code** | `CLAUDE.md` | ❌ **唯一不读的**（issue 仍未合并） |
+| Cursor（进阶） | `.cursor/rules/*.mdc` | ✅ 另有 glob 作用域能力 |
+| GitHub Copilot | `.github/copilot-instructions.md` | ✅ |
+| Gemini CLI | `GEMINI.md`（文件名可配） | ✅ |
+| Windsurf | `.windsurf/rules/` | ✅ |
+| Cline | `.clinerules/` | ✅ |
+
+**桥接用 import，不用软链**：
+
+```markdown
+<!-- CLAUDE.md：两行即可 -->
+@AGENTS.md
+
+## Claude Code 专属
+（仅此工具需要的补充）
+```
+
+- **为什么不用软链**：`ln -s` 在 Windows 上需开发者模式或管理员权限；CI 容器与 zip 下载还会把它拍平成普通文本。**import 跨平台一致，且允许追加工具专属段**——软链做不到。
+- 这是 Anthropic 官方文档推荐的做法，非自创。
+
+**上下文预算纪律**：
+- 根 `AGENTS.md` 控制在 **200–300 行以内**；超出的按主题拆到 `docs/rules/*.md`。
+- **import 不省 context**（启动即全量加载），只有**路径 / glob 作用域**才真正省。
+
+### 11.6 「上下文不是配置」——强制项必须落成门禁
+
+官方文档说得直白：规则文件是**作为消息投递给模型**的，模型「读到并试图遵守」，**没有任何保证**。
+
+所以纪律必须分两级：
+
+| 级别 | 机制 | 适用 | 例子 |
+|---|---|---|---|
+| **文档级**（提醒） | `AGENTS.md` / rules 里的句子 | 「我们一般这么做」 | 命名风格、提交信息格式 |
+| **门禁级**（强制） | hook / 校验脚本 / 权限配置 | 「无论如何都必须」 | 提交前跑测试、上游只读、禁改 `contracts/` |
+
+**判据**：同一个规则如果在文档里写了三遍仍未被遵守——**它就不该待在文档里，该做成门禁**。
+
+> 这正对应 §5 的审核门禁与 §7 的校验脚本：**校验脚本才是门禁，`AGENTS.md` 只是提醒。**
+
 ---
 
-## 12. 待大人裁决
+## 12. 多源 skill 供给与准入
+
+> §7 讲「三层供给」（L1 通用 / L2 领域 / L3 契约）；本节讲**无论哪一层、哪个渠道来的 skill，都过同一道闸**。
+
+### 12.1 渠道现状（2026-09 实测）
+
+| 类型 | 代表 |
+|---|---|
+| 官方目录 | `github.com/anthropics/skills`、`github.com/openai/skills` |
+| 开放注册表 | **`agentskills.io`**（Agent Skills 规范，Anthropic / OpenAI / Google ADK / Agno 采用） |
+| 聚合市场 | `skills.sh`(2.6k+)、`SkillsMP`(145k+)、`AgentSkillsHub`(117k+)、`claudskills.com`(67k+)、`cocoloop hub` |
+| 社区集合 | `obra/superpowers`、`alirezarezvani/claude-skills`（338 skills · 支持 13 工具转换）、awesome 列表 |
+
+**skill 已成为开放标准**（agentskills.io，2025-12 起）——与 `AGENTS.md` 一样可跨工具，且有现成转换工具（`convert.sh --tool all`）。
+
+### 12.2 风险（实测数字）
+
+**Snyk ToxicSkills 审计（2026-02，抽样 3,984 个 skill）**：
+
+> **36%（1,467 个）至少有一个安全缺陷；13.4%（534 个）存在严重问题；76 个已确认恶意**（凭证窃取、后门、数据外泄）。
+
+skill 是**可执行的指令 + 脚本**，能碰文件系统、shell 与密钥——**它不是文档，它是依赖**。
+
+### 12.3 准入四步（硬性）
+
+```text
+多源渠道 → 隔离暂存 + 安全审计 → 归一化入库（vendor）→ 允许使用
+                  ↓ 未过
+                拒收，不入库
+```
+
+三条硬规则：
+
+1. **不许「直接安装生效」**——一律先进隔离区，审计通过才移动。
+2. **一律 vendor 进仓库**（`skills/`），**不引用外部路径**——否则云电脑拉不到、上游删除即断供。
+3. **记 provenance**：来源 URL + commit / 版本 + 审计结论 + 审计日期，落在 `skills/PROVENANCE.md`。
+
+审计工具（择一或并用）：`skill-security-auditor`、**Cisco Skill Scanner**、Snyk Agent Scan；最低限度也要**人工读 `SKILL.md` 与 `scripts/`**。
+
+### 12.4 自建 skill 的两条纪律
+
+- **必须人审，不许全自动生成**。ETH Zurich 研究（2026）：LLM 自动生成的 `SKILL.md` 使 agent 成功率下降约 3%、token 成本上升约 20%。**人写的 do / don't 规则持续优于 AI 生成。**
+- **确定性步骤写进脚本**，不要靠模型推理（跑 linter、查类型、校验命名——一律脚本化）。
+
+---
+
+## 13. 多环境（云电脑 / CI）与状态持久化
+
+云机与本地最大的区别：**环境是临时的，随时可销毁**。三条纪律：
+
+1. **环境即代码**——工具链固化进 `devcontainer.json` / `Dockerfile` / 初始化脚本（Godot 版本、Python、Node、blender-mcp…），一键重建。**不依赖「我这台机器装过什么」的记忆。**
+2. **状态只认 git**——云机上一切产物必须提交推送。**未推送 = 没做。**
+3. **凭证绝不入库**——SSH key / token / API Key 走环境变量或密钥管理，`.gitignore` 兜底。（与既有的「不粘贴凭证、走浏览器授权」习惯一致。）
+
+**附带红利**：云机 + 沙箱天然适合跑**只读审核 agent**，风险隔离比本地更彻底。
+
+---
+
+## 14. 待大人裁决
 
 1. **`world` 的配置表工具确认用 Luban 吗？** 世界观库 §6.2 推荐 Luban，但那是 UE5/C++ 语境。Godot 原型期未必需要 Luban 全套，可能 CSV/JSON 起步更快。**这个要先定，因为 Phase 1 就靠它。**
 2. **Godot 工程目录名？** 决定 `contracts/` 与工程目录的相对位置。
@@ -605,3 +711,5 @@ grep -rnE "=\s*[0-9]+\s*$" scripts/ --include=*.gd | grep -v "// data-ref"
 5. **Phase 0 是否现在开工？** 定了 1 和 2 我就能直接落地骨架。
 6. **hub 先装哪几个？** 建议先 `SkillScan`（安全前置）→ 再 `Godot Dev Guide`(A)。
 7. **契约层 `contracts/` 归 guild 还是 dalu？** 方案原写在游戏本体内部；拆分后建议**真源归 guild、dalu 只读消费**（§11.3 纪律 3）。这个定了，Phase 0 的目录骨架才好定。
+8. **门禁（hook + 校验脚本）Phase 1 就上，还是推到 Phase 3？** 按 §11.6，「提交前跑测试」「上游只读」这类必须落成门禁——建议 **Phase 1 就上最小门禁**（一个 pre-commit 钩子 + 一个校验脚本），否则纯文档规则会被静默忽略。
+9. **skill 准入是否引入自动扫描工具**（Cisco Skill Scanner / Snyk Agent Scan），还是先人工读 `SKILL.md` + `scripts/` 起步？
