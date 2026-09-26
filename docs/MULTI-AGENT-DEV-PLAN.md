@@ -1,8 +1,10 @@
 # 虬渊大陆 · 多 Agent 协作开发方案
 
-> 版本 v0.4（草案，待大人裁决）
+> 版本 v0.5（草案，待大人裁决）
 > 日期 2026-09-27
 > **文档归属**：`F:/zxc/Project/qiuyuan-guild`（协作规范中枢）　|　**描述对象**：`F:/zxc/Project/qiuyuan-dalu`（游戏本体）
+>
+> **v0.5 变更**：新增 §11「跨工具可移植性」——实测 Codex / Qoder 机制，确认方案可跨工具运行，并定下「`AGENTS.md` 为唯一锚点」纪律。
 >
 > **v0.4 变更**（结构拆分）：
 > ① 项目拆分——协作规范体系独立为 `qiuyuan-guild`，游戏本体另立 `qiuyuan-dalu`（见 §0 修正一五库表）；
@@ -557,7 +559,44 @@ grep -rnE "=\s*[0-9]+\s*$" scripts/ --include=*.gd | grep -v "// data-ref"
 
 ---
 
-## 11. 待大人裁决
+## 11. 跨工具可移植性（WorkBuddy / Codex / Qoder）
+
+**结论：能正常跑。** 因为这套机制的地基是**文件系统约定**，不是某个工具的插件——三个工具都原生认 `AGENTS.md`，Codex 与 WorkBuddy 还共用 `SKILL.md` 格式。
+
+### 11.1 三层机制的可移植性
+
+| 层 | 内容 | 可移植性 | 依据 |
+|---|---|---|---|
+| **契约层** | `contracts/`、schema、校验脚本 | ✅ 100% | 纯文件 + Python/Node 脚本，与工具无关 |
+| **纪律层** | `AGENTS.md`、`docs/`、任务台账 | ✅ 100% | 三家都原生读 `AGENTS.md` |
+| **能力层** | skill 加载、subagent 编排、memory | ⚠️ 格式相通、加载机制不同 | 见 §11.2 |
+
+### 11.2 三家工具的机制对照（实测）
+
+| 能力 | WorkBuddy | Codex | Qoder |
+|---|---|---|---|
+| 项目指导 | identity 文件注入 | `AGENTS.md` **层级加载**（root→leaf，最近优先） | `AGENTS.md` 静态记忆 + `.qoder/rules/**/*.md` |
+| 技能 | Skill 工具，**自动加载** | `SKILL.md`，**与 WorkBuddy 同格式** | `.qoder/rules` 四种生效方式 |
+| 子代理 | subagent 工具 | subagent + TOML 定制，**可设 `sandbox_mode = "read-only"`** | Quest 并行执行 |
+| 记忆 | `.workbuddy/memory` | Memories | Auto-Memory |
+
+> **来源**：OpenAI Codex 官方 Customization / Subagents 文档；Qoder 官方 Memory 文档（2026-09-27 检索留证）。
+
+### 11.3 三条迁移纪律（重要）
+
+1. **`AGENTS.md` 是全工具唯一锚点。** 工具私有 memory 只当缓存，**不当真源**——否则三工具混用会各自积累、互不可见，真源立刻分裂。
+2. **跨会话知识一律入 git**（`docs/` + `records/`），不进任何工具的私有内存。这是「交付即产记录」的深层理由。
+3. **契约层物理归 guild**，三个工具都指向同一路径。工具可换，契约不动。
+
+### 11.4 落到具体工具的三个红利
+
+- **Codex 能直接实现「横向只读」铁律**：`~/.codex/agents/*.toml` 给 review / qa agent 设 `sandbox_mode = "read-only"`——这不是约定，是**沙箱强制**，比口头纪律硬。
+- **Qoder 的 `Always Apply` / `Specific Files` 正好对应两级规则**：铁律用 Always Apply，`contracts/**` 用 Specific Files 挂审核要求。
+- **L2 自建 skill 零改写复用**：WorkBuddy 与 Codex 共用 `SKILL.md` 格式，屋顶提示词系列等 L2 资产可直接拿去。
+
+---
+
+## 12. 待大人裁决
 
 1. **`world` 的配置表工具确认用 Luban 吗？** 世界观库 §6.2 推荐 Luban，但那是 UE5/C++ 语境。Godot 原型期未必需要 Luban 全套，可能 CSV/JSON 起步更快。**这个要先定，因为 Phase 1 就靠它。**
 2. **Godot 工程目录名？** 决定 `contracts/` 与工程目录的相对位置。
@@ -565,3 +604,4 @@ grep -rnE "=\s*[0-9]+\s*$" scripts/ --include=*.gd | grep -v "// data-ref"
 4. **`10-MMO化` 与配置表谁是数据真源？** 建议：`10-MMO化` 是**需求文档**，配置表是**实现**；两者冲突时以配置表为准并回写设计层。但需要大人确认这个从属关系。
 5. **Phase 0 是否现在开工？** 定了 1 和 2 我就能直接落地骨架。
 6. **hub 先装哪几个？** 建议先 `SkillScan`（安全前置）→ 再 `Godot Dev Guide`(A)。
+7. **契约层 `contracts/` 归 guild 还是 dalu？** 方案原写在游戏本体内部；拆分后建议**真源归 guild、dalu 只读消费**（§11.3 纪律 3）。这个定了，Phase 0 的目录骨架才好定。
