@@ -27,7 +27,7 @@ registry/                   ★ 跨库登记（第三条铁律的落点）——
   agent-log.md                 按 agent 的完成记录视图（**派生视图**）
   schema-layers.md             三处 schema 层次登记（待建）
 scripts/                    ★ 校验脚本（没有校验脚本的契约 = 装饰品）
-  check-data.js               契约一致性（7 规则 R1~R7 + `--self-test` 19 用例）
+  check-data.js               契约一致性 + 文档表格结构（8 规则 R1~R8 + `--self-test` 24 用例）
   check-asset-ref.js          资产引用 + 跨层一致性（5 规则）
 ```
 
@@ -94,8 +94,8 @@ scripts/                    ★ 校验脚本（没有校验脚本的契约 = 装
 **校验脚本本地跑法**：
 
 ```bash
-node scripts/check-data.js             # 数据契约一致性（7 规则）
-node scripts/check-data.js --self-test # ★ 反向测试（19 用例，注入坏样本断言必失败）
+node scripts/check-data.js             # 数据契约一致性 + 文档表格结构（8 规则）
+node scripts/check-data.js --self-test # ★ 反向测试（24 用例，注入坏样本断言必失败）
 node scripts/check-asset-ref.js        # 资产引用 + 跨层一致性（5 规则）
 ```
 

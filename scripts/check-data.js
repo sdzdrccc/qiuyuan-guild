@@ -337,6 +337,89 @@ const DATA_DIR = 'F:/zxc/Project/qiuyuan-dalu/data';
 })();
 
 // ─────────────────────────────────────────────────────────────
+// R8 · Markdown 表格结构（v0.4 新增）
+//   缘起：ROADMAP.md §1 的 M2~M17 行把「依赖」值填进了「状态」列。
+//        列数**恰好齐**（尾部空单元格补齐），所以任何「数管道」的检查都查不出来，
+//        最后由大人在 Obsidian 里肉眼发现 —— **门禁缺位**。
+//   三条判据（Obsidian / GitHub / markdown-it 通用）：
+//     ① 表格块**前一行必须为空行** —— 否则 markdown-it 不认它是表格，
+//        整块降级为段落。这是「表格怎么不渲染」的**经典原因**。
+//     ② 数据行列数须与表头一致。
+//     ③ 行尾空单元格 → **warn**（疑似列位错填；确为空时可忽略）。
+//   注：**列数一致 ≠ 列位正确** —— ②只拦「数得出来」的错，③才是防错位的软信号。
+// ─────────────────────────────────────────────────────────────
+
+const TROW = /^\s*\|.*\|\s*$/;            // 表头 / 数据行
+const TDELIM = /^\s*\|[\s:|-]+\|\s*$/;    // 分隔行（|---|---|）
+
+/** 纯函数：便于 `--self-test` 反向测试 */
+function scanTables(text, file) {
+  const out = { errors: [], warns: [], tables: 0 };
+  const lines = text.split(/\r?\n/);
+
+  // 先标记代码围栏内的行 —— 伪表格不得误报
+  const inCode = [];
+  let fence = false;
+  for (let i = 0; i < lines.length; i++) {
+    if (/^\s*```/.test(lines[i])) { inCode[i] = true; fence = !fence; continue; }
+    inCode[i] = fence;
+  }
+
+  for (let i = 0; i < lines.length - 1; i++) {
+    if (inCode[i]) continue;
+    if (!TROW.test(lines[i]) || !TDELIM.test(lines[i + 1])) continue;
+
+    out.tables++;
+    // ① 表格前一行须为空行
+    if (i > 0 && !inCode[i - 1] && lines[i - 1].trim() !== '') {
+      out.errors.push(`${file}:${i + 1} 表格前一行非空 —— markdown 不会渲染该表格`);
+    }
+    // ② ③ 逐行核对
+    const cols = lines[i].split('|').length - 2;
+    let j = i + 2;
+    for (; j < lines.length && !inCode[j] && TROW.test(lines[j]); j++) {
+      const n = lines[j].split('|').length - 2;
+      if (n !== cols) {
+        out.errors.push(`${file}:${j + 1} 列数 ${n} ≠ 表头 ${cols}`);
+      } else if (cols > 1 && /\|\s*\|\s*$/.test(lines[j])) {
+        out.warns.push(`${file}:${j + 1} 行尾空单元格 —— 核对是否列位错填`);
+      }
+    }
+    i = j - 1;   // 跳过整个表块
+  }
+  return out;
+}
+
+(function r8() {
+  const dirs = [CONTRACTS, path.join(ROOT, 'docs'), path.join(ROOT, 'registry'), path.join(ROOT, 'records')];
+  const files = [];
+  for (const d of dirs) {
+    if (!fs.existsSync(d)) continue;
+    for (const e of fs.readdirSync(d, { withFileTypes: true })) {
+      if (e.isFile() && e.name.endsWith('.md')) files.push(path.join(d, e.name));
+    }
+  }
+  const rootReadme = path.join(ROOT, 'README.md');
+  if (fs.existsSync(rootReadme)) files.push(rootReadme);
+
+  let tables = 0;
+  for (const f of files) {
+    const t = read(f);
+    if (t === null) continue;
+    const r = scanTables(t, path.relative(ROOT, f).replace(/\\/g, '/'));
+    tables += r.tables;
+    r.errors.forEach(m => err('R8', m));
+    r.warns.forEach(m => warn('R8', m));
+  }
+
+  if (tables === 0) {
+    err('R8', '未扫描到任何 Markdown 表格 —— 疑似扫描范围出错（禁止空集真空通过）');
+  } else if (!errors.some(e => e.rule === 'R8')) {
+    ok('R8', `Markdown 表格结构合规（${tables} 张表：前空行 / 列数 / 尾格）`);
+  }
+})();
+
+// ─────────────────────────────────────────────────────────────
 // --self-test · 反向测试（CONVENTIONS §7.1 纪律 2）
 //   「**没失败过的校验脚本 = 未被验证过的校验脚本**」
 //   注入坏样本，断言**必须被拦下**；再注入好样本，断言**不得误报**。
@@ -370,6 +453,12 @@ if (process.argv.includes('--self-test')) {
     ['R5', '契约有待裁项 → 判为 pending', classifyPending(3, 0) === 'pending', true],
     ['R5', '契约有待裁项 + ADR proposed → 仍为 pending', classifyPending(4, 1) === 'pending', true],
     ['R5', 'ADR 台账缺失 → 判为无法核对', classifyPending(1, null) === 'adr-missing', true],
+    // R8 · 表格结构（v0.4）
+    ['R8', '表格前一行非空 → 必报错', scanTables('段落文字\n| a | b |\n|---|---|\n| 1 | 2 |', 'x.md').errors.length > 0, true],
+    ['R8', '数据行列数不齐 → 必报错', scanTables('\n| a | b |\n|---|---|\n| 1 |', 'x.md').errors.length > 0, true],
+    ['R8', '行尾空单元格 → 必告警', scanTables('\n| a | b |\n|---|---|\n| 1 | |', 'x.md').warns.length > 0, true],
+    ['R8', '标准表格 → 不得报错', scanTables('\n| a | b |\n|---|---|\n| 1 | 2 |', 'x.md').errors.length === 0, true],
+    ['R8', '代码块内伪表格 → 不得误报', scanTables('\n```\n| a | b |\n|---|---|\n| 1 |\n```', 'x.md').errors.length === 0, true],
   ];
 
   const fails = cases.filter(([, , got, want]) => got !== want);
