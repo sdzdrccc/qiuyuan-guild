@@ -28,9 +28,12 @@
 
 | 你要做的事 | 先读 |
 |---|---|
+| **不知道下一步做什么** | `docs/ROADMAP.md` —— **里程碑路线图**（84 项 → 17 个里程碑） |
 | 判断某物该归哪个库 | 本文件 §2 铁律三 + 归属判据 |
+| 判断某个细节该不该进契约 | `CONVENTIONS.md` §1.1 铁律 5 + §1.2 —— **逻辑进契约，物理归下游** |
 | 改契约 | `contracts/`（真源）→ **先开 ADR**（`docs/DECISIONS.md`） |
-| 查某条裁决的来由 | `docs/MULTI-AGENT-DEV-PLAN.md` **§14 裁决台账** |
+| 查某条裁决的来由 | `docs/DECISIONS.md`（**唯一真源**）；大局裁决另见方案 **§14 台账** |
+| 查某个里程碑的范围与出口 | `docs/ROADMAP.md` 对应章节（in / out scope + 可复现判据） |
 | 改目录结构 / 命名 / 接口 | `docs/CONVENTIONS.md` |
 | 找该用哪个 skill | `docs/SKILL-ROUTING.md` |
 | 装 skill | `docs/SKILL-ROUTING.md` §准入 —— **先过安全审计** |

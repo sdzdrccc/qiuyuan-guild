@@ -136,7 +136,7 @@
 **作用**：场景 → 资产引用清单。**它是场景布局的唯一真源**，引擎文件（`.umap` / `.tscn`）只是它的**渲染产物**。
 
 > 依据：`CONVENTIONS.md` §4.3 —— **判据：删掉所有场景文件能从 manifest 重新生成 → 合格。**
-> 原型现状**不合格**：布局知识埋在 `ProtoSpawnCity.tscn` 与 `Main.cs` 里，须在 Phase 1 抽出。
+> 原型现状**不合格**：布局知识埋在 `ProtoSpawnCity.tscn` 与 `Main.cs` 里，须在 **M4（入世）** 抽出。
 
 ### 5.1 结构
 
@@ -165,7 +165,7 @@ references:
 
 # 预算（可选 · 与 L2 kit.json budgets 对齐）
 budget:
-  polycount_max: null           # 待 Phase 1 从 kit.json 取
+  polycount_max: null           # 待 M4 从 kit.json 取
 ```
 
 ### 5.2 规约
@@ -201,7 +201,7 @@ budget:
 
 ---
 
-## 7. 待办（Phase 1 提炼时补全）
+## 7. 待办（按里程碑补全 · 见 `docs/ROADMAP.md`）
 
 - [ ] 从 `gbe-assets/catalog/schema/asset.v2.schema.json` **抄录** `geometry` / `files` / `sockets` / `engines` 四个子对象的**字段清单**（本轮只取了顶层键，未展开子对象）
 - [ ] 补 `resource-manifest.yaml` 的**完整 JSON Schema**（当前仅 yaml 示意 + 规约表）

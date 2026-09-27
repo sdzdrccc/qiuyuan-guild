@@ -258,7 +258,7 @@
 | `roots[].sortOrder` | **`0` = 主灵根 = 纯度最高者** | `data-contract.md` §3.2 |
 
 > ⚠️ **注意**：`spiritPower`（协议里的灵力）与 `data-contract` 的 `mp` 是同一资源。
-> 字段名不统一 **`spiritPower` vs `mp`** —— **Phase 1 提炼时须统一并落 ADR**（Go 重写是统一的最佳时机，Java 侧保留原样）。
+> 字段名不统一 **`spiritPower` vs `mp`** —— **M1 须统一并落 ADR**（Go 重写是统一的最佳时机，Java 侧保留原样）。
 
 ### 5.2 世界玩家对象
 
@@ -334,7 +334,7 @@ ID 格式 **`gong_<root>`**（`gong_jin` / `gong_mu` / `gong_shui` / `gong_huo` 
 
 ---
 
-## 8. 待办（Phase 1 提炼时补全）
+## 8. 待办（按里程碑补全 · 见 `docs/ROADMAP.md`）
 
 - [ ] **统一 `spiritPower` / `mp` 命名**（§5.1 备注）→ 落 ADR
 - [ ] 为每条消息补**字段类型与必填性**（当前多数仅有字段名）
