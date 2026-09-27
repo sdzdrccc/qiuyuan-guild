@@ -1,9 +1,14 @@
 # 虬渊大陆 · 多 Agent 协作开发方案
 
-> 版本 v0.7（草案，待大人裁决）
+> 版本 v0.8（草案，待大人裁决）
 > 日期 2026-09-27
 > **文档归属**：`F:/zxc/Project/qiuyuan-guild`（协作规范中枢）
 > **描述对象**：Godot 原型（验证方）+ `F:/zxc/Project/qiuyuan-dalu`（UE5 正式工程）
+>
+> **v0.8 变更**（目录结构修正）：
+> ① §3 重写——原结构为 v0.3~v0.6 残留（把 `contracts/` 画在 dalu 内部，与「契约归 guild」正相反）；
+> ② §3 拆为**机制层（已定，与引擎无关）+ 引擎层（待裁决）**两段；明确 `contracts/` 与方案文档均不在本工程内；
+> ③ 补出多端 monorepo 建议骨架（按原型实测形态：`ue-client/` + `server/` + `admin/` + `db/` + `tools/`）。
 >
 > **v0.7 变更**（原型归位 · 重大）：
 > ① 生态由 5 库扩为 **6 库**——**Godot 原型与 UE5 正式工程分离**（§0 修正一）；
@@ -221,12 +226,15 @@ qiuyuan-dalu（UE5 正式工程）  ←── gbe-assets（资产仓储 · kits/
 
 ### 2.1 纵向：4 个模块 owner（对齐 14 个官方模块）
 
-| Agent | 覆盖官方模块 | 职责 | 独占目录 |
+| Agent | 覆盖官方模块 | 职责 | 独占领地 |
 |---|---|---|---|
-| **`world`** | A 账号角色 · B 成长境界 · D 技能功法 · E 装备法器 · F 物品经济 · G 生活职业 · J 社交宗门 · K 灵兽 · M 任务剧情（数据侧） | **数据层**：全部数值与配置表 | `data/` `tables/` |
-| **`combat`** | C 战斗（12 项） · H PVE · I PVP · D/K 的逻辑侧 | 战斗结算、技能释放、AI、掉落 | `scripts/combat/` |
-| **`scene`** | L 开放世界（9 项） · H/M 的场景侧 · G 的场景侧 | 地图、场景、据点、副本场景 | `scenes/` |
-| **`ui`** | N UI 与运营技术 · A 角色创建界面 · J 界面 · E/F 界面 | HUD、功能页、交互 | `ui/` |
+| **`world`** | A 账号角色 · B 成长境界 · D 技能功法 · E 装备法器 · F 物品经济 · G 生活职业 · J 社交宗门 · K 灵兽 · M 任务剧情（数据侧） | **数据层**：全部数值与配置表 | `data/`（配置表） |
+| **`combat`** | C 战斗（12 项） · H PVE · I PVP · D/K 的逻辑侧 | 战斗结算、技能释放、AI、掉落 | `Combat/`（源码逻辑） |
+| **`scene`** | L 开放世界（9 项） · H/M 的场景侧 · G 的场景侧 | 地图、场景、据点、副本场景 | `Maps/`（场景资源） |
+| **`ui`** | N UI 与运营技术 · A 角色创建界面 · J 界面 · E/F 界面 | HUD、功能页、交互 | `UI/`（界面资源） |
+
+> 「独占领地」此处只标**逻辑领地**；物理落点随 §3.2 的 UE5 骨架定了再填（`ue-client/Content/` `Source/` 下）。
+> **判据不变**：一列一主，同一时刻同一目录只有一个 agent 有写权。
 
 **映射原则**：一个官方模块**可以跨两个 agent**，但必须分清「数据归 `world`、逻辑归 `combat`/`scene`/`ui`」。以模块 D（技能功法）为例——技能数值表归 `world`，技能释放与冷却归 `combat`。
 
@@ -287,31 +295,61 @@ qiuyuan-dalu（UE5 正式工程）  ←── gbe-assets（资产仓储 · kits/
 
 ## 3. 目录结构
 
+> **v0.8 重写**：本节原为 v0.3~v0.6 版（当时 `qiuyuan-dalu` 被设想为 Godot 游戏本体）。
+> v0.7 裁决「原型留原地、dalu = UE5 新工程、契约归 guild」后，原结构已失效——它把 `contracts/` 画在了 dalu 内部，与 §14 已决正相反。
+> 现拆为**机制层（已定）+ 引擎层（待裁决）**两部分。
+
+### 3.1 机制层——已定，与引擎无关
+
+不论最终用 UE5 还是别的引擎，下列目录都存在，且位置固定：
+
 ```
 qiuyuan-dalu/
-├─ docs/
-│  ├─ AGENTS.md           ★ AI 工作纪律（对齐 gbe-studio/AGENTS.md 体例）
-│  ├─ CONVENTIONS.md      开发规范（铁律级，升版需 ADR）
-│  ├─ DECISIONS.md        ADR 决策台账（只追加，不许改写）
-│  ├─ DEVLOG.md           开发完成记录（只追加）
-│  ├─ SKILL-ROUTING.md    角色 → skill 路由表
-│  └─ MULTI-AGENT-DEV-PLAN.md  本文件
-├─ contracts/             ★ 唯一真源
-│  ├─ data-contract.md     世界数据 schema（对齐 10-MMO化）
-│  ├─ asset-ref-contract.md 资产引用契约（命名/尺寸/锚点/LOD）
-│  ├─ interfaces.md        跨模块接口与信号
-│  └─ resource-manifest.yaml 场景 → 资产引用清单
-├─ data/  tables/         world 的领地（Luban 配置表）
-├─ scripts/combat/        combat 的领地
-├─ scenes/                scene 的领地
-├─ ui/                    ui 的领地
-├─ tasks/                 inbox / active / done
-├─ records/               每任务完成记录（强制产出）
-├─ tests/                 qa 的领地
-└─ .workbuddy/skills/     项目级自建 skill
+├─ docs/                      ★ 本工程自己的纪律与记录
+│  ├─ AGENTS.md               AI 工作纪律（对齐 gbe-studio/AGENTS.md 体例）
+│  ├─ CONVENTIONS.md          开发规范（铁律级，升版需 ADR）
+│  ├─ DECISIONS.md            ADR 决策台账（只追加，不许改写）
+│  ├─ DEVLOG.md               开发完成记录（只追加）
+│  └─ SKILL-ROUTING.md        角色 → skill 路由表
+├─ tasks/                     inbox / active / done
+├─ records/                   每任务完成记录（强制产出）
+├─ tests/                     qa 的领地（验收脚本）
+└─ .workbuddy/skills/         项目级自建 skill
 ```
 
-**为什么 `docs/AGENTS.md` 要第一个建**：gbe-studio 已经证明这个体例有效——给 AI 看的硬纪律，优先级高于临时指令。本项目直接沿用同一套骨架（方向感表 / 不可违反纪律 / 自检清单 / 分歧处理）。
+**两个必须说清的位置关系**（v0.8 更正）：
+
+- **`MULTI-AGENT-DEV-PLAN.md` 不在本工程内**——它住在 `qiuyuan-guild/docs/`。本工程 `docs/` 只放本工程自己的纪律与记录，不重复存放方案。
+- **`contracts/` 也不在本工程内**——真源归 `qiuyuan-guild/contracts/`，本工程与其两侧的原型**一律只读消费**（§14 已决「契约层归 guild」）。**本工程不建 `contracts/` 目录**，理由：留一个本地副本，就等于留了一条「悄悄分叉」的路。
+
+### 3.2 引擎层与多端结构——⚠ 待裁决
+
+> **本节形态取决于 §14 待决 1（服务端归属）与 3（UE5 工程名）**，定论前不落盘。
+> 以下是按**原型实测形态 + UE5 惯例**推导的建议骨架，供裁决用。
+
+原型实测是**多端 monorepo**（`godot-client/` + `java-server/` + `vue-admin/` + `db/` + `tools/`）。UE5 正式工程应沿用这个多端形态，只把客户端一端由 Godot 换为 UE5：
+
+```
+qiuyuan-dalu/
+├─ ue-client/                 ← UE5 客户端（替换原型的 godot-client/）
+│  ├─ QiuyuanDalu.uproject      工程名待 §14-3 定
+│  ├─ Config/                   DefaultEngine.ini / DefaultInput.ini …
+│  ├─ Content/                  资产（消费 GBE 交付包）
+│  ├─ Source/                   C++ / GAS
+│  └─ Plugins/
+├─ server/                    ← 服务端（Go / Java 待 §14-1 定）
+├─ admin/                     ← GM 后台（Vue3，原型可沿用）
+├─ db/                        ← 迁移 SQL（原型 14 个迁移可继承）
+└─ tools/                     ← 校验脚本 / 构建工具
+（外加 3.1 的机制层）
+```
+
+**两个待定点**：
+
+- 客户端目录叫 `ue-client/` 还是 `client/`？**建议 `ue-client/`**——与原型 `godot-client/` 命名并列，且为「未来可能并存多端」留位。
+- `server/` 名字可保留，但**语言未定**：保留 Java 最省（原型 22 个领域服务可继承），重写 Go 则对齐世界观库定稿（详见 §8.5）。
+
+**为什么 `docs/AGENTS.md` 第一个建**：gbe-studio 已经证明这个体例有效——给 AI 看的硬纪律，优先级高于临时指令。本项目直接沿用同一套骨架（方向感表 / 不可违反纪律 / 自检清单 / 分歧处理）。
 
 ---
 
@@ -844,7 +882,7 @@ skill 是**可执行的指令 + 脚本**，能碰文件系统、shell 与密钥�
 
 1. **服务端归属（最急）** —— 原型已有完整 Java 21 服务端（22 个领域服务、23 张表），世界观库定稿却是 Go + UE Dedicated Server。**保留 Java / 重写 Go / 折中（契约抽出 + Go 骨架）？** 在定之前，服务端侧一切投入都算浅投（§8.5）。
 2. **`world` 配置表工具用 Luban 还是 JSON？** 原型用 JSON（`items.json`）+ DB 权威，已跑通；世界观库 §6.2 推荐 Luban（UE5/C++ 语境）。目标既是 UE5，**Luban 更顺**，但原型已验证 JSON 可行。Phase 1 提炼契约前须定格式。
-3. **UE5 工程目录名与骨架形态？** 决定 `contracts/` 相对位置与 UE5 工程结构。
+3. **UE5 工程目录名与骨架形态？** 决定 UE5 工程结构。**已给出建议骨架（§3.2）**：多端 monorepo，客户端 `ue-client/`、工程名 `QiuyuanDalu.uproject`。待大人拍：客户端目录用 `ue-client/` 还是 `client/`；工程名是否就用 `QiuyuanDalu`。
 4. **`10-MMO化` / 原型配置表 / 契约层，三者谁是真源？** 建议：`10-MMO化` = 需求文档 → 原型 = 验证实现 → **契约层 = 唯一真源**；冲突时以契约层为准并回写前两者。
 5. **Phase 0 是否现在开工？** 定了 1、2 我就能落契约层骨架。
 6. **hub 先装哪几个？** 建议先 `SkillScan`（安全前置）→ 再 `Godot Dev Guide`(A)。注：若主攻 UE5 侧，需重新检索 hub 上的 UE 类 skill。
