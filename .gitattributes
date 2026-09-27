@@ -1,0 +1,17 @@
+# ── 换行规范 ───────────────────────────────────────────────────
+# 为什么写进仓库：`core.autocrlf` 是**本地配置**，不随仓库走。
+# 本仓会在**多工具 / 多机器**间流转（Obsidian 阅读编辑、Codex / Qoder / WorkBuddy 开发、
+# 云电脑执行），各机配置不一致会导致换行混乱与噪音 diff。
+# 写进仓库 → 对所有机器生效：提交时统一归一化为 LF；工作区保留各机习惯。
+* text=auto
+
+# ── 二进制 —— 不做文本处理（避免换行转换损坏文件）──────────────
+*.png    binary
+*.jpg    binary
+*.jpeg   binary
+*.gif    binary
+*.ico    binary
+*.zip    binary
+*.fbx    binary
+*.glb    binary
+*.blend  binary
