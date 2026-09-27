@@ -39,6 +39,8 @@
 | 装 skill | `docs/SKILL-ROUTING.md` §准入 —— **先过安全审计** |
 | 写任务卡 / 完成记录 | `tasks/` + `records/`（**编号前缀 `X-`**） |
 | 登记跨库需求 | `registry/cross-repo-ledger.md`（索引）+ `records/X-*.md`（正文） |
+| 查「某 agent 做过什么」 | `registry/agent-log.md`（**派生视图，非真源** —— 真源是 `records/`） |
+| 判某条变更该给什么结论 | `CONVENTIONS.md` **§5.5** —— **只有 `通过 / 不通过`，不得填分数** |
 | 查 schema 层次 | `registry/schema-layers.md` + 方案 §4.4 |
 | 不确定「为什么这么定」 | 本仓 `docs/DECISIONS.md` → 上游 `gbe-assets/docs/DECISIONS.md` |
 | 不确定「这是啥设定」 | 虬渊大陆对应页（**只读**） |

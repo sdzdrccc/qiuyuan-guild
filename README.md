@@ -9,22 +9,30 @@
 
 ```
 docs/
-  MULTI-AGENT-DEV-PLAN.md   多 Agent 协作开发方案（总纲 · v0.14）
+  MULTI-AGENT-DEV-PLAN.md   多 Agent 协作开发方案（总纲 · v0.15）
   AGENTS.md                 ★ 跨库 AI 硬纪律（给 AI 看的，优先级高于临时指令）
   CONVENTIONS.md            ★ 工程约定（铁律级，升版需 ADR）
   DECISIONS.md              ★ ADR 台账 —— 「为什么这么定」的唯一真源
   ROADMAP.md                ★ 里程碑路线图 —— 84 项功能 → 17 个里程碑
   SKILL-ROUTING.md          角色 → skill 路由表
 contracts/                  ★ 唯一真源（三方只读消费，禁止本地副本）
-  data-contract.md            数据模型（**逻辑层**：实体 / 境界 / 灵根 / 属性 / 战斗公式）
+  data-contract.md            数据模型（**逻辑层**：实体 / 境界 / 灵根 / 属性 / 战斗公式 · v0.3）
   asset-ref-contract.md       资产引用契约（格式 / 交付基准 / 装配 / 场景清单）
   protocol-contract.md        协议契约（WS + REST，Go 重写的接口基线）
+records/                    ★ 完成记录（guild 侧编号 **`X-*`**；dalu 侧用 `T-*`）
+  X-0001.md                    v0.14 契约去物理化（**补记**，依据 `e77661f`）
+  X-0002.md                    v0.15 境界口径裁定 + 审核机制补完
+registry/                   ★ 跨库登记（第三条铁律的落点）—— **全部是视图，非真源**
+  cross-repo-ledger.md         跨库需求 / 交付台账（**索引视图**）
+  agent-log.md                 按 agent 的完成记录视图（**派生视图**）
+  schema-layers.md             三处 schema 层次登记（待建）
 scripts/                    ★ 校验脚本（没有校验脚本的契约 = 装饰品）
-  check-data.js               契约一致性（6 规则）
+  check-data.js               契约一致性（7 规则 R1~R7 + `--self-test` 19 用例）
   check-asset-ref.js          资产引用 + 跨层一致性（5 规则）
 ```
 
 > **契约不含物理映射**（表名 / 前缀 / 主键命名 / 存储引擎 / 分片键）—— 归下游 `qiuyuan-dalu` 自决。详见 `docs/DECISIONS.md` ADR-0001。
+> **`registry/` 里全部是视图，不是真源** —— 索引视图的正文在 `records/`，视图可重生成。详见 `docs/CONVENTIONS.md` §5.6。
 
 ## 生态定位（6 库）
 
@@ -41,11 +49,12 @@ scripts/                    ★ 校验脚本（没有校验脚本的契约 = 装
 
 ## 核心文档
 
-- [`docs/MULTI-AGENT-DEV-PLAN.md`](docs/MULTI-AGENT-DEV-PLAN.md) — 多 Agent 协作开发方案（**v0.14**）
+- [`docs/MULTI-AGENT-DEV-PLAN.md`](docs/MULTI-AGENT-DEV-PLAN.md) — 多 Agent 协作开发方案（**v0.15**）
 - [`docs/AGENTS.md`](docs/AGENTS.md) — **动手前先读这份**
-- [`docs/DECISIONS.md`](docs/DECISIONS.md) — **裁决台账**（改契约前必读；当前有 **3 条 `proposed` 待裁**）
+- [`docs/DECISIONS.md`](docs/DECISIONS.md) — **裁决台账**（改契约前必读；当前 **无待裁项**）
 - [`docs/ROADMAP.md`](docs/ROADMAP.md) — **里程碑路线图**（不知道下一步做什么就读它）
 - [`docs/CONVENTIONS.md`](docs/CONVENTIONS.md) — 工程约定
+- [`registry/cross-repo-ledger.md`](registry/cross-repo-ledger.md) — 跨库登记台账
 
 ## 三条铁律
 
@@ -54,6 +63,7 @@ scripts/                    ★ 校验脚本（没有校验脚本的契约 = 装
 3. **guild 只装无处可归的东西** —— 判据：**这件事的产生方是谁，产生方在哪它就归哪**（此处「产生方」= **发起方**，不是执行位置）。各库内部规范归各自；guild 只持跨库契约 / 跨库台账 / 术语 / 准入规范。
 
 另有三项机制级纪律：**契约先于实现**（契约是唯一真源，代码与数据服从它）、**交付即产记录**（完成即产出结构化记录，**且记录须与改动同仓**）、**契约不含物理映射**（逻辑进契约，物理归下游）。
+**v0.15 再加两条**：**审核判据一律二值**（只有 `通过 / 不通过`，**禁主观评分**；量化只用四个客观计数 —— ADR-0008）、**环境指纹不是评价**（记录可写「用了什么工具 / 模型」，但**不作质量判据、不进统计** —— ADR-0007）。
 
 **真源优先级（v0.14 新增）**：`10-MMO化`（需求） **>** `contracts/`（契约） **>** 原型（参考实作）。
 
@@ -78,12 +88,14 @@ scripts/                    ★ 校验脚本（没有校验脚本的契约 = 装
 | M2 | 首战 —— 移动 / 伤害结算 / 死亡复活 | 未开始 |
 | M3+ | 见 [`docs/ROADMAP.md`](docs/ROADMAP.md) | 未开始 |
 
-> ⚠️ **M1 的硬前置**：`DECISIONS.md` 的 **ADR-0004 / 0005 / 0006** 三条 `proposed` 必须先裁（它们决定 `Role` / `RealmLevelConfig` 的字段定义）。
+> ✅ **M1 的硬前置已解除（2026-09-28 · v0.15）**：**ADR-0004 / 0005 / 0006** 已全部裁定 —— 境内 **9 层（82 台阶）** / 属性**上限不落库** / `realm_id` **`1~9`**。契约升 **v0.3**，`Role` / `RealmLevelConfig` 的字段定义已落笔。
+> 余下待裁项为**里程碑级**（M5 装备槽位 / M7 队伍人数），**不阻塞 M1**。
 
 **校验脚本本地跑法**：
 
 ```bash
-node scripts/check-data.js        # 数据契约一致性
-node scripts/check-asset-ref.js   # 资产引用 + 跨层一致性
+node scripts/check-data.js             # 数据契约一致性（7 规则）
+node scripts/check-data.js --self-test # ★ 反向测试（19 用例，注入坏样本断言必失败）
+node scripts/check-asset-ref.js        # 资产引用 + 跨层一致性（5 规则）
 ```
 

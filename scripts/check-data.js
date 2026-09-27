@@ -76,9 +76,10 @@ const REQUIRED = ['data-contract.md', 'asset-ref-contract.md', 'protocol-contrac
 })();
 
 // ─────────────────────────────────────────────────────────────
-// R2 · §0 勘误必须钉死（防误删 —— 这两处是提炼出来的硬结论）
-//      v0.2 改造：境界部分**不再钉 `0~8`**（那与 ADR-0006 的主张相反），
-//      改为钉「9 大境界 + 三种口径并存 + 已指向 ADR」。
+// R2 · §0 勘误与已裁口径必须钉死（防误删 / 防静默改回）
+//      v0.2：境界部分**不再钉 `0~8`**（那与 ADR-0006 的主张相反）。
+//      v0.3：ADR-0004 / 0006 **已裁定**，本规则改为**钉住裁定结果**——
+//            契约必须仍引用这两条 ADR（口径不得被静默改回原型口径）。
 // ─────────────────────────────────────────────────────────────
 
 const ROOT_ORDER = '金木水火土风雷冰';   // 权威（勘误一）
@@ -97,12 +98,13 @@ function errataIssues(t) {
   if (!/9\s*大境界/.test(t)) {
     out.errors.push('未声明「9 大境界」');
   }
-  // v0.2：境界的「境内粒度」与「基址」都是**待裁项**，契约必须**显式标注**而非假装已定。
+  // v0.3：ADR-0004 / 0006 **已裁定** —— 契约必须仍引用它们。
+  //       作用由「标注待裁」转为「钉住裁定结果」：口径不得被静默改回原型口径。
   if (!/ADR-0004/.test(t)) {
-    out.errors.push('未标注 ADR-0004（境内粒度 9 层 vs 4 阶段）—— 该冲突不得静默消失');
+    out.errors.push('未引用 ADR-0004（境内 9 层）—— 已裁口径不得静默消失');
   }
   if (!/ADR-0006/.test(t)) {
-    out.errors.push('未标注 ADR-0006（realm_id 基址）—— 该冲突不得静默消失');
+    out.errors.push('未引用 ADR-0006（realm_id 1–9）—— 已裁口径不得静默消失');
   }
   // 作废的笔误不得复活
   if (t.includes(ROOT_ORDER_WRONG) && !/作废|笔误/.test(t)) {
@@ -118,7 +120,7 @@ function errataIssues(t) {
   r.errors.forEach(m => err('R2', m));
   r.warns.forEach(m => warn('R2', m));
   if (r.errors.length === 0 && r.warns.length === 0) {
-    ok('R2', '两处勘误已钉死 + 境界两处待裁项已显式标注（ADR-0004 / 0006）');
+    ok('R2', '两处勘误已钉死 + 已裁口径的 ADR 引用在场（ADR-0004 境内 9 层 / ADR-0006 基址 1–9）');
   }
 })();
 
@@ -238,8 +240,10 @@ function extractProtocolAffixKeys(t) {
 
 // v0.2 扩写：原先只匹配「待裁决 / ⚠️待」，**漏掉了「待确认 / 待裁 / proposed」等写法**。
 //            漏报比误报危险得多 —— 待裁项被静默忽略，就是「空集真空通过」的兄弟问题。
+// v0.3 改造：**取消魔法数字下限**（原 `EXPECTED_FLOOR = 3`，ADR 裁定后必然失效），
+//            改为**与 ADR 台账联动** —— 契约的待裁项与 `docs/DECISIONS.md` 的 `proposed` 条数
+//            必须**方向一致**。这才是真正的漏报防线。
 const PENDING = /待裁决|待裁定|待裁\b|待确认|待大人|proposed|⚠️\s*待/;
-const EXPECTED_FLOOR = 3;   // 已知至少 3 条（ADR-0004/0005/0006）—— 低于此数即疑似漏报
 
 /** 纯函数：便于 `--self-test` 反向测试 */
 function findPending(text, file) {
@@ -250,6 +254,22 @@ function findPending(text, file) {
   return out;
 }
 
+/** 从 ADR 台账索引表数 `proposed` 条数（null = 台账不存在） */
+function countProposedAdr() {
+  const t = read(path.join(ROOT, 'docs', 'DECISIONS.md'));
+  if (!t) return null;
+  const m = t.match(/^\|\s*ADR-\d+\s*\|[^|]*\|\s*`proposed`/gm);
+  return m ? m.length : 0;
+}
+
+/** 纯函数：判定待裁项与 ADR 台账是否自洽（便于反向测试） */
+function classifyPending(allCount, proposedCount) {
+  if (proposedCount === null) return 'adr-missing';
+  if (proposedCount > 0 && allCount === 0) return 'suspect-miss';
+  if (proposedCount === 0 && allCount === 0) return 'clean';
+  return 'pending';
+}
+
 (function r5() {
   const all = [];
   for (const f of REQUIRED) {
@@ -257,13 +277,24 @@ function findPending(text, file) {
     if (!t) continue;
     all.push(...findPending(t, f));
   }
+  const proposed = countProposedAdr();
 
-  if (all.length === 0) {
-    warn('R5', '契约内未检出任何待裁项 —— 若 ADR 台账里还有 `proposed`，说明本规则漏报了');
-  } else if (all.length < EXPECTED_FLOOR) {
-    warn('R5', `${all.length} 处待裁项 —— 少于已知下限 ${EXPECTED_FLOOR}（ADR-0004/0005/0006），疑似漏报：${all.join(' / ')}`);
-  } else {
-    warn('R5', `${all.length} 处待裁项（须在**对应里程碑开工前**裁定，见 docs/DECISIONS.md）：${all.slice(0, 6).join(' / ')}${all.length > 6 ? ' …' : ''}`);
+  switch (classifyPending(all.length, proposed)) {
+    case 'adr-missing':
+      warn('R5', `检出 ${all.length} 处待裁项，但**未找到 docs/DECISIONS.md** —— 无法交叉核对`);
+      break;
+    case 'suspect-miss':
+      warn('R5', `ADR 台账有 ${proposed} 条 \`proposed\`，但契约**未检出任何待裁项** —— 疑似漏报（本规则是防漏报的最后一道）`);
+      break;
+    case 'clean':
+      ok('R5', '契约无待裁项，ADR 台账亦无 `proposed` —— 两侧一致');
+      break;
+    default: {
+      const note = proposed > 0
+        ? `（含 ${proposed} 条 ADR \`proposed\`，须在**对应里程碑开工前**裁定）`
+        : '（均为里程碑级；ADR 台账无 `proposed`）';
+      warn('R5', `${all.length} 处待裁项${note}：${all.slice(0, 6).join(' / ')}${all.length > 6 ? ' …' : ''}`);
+    }
   }
 })();
 
@@ -333,6 +364,12 @@ if (process.argv.includes('--self-test')) {
     ['R5', '「待大人处置」→ 必拦下', findPending('待大人处置', 'x.md').length > 0, true],
     ['R5', '元信息头内的字样 → 不得误报', findPending('> **层**：L3　待裁决', 'x.md').length === 0, true],
     ['R5', '普通正文 → 不得误报', findPending('这是一个正常段落。', 'x.md').length === 0, true],
+    // R5 · v0.3 新增：待裁项 ↔ ADR 台账联动（取代原魔法数字下限）
+    ['R5', 'ADR 有 proposed 但契约无待裁项 → 判为漏报', classifyPending(0, 2) === 'suspect-miss', true],
+    ['R5', '两侧皆空 → 判为一致', classifyPending(0, 0) === 'clean', true],
+    ['R5', '契约有待裁项 → 判为 pending', classifyPending(3, 0) === 'pending', true],
+    ['R5', '契约有待裁项 + ADR proposed → 仍为 pending', classifyPending(4, 1) === 'pending', true],
+    ['R5', 'ADR 台账缺失 → 判为无法核对', classifyPending(1, null) === 'adr-missing', true],
   ];
 
   const fails = cases.filter(([, , got, want]) => got !== want);
