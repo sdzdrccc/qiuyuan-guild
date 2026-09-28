@@ -420,6 +420,55 @@ function scanTables(text, file) {
 })();
 
 // ─────────────────────────────────────────────────────────────
+// R9 · 第一设计原则的锚点一致性（v0.5 新增 · ADR-0009）
+//   缘起：「世界真实性优先」是**第一原则**，但四处入口是分开的 ——
+//         新人看 README、AI 看 AGENTS、工程约定看 CONVENTIONS、总纲看方案。
+//         **只写一处 = 其余入口的人读不到**；写了四处又容易改一处漏三处。
+//   与本规则的分工（重要）：
+//     本规则查的是「**锚点存在性**」—— 可机械校验。
+//     原则**有没有被遵守**、三问答得对不对 —— 是**语义判断**，只能人判
+//       （`CONVENTIONS.md` §7.4 第 1 号人工检查点）。
+//     **拿脚本假装能判后者 = 虚假的安心**（§7.1 纪律 1 同类病）。
+// ─────────────────────────────────────────────────────────────
+
+const PRINCIPLE_KEY = '世界真实性';
+const PRINCIPLE_ANCHORS = [
+  'README.md',
+  'docs/AGENTS.md',
+  'docs/CONVENTIONS.md',
+  'docs/MULTI-AGENT-DEV-PLAN.md',
+];
+
+/** 纯函数：便于 `--self-test` 反向测试。入参 [[文件, 全文], …]，返回**缺失锚点的文件**数组 */
+function missingAnchors(key, pairs) {
+  return pairs.filter(pair => !pair[1].includes(key)).map(pair => pair[0]);
+}
+
+(function r9() {
+  const pairs = [];
+  for (const rel of PRINCIPLE_ANCHORS) {
+    const p = path.join(ROOT, rel);
+    if (!fs.existsSync(p)) {
+      err('R9', `锚点文件不存在：${rel}`);
+      continue;
+    }
+    pairs.push([rel, read(p) || '']);
+  }
+
+  if (pairs.length === 0) {
+    err('R9', '未读到任何锚点文件 —— 禁止空集真空通过');
+    return;
+  }
+
+  const missing = missingAnchors(PRINCIPLE_KEY, pairs);
+  if (missing.length) {
+    err('R9', `第一设计原则「${PRINCIPLE_KEY}」缺锚点：${missing.join(' / ')} —— 只写一处，其余入口的人读不到`);
+  } else if (!errors.some(e => e.rule === 'R9')) {
+    ok('R9', `第一设计原则「${PRINCIPLE_KEY}」四处锚点齐备（${pairs.length}/${PRINCIPLE_ANCHORS.length}）`);
+  }
+})();
+
+// ─────────────────────────────────────────────────────────────
 // --self-test · 反向测试（CONVENTIONS §7.1 纪律 2）
 //   「**没失败过的校验脚本 = 未被验证过的校验脚本**」
 //   注入坏样本，断言**必须被拦下**；再注入好样本，断言**不得误报**。
@@ -459,6 +508,10 @@ if (process.argv.includes('--self-test')) {
     ['R8', '行尾空单元格 → 必告警', scanTables('\n| a | b |\n|---|---|\n| 1 | |', 'x.md').warns.length > 0, true],
     ['R8', '标准表格 → 不得报错', scanTables('\n| a | b |\n|---|---|\n| 1 | 2 |', 'x.md').errors.length === 0, true],
     ['R8', '代码块内伪表格 → 不得误报', scanTables('\n```\n| a | b |\n|---|---|\n| 1 |\n```', 'x.md').errors.length === 0, true],
+    // R9 · 第一设计原则锚点（v0.5）
+    ['R9', '缺一处锚点 → 必报错并点名', missingAnchors('世界真实性', [['a.md', '世界真实性优先'], ['b.md', '无关内容']]).length === 1, true],
+    ['R9', '四处齐备 → 不得报错', missingAnchors('世界真实性', [['a.md', '世界真实性'], ['b.md', '世界真实性优先']]).length === 0, true],
+    ['R9', '全缺 → 全部列出', missingAnchors('世界真实性', [['a.md', 'x'], ['b.md', 'y']]).length === 2, true],
   ];
 
   const fails = cases.filter(([, , got, want]) => got !== want);
