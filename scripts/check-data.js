@@ -301,38 +301,55 @@ function classifyPending(allCount, proposedCount) {
 // ─────────────────────────────────────────────────────────────
 // R6 · 配置表检查（dalu 侧存在时才跑）
 //      v0.2 改造：**删去 `xx_` 前缀强制**（违反 ADR-0001）。
-//      改为两条：① 目录存在则**不得为空**（禁止空集真空通过）；② 文件名**命名合规**。
+//      v0.21 改造：区分「**骨架期**」与「**空目录错**」——
+//        dalu 建仓时会先落 `data/` 骨架（里面只有 `.gitkeep`），**此时尚无配置表是正常的**；
+//        而「**有非占位文件却无配置表**」才是「建了目录未放内容」。
+//        来源：v0.21 实测 —— dalu 首次提交后 R6 立刻误报（门禁**确实在联动**，但判据过粗）。
+//      ⚠️ 本规则此前**没有反向测试**（违反 §7.1 纪律 2）—— v0.21 一并补齐（6 用例）。
 // ─────────────────────────────────────────────────────────────
 
 const DATA_DIR = 'F:/zxc/Project/qiuyuan-dalu/data';
+
+/** 配置表文件（Luban 表源：Excel / CSV / JSON —— 上游 §6.2） */
+const CFG_FILE = /\.(json|csv|ya?ml|xlsx?)$/i;
+/** 占位文件 —— 只有它们在场 = **骨架期**，不算「建了目录未放内容」 */
+const CFG_PLACEHOLDER = /(^|\/)(\.gitkeep|\.gitignore|\.gitattributes|\.keep|README\.md)$/i;
+
+/** 纯函数：便于 `--self-test` 反向测试。入参为目录下**所有**文件（相对路径 · `/` 分隔） */
+function configDirVerdict(allFiles) {
+  const cfg = allFiles.filter(f => CFG_FILE.test(f));
+  const real = allFiles.filter(f => !CFG_PLACEHOLDER.test(f));
+  if (cfg.length > 0) {
+    const bad = cfg.filter(f => !/^[a-z0-9_\-./]+$/.test(f));
+    return { kind: bad.length ? 'badname' : 'ok', cfg, bad, real };
+  }
+  return { kind: real.length === 0 ? 'skeleton' : 'empty-err', cfg, bad: [], real };
+}
 
 (function r6() {
   if (!fs.existsSync(DATA_DIR)) {
     ok('R6', '配置表目录未建立（`qiuyuan-dalu/data/`）→ 跳过');
     return;
   }
-  const files = [];
+  const all = [];
   const walk = (dir) => {
     for (const e of fs.readdirSync(dir, { withFileTypes: true })) {
       const p = path.join(dir, e.name);
       if (e.isDirectory()) { walk(p); continue; }
-      if (!/\.(json|csv|yaml|yml)$/i.test(e.name)) continue;
-      files.push(path.relative(DATA_DIR, p).replace(/\\/g, '/'));
+      all.push(path.relative(DATA_DIR, p).replace(/\\/g, '/'));
     }
   };
   walk(DATA_DIR);
 
-  if (files.length === 0) {
-    err('R6', '配置表目录存在但**无任何配置文件** —— 建了目录未放内容（禁止空集真空通过）');
-    return;
-  }
-
-  // 命名合规：只允许小写字母 / 数字 / 下划线 / 连字符 / 点（**不再强制任何前缀** —— ADR-0001）
-  const bad = files.filter(f => !/^[a-z0-9_\-./]+$/.test(f));
-  if (bad.length) {
-    err('R6', `配置表文件名含非法字符（须小写字母/数字/下划线/连字符）：${bad.join(', ')}`);
+  const v = configDirVerdict(all);
+  if (v.kind === 'skeleton') {
+    ok('R6', `配置表目录为**骨架期**（${all.length} 个占位文件，尚无配置表）→ 跳过（M1 起放表）`);
+  } else if (v.kind === 'empty-err') {
+    err('R6', `配置表目录含 ${v.real.length} 个非占位文件，但**无任何配置表**（.xlsx / .csv / .json）—— 建了目录未放内容（禁止空集真空通过）`);
+  } else if (v.kind === 'badname') {
+    err('R6', `配置表文件名含非法字符（须小写字母/数字/下划线/连字符）：${v.bad.join(', ')}`);
   } else {
-    ok('R6', `配置表命名合规（${files.length} 个文件；前缀由 qiuyuan-dalu 自定 —— ADR-0001）`);
+    ok('R6', `配置表命名合规（${v.cfg.length} 个文件；前缀由 qiuyuan-dalu 自定 —— ADR-0001）`);
   }
 })();
 
@@ -512,6 +529,13 @@ if (process.argv.includes('--self-test')) {
     ['R9', '缺一处锚点 → 必报错并点名', missingAnchors('世界真实性', [['a.md', '世界真实性优先'], ['b.md', '无关内容']]).length === 1, true],
     ['R9', '四处齐备 → 不得报错', missingAnchors('世界真实性', [['a.md', '世界真实性'], ['b.md', '世界真实性优先']]).length === 0, true],
     ['R9', '全缺 → 全部列出', missingAnchors('世界真实性', [['a.md', 'x'], ['b.md', 'y']]).length === 2, true],
+    // R6 · 骨架期 vs 空目录错（v0.21 补齐 —— 本规则此前**无反向测试**）
+    ['R6', '无文件 → 骨架期（不报错）', configDirVerdict([]).kind === 'skeleton', true],
+    ['R6', '仅 .gitkeep → 骨架期（不报错）', configDirVerdict(['.gitkeep']).kind === 'skeleton', true],
+    ['R6', '仅 README.md → 骨架期（不报错）', configDirVerdict(['README.md']).kind === 'skeleton', true],
+    ['R6', '有非占位文件却无配置表 → 必报错', configDirVerdict(['notes.txt']).kind === 'empty-err', true],
+    ['R6', '有配置表 → 通过', configDirVerdict(['realm_level_config.json']).kind === 'ok', true],
+    ['R6', '配置表名含大写 → 必报错', configDirVerdict(['Realm.json']).kind === 'badname', true],
   ];
 
   const fails = cases.filter(([, , got, want]) => got !== want);

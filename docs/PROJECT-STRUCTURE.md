@@ -1,6 +1,7 @@
 # PROJECT-STRUCTURE.md —— 工程结构详案
 
-> **层**：L4 规范层（本仓 `docs/`）　|　**状态**：v1.3（草案 · **M1 施工图**）
+> **层**：L4 规范层（本仓 `docs/`）　|　**状态**：v1.4（草案 · **M1 施工图**）
+> **v1.4 变更**：**环境事实全部迁出** → 新建真源 **`docs/ENVIRONMENT.md`**。§3.1 由 84 行实测表**收成指针**（依据纪律①：**同一事实不写两处**）；§9 待办同步（`git init` / `platforms/mobile/` / 版本锁定 **均已办**，仅剩**装齐 Go / protoc / Luban**）。
 > **v1.3 变更**：§3.1 第 2 项**推翻 v1.2 的结论** —— 「MSVC 被禁」是**误判**。错在**拿目录名当版本号**：实测 `cl.exe` 的 `ProductVersion` = **`14.44.35228`**（微软「就地修补」，目录名仍写 `14.44.35207`）→ **合规、无需升级**。附 UE 源码依据（读 `ProductVersion` 优先）与正确验证命令。
 > **v1.2 变更**：§3.1 第 2 项「MSVC 被禁」**细化为可执行** —— 补根因（装的是**锁定版组件**，**不随 VS 主程序滚动**）、五步升级操作、**验证命令**、两条退路；写明**有效可用区间 `14.44.35211`~`14.44.99999`**（**Banned 优先于 Preferred**）。
 > **回答三问**：① `qiuyuan-dalu` 整个是什么结构　② UE 工程怎么创建　③ 手机端怎么预留
@@ -82,7 +83,7 @@ ue-client/                         ← 这就是 UE 工程根（不是子目录�
 2. **UE 生成的四个目录一律不提交**：`Binaries/`（可执行）、`Intermediate/`、`Saved/`（日志 / 自动保存）、`DerivedDataCache/`。**提交它们 = 仓库被二进制污染**。
 3. **monorepo 里放 UE 工程是官方支持的** —— UE 用 `Default.uprojectdirs` 机制在子目录中发现工程。无需额外配置。
 
-> **UE 版本必须全队锁定同一小版本** —— 本项目锁定 **UE 5.8.1**（见 §3.1），写进 `CONVENTIONS.md`。
+> **UE 版本必须全队锁定同一小版本** —— 本项目锁定 **UE 5.8.1**（锁定值与查法见 `ENVIRONMENT.md` §2.1），纪律见 `CONVENTIONS.md` §9。
 > **理由**：UE 的**小版本之间不保证资产兼容** —— 5.8.1 存的 `.uasset`，被更高补丁版打开会升级且**不可回退**。
 > 多工具 / 云电脑协作下，版本漂移会直接损坏资产。**这是硬约束，不是建议。**
 
@@ -90,89 +91,34 @@ ue-client/                         ← 这就是 UE 工程根（不是子目录�
 
 ## 3. UE 工程怎么创建（M1 第一件事）
 
-### 3.1 前置：环境**实测**结论（2026-09-28 探测）
+### 3.1 前置：环境（**真源已移出** → `ENVIRONMENT.md`）
 
-> ### 纪律：不看「装了没」，看「**能不能编译**」。
-> 下表每一行都是**实测**（列目录 / 读版本文件），不是安装记录推断。
-> **教训来源**：本次探测中 `vswhere -requires …VC.Tools…` **返回空**（看似没装 C++），
-> 但 `cl.exe` **实际存在** —— **组件 ID 查询不可靠，文件实测才准**。
+> **本节的版本号与现状不再在此维护** —— 真源是 **`ENVIRONMENT.md`**（开发环境与工具链台账）。
+> 依据纪律①：**同一事实不写两处**。此处只留「M1 要做什么」，**事实一律查台账**。
+> 历史上此处曾维护整张环境实测表，**已全部迁出**（含 MSVC 判据、移动端平台、Android SDK 等）。
 
-| # | 项 | 实测结果 | 处置 |
-|---|---|---|---|
-| 1 | **UE 引擎** | ✅ **5.8.1**（`F:/zxc/UE_5.8/`，`Build.version` = 5.8.1-56057345） | 已就绪 |
-| 2 | **MSVC 工具链** | ✅ **`ProductVersion` = `14.44.35228`**（目录名 `14.44.35207` **不是版本号**） | 已就绪（见下） |
-| 3 | **Windows SDK** | ⚠️ 已装 `10.0.26100.0`；UE 5.8 的 `MainVersion` 是 `10.0.22621.0`（`Min` = `19041`） | 可用（在 Min~Max 内）；建议补装 22621 免告警 |
-| 4 | **Visual Studio** | ✅ Build Tools 2022 `17.14.39`（UE 要求 ≥ 17.8） | 已就绪 |
-| 5 | **.NET（UBT 依赖）** | ✅ 引擎自带 `Engine/Binaries/ThirdParty/DotNet/10.0` | 已就绪 |
-| 6 | **移动端平台支持** | ⚠️ `Android` + `IOS` 的 **UBT 平台模块**已随引擎安装（`Engine/Binaries/Win64/{Android,IOS}/` 有 dll）—— **但这不等于「能出包」** | **不影响 M1**；出包链路见 `MOBILE-PLAN.md` §2 |
-| 7 | **Android SDK / NDK** | ❌ 未配（`ANDROID_HOME` 为空） | **不阻塞 M1**（M1 不打包）；将来跑 `Engine/Extras/Android/SetupAndroid.bat` |
-| 8 | **`git init` + Git LFS** | ❌ dalu 还不是 git 仓库 | 见下方顺序说明 |
+**M1 开工前，环境侧只有两件事：**
 
-> **第 6 项的更正（v0.19）** —— 本条原写「**已就绪 · 勾 Mobile 即生效**」，**是错的**。
-> Launcher 预编译版里 `Engine/Platforms/{Android,IOS}/` **只有 `Plugins/`**，平台模块以 dll 形式住在 `Engine/Binaries/Win64/<平台>/`。
-> **「模块在」≠「能出包」**：Android 还缺 SDK / NDK / JDK；**iOS 在 Windows 上物理上出不了包**（依赖 Xcode，仅 macOS）。
-> 与第 2 项同属「**判据要看对字段**」一族 —— 第 6 项是「看似能用、其实不能用」，第 2 项是「看似不能用、其实能用」。出包链路与前置见 **`MOBILE-PLAN.md` §2**。
-
-#### ✅ 「MSVC 被禁」是误判 —— 判据要看 `cl.exe` 的 `ProductVersion`（第 2 项）
-
-**结论（v0.20 实测）**：本机 MSVC **完全合规、无需任何升级**。上一版（v1.2）把它列为「唯一阻塞」，**是误报**。
-
-**判据陷阱**（本节的价值全在这里）：
-
-| 看什么 | 值 | 会得出 |
+| # | 事项 | 详见 |
 |---|---|---|
-| ❌ 目录名 `VC/Tools/MSVC/` **`14.44.35207`** | `14.44.35207` | **落在禁用区间 → 误判为阻塞** |
-| ✅ `cl.exe` 的 **`ProductVersion`** | **`14.44.35228.0`** | **合规可用** |
+| 1 | 按台账 §4.1 装齐三项（**Go / protoc / Luban**） | `ENVIRONMENT.md` §4.1 |
+| 2 | 先 `git init` + LFS + `.gitignore`，**再**创建 UE 工程 | 本文件 §3.3 ／ 台账 §4.3 |
 
-**目录名只是微软的「家族基线名」，不是编译器版本。** 微软用**就地修补（Servicing）**：
-包 `Microsoft.VC.14.44.17.14.Servicing.Compilers`（版本 `14.44.35228`）把二进制更新到 `35228`，
-而**目录名保持 `14.44.35207` 不变**。
+**两条判据纪律**（本轮实测得来，务必记住）：
 
-`cl.exe` 里两个版本号含义不同：
+- **不看「装了没」，看「能不能编译」** —— 环境前置须**实测**，不得由安装记录推断。
+  （同源：ADR-0002「**已验证 ≠ 正确**」——不看声明，看实物。）
+- **判据要落在「引擎真正读取的那个字段」上** —— 最典型的例子是 MSVC：
+  **目录名 `14.44.35207` 不是版本号**，UE 读的是 `cl.exe` 的 **`ProductVersion`**（本机 `14.44.35228` ✅ 合规）。
+  **唯一正确查法**见 `ENVIRONMENT.md` §2.1.1。
+  > 曾据此误报「MSVC 被禁导致 M1 阻塞」**两次**，并写进两仓文档 —— 复盘见 `records/X-0006.md` 附加节。
 
-| 字段 | 值 | 含义 |
-|---|---|---|
-| `FileVersion` | `19.44.35228.0` | 编译器内核版本（`19.x`） |
-| **`ProductVersion`** | **`14.44.35228.0`** | **工具集版本（`14.x`）—— UE 读的就是它** |
-
-**UE 怎么判**（源码 `UnrealBuildTool/Platform/Windows/MicrosoftPlatformSDK.cs` → `IsValidToolChainDirMSVC()`）：
-
-```csharp
-FileVersionInfo VersionInfo = FileVersionInfo.GetVersionInfo(CompilerExe.FullName);
-if (VersionInfo.ProductMajorPart != 0)
-    Version = new VersionNumber(ProductMajorPart, ProductMinorPart, ProductBuildPart);  // ← 读 ProductVersion
-else
-    VersionNumber.TryParse(ToolChainDir.GetDirectoryName(), out Version);              // ← 读不到才回退目录名
-```
-
-→ UE 拿到 **`14.44.35228`**：不在 `BannedVisualCppVersions`（`14.44.0-14.44.35210`），
-且在 `PreferredVisualCppVersions`（`14.44.35207-14.44.99999`）内 → **接受**。
-
-**正确验证命令**（**别用 `ls` 看目录名**）：
-
-```powershell
-(Get-Item "F:\zxc\Microsoft Visual Studio\2022\BuildTools\VC\Tools\MSVC\*\bin\Hostx64\x64\cl.exe").VersionInfo.ProductVersion
-# 期望 ≥ 14.44.35211
-```
-
-> **与第 6 项那条纪律同源、方向相反** —— 第 6 项是「**看似能用，其实不能用**」（模块在 ≠ 能出包）；
-> 本节是「**看似不能用，其实能用**」。**两次栽在同一个动作上：拿一个「长得像版本号」的东西下了结论。**
-> **判据必须落在「引擎真正读取的那个字段」上，而不是最显眼的那个名字上。**
-> 「真能编译」的终审 → 留到 M1 建工程时（`ROADMAP.md` M1 第 0 项）。
-
-> **附：本次 VS 侧操作的实际收获**（大人按 v1.2 步骤跑了一次安装，82 个包 0 失败）
-> —— 把「锁定版组件 `Component.VC.14.44.17.14.x86.x64`」换成了**滚动版** `Component.VC.Tools.x86.x64`（「最新」），
-> 并补装了 CRT / ATL / MFC / PGO / CA 等包。**编译器内核未被替换**（`cl.exe` 时间戳仍是 2026-08-26），
-> 即 **8 月 26 日装机时就已是 `35228`**。这次操作无害、且对未来有利（滚动组件会随 VS 更新）。
-
-> **版本口径**（写进 `CONVENTIONS.md`）：**UE 5.8.1** ／ **MSVC `ProductVersion` ≥ 14.44.35211**（本机实测 `14.44.35228` ✅）／ Windows SDK ≥ 10.0.22621。
-
-#### 创建前的顺序（第 8 项）
+#### 创建前的顺序
 
 **先 `git init` + `git lfs install` + 写 `.gitignore`，再创建工程。**
 
 反了的话，UE 生成的 `Binaries/` `Intermediate/` `Saved/` 会**先落盘**，容易误提交 ——
-**先让 `.gitignore` 挡着，再让 UE 生成。**
+**先让 `.gitignore` 挡着，再让 UE 生成。**（台账 §4.3 第 4 项的实操依据。）
 
 ### 3.2 创建向导的六个选择（**逐项给建议**）
 
@@ -371,17 +317,18 @@ ue-client/Config/
 
 **M1 开工前置**（硬）：
 
-- [x] ~~升级 MSVC~~ —— **实测无需**：`cl.exe` 的 `ProductVersion` = `14.44.35228`，本就合规（§3.1）
-- [ ] `qiuyuan-dalu` 做 `git init` + `git lfs install` + 写 `.gitattributes` / `.gitignore`
-- [ ] 建 `platforms/mobile/` 并落文件清单（**`MOBILE-PLAN.md` §5**）—— **与 `git init` 同批**，不单独建
-- [ ] 锁定版本号（**UE 5.8.1 / MSVC ≥ 14.44.35211**）写进 `CONVENTIONS.md`
+- [x] ~~升级 MSVC~~ —— **实测无需**：`cl.exe` 的 `ProductVersion` = `14.44.35228`，本就合规（`ENVIRONMENT.md` §2.1.1）
+- [x] `qiuyuan-dalu` 做 `git init` + `git lfs install` + `.gitattributes` / `.gitignore` —— **2026-09-28 完成**
+- [x] 建 `platforms/mobile/` 并落文件清单（**`MOBILE-PLAN.md` §5**）—— 与 `git init` 同批
+- [x] **建立 `docs/ENVIRONMENT.md`**（环境与工具链台账）+ 版本锁定 —— **2026-09-28 完成**
+- [ ] **装齐三项工具链**：**Go** / **protoc** / **Luban** ← **当前唯一阻塞**（见 `ENVIRONMENT.md` §4.1）
 
-**已就绪**（实测，无需动作）：UE 5.8.1 ／ VS BuildTools 17.14.39 ／ .NET 10 ／ `TP_Blank` 模板 ／ Android 与 iOS 的 **UBT 平台模块**（⚠️ **模块在 ≠ 能出包** —— §3.1 第 6 项）。
+> **环境现状一律查 `ENVIRONMENT.md` §3** —— 本文件**不再复写任何版本号**（纪律①：同一事实不写两处）。
 
 **待补**：
 
-- [ ] `CONVENTIONS.md` §6.1 命名表补录 UE 资产前缀（§4 那张表）
-- [ ] `CONVENTIONS.md` §3 补「UE 版本锁定」条文
+- [x] `CONVENTIONS.md` §6.1 命名表补录资产命名两条线（引擎内 / 引擎外）—— **2026-09-28 完成**
+- [x] `CONVENTIONS.md` §9 补「环境与版本锁定」条文 —— **2026-09-28 完成**
 - [ ] 上游《技术架构》§3.4 表结构漏列配置表 —— 已在 `registry/cross-repo-ledger.md`（**U-0004**）
 
 **待裁**：

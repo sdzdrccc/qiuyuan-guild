@@ -28,12 +28,13 @@
 
 ```
 docs/
-  MULTI-AGENT-DEV-PLAN.md   多 Agent 协作开发方案（总纲 · v0.19）
+  MULTI-AGENT-DEV-PLAN.md   多 Agent 协作开发方案（总纲 · v0.21）
   AGENTS.md                 ★ 跨库 AI 硬纪律（给 AI 看的，优先级高于临时指令）
-  CONVENTIONS.md            ★ 工程约定（铁律级，升版需 ADR）
+  CONVENTIONS.md            ★ 工程约定（铁律级，升版需 ADR · v0.4）
   DECISIONS.md              ★ ADR 台账 —— 「为什么这么定」的唯一真源
   ROADMAP.md                ★ 里程碑路线图 —— 84 项功能 → 17 个里程碑
-  PROJECT-STRUCTURE.md      ★ 工程结构详案 —— UE 创建规格 / 目录全貌 / 手机端判据（M1 施工图 · v1.1）
+  PROJECT-STRUCTURE.md      ★ 工程结构详案 —— UE 创建规格 / 目录全貌 / 手机端判据（M1 施工图 · v1.4）
+  ENVIRONMENT.md            ★ 环境与工具链台账 —— **应用 / 锁定版本 / 实测现状的唯一真源**
   MOBILE-PLAN.md            ★ 手机端专案书 —— 方案 / 出包链路 / 归置表 / 启停判据
   SKILL-ROUTING.md          角色 → skill 路由表
 contracts/                  ★ 唯一真源（三方只读消费，禁止本地副本）
@@ -47,6 +48,7 @@ records/                    ★ 完成记录（guild 侧编号 **`X-*`**；dalu 
   X-0004.md                    v0.17 第一设计原则（世界真实性优先）
   X-0005.md                    v0.18 UE 工程规格 + 手机端预留（ADR-0010）
   X-0006.md                    v0.19 手机端专案化：归置 + 出包 + iOS 硬约束（ADR-0011）
+  X-0007.md                    v0.21 环境台账 + dalu 开工（ADR-0012 / 0013）
 registry/                   ★ 跨库登记（第三条铁律的落点）—— **全部是视图，非真源**
   cross-repo-ledger.md         跨库需求 / 交付台账（**索引视图**）
   agent-log.md                 按 agent 的完成记录视图（**派生视图**）
@@ -74,10 +76,11 @@ scripts/                    ★ 校验脚本（没有校验脚本的契约 = 装
 
 ## 核心文档
 
-- [`docs/MULTI-AGENT-DEV-PLAN.md`](docs/MULTI-AGENT-DEV-PLAN.md) — 多 Agent 协作开发方案（**v0.19**）
+- [`docs/MULTI-AGENT-DEV-PLAN.md`](docs/MULTI-AGENT-DEV-PLAN.md) — 多 Agent 协作开发方案（**v0.21**）
 - [`docs/AGENTS.md`](docs/AGENTS.md) — **动手前先读这份**
 - [`docs/DECISIONS.md`](docs/DECISIONS.md) — **裁决台账**（改契约前必读）
 - [`docs/ROADMAP.md`](docs/ROADMAP.md) — **里程碑路线图**（不知道下一步做什么就读它）
+- [`docs/ENVIRONMENT.md`](docs/ENVIRONMENT.md) — **环境与工具链台账**（**要装工具 / 查版本 / 问缺什么就读它**）
 - [`docs/PROJECT-STRUCTURE.md`](docs/PROJECT-STRUCTURE.md) — **工程结构详案**（**要建 UE 工程就读它**）
 - [`docs/MOBILE-PLAN.md`](docs/MOBILE-PLAN.md) — **手机端专案书**（**手机端的东西放哪 / 怎么出安装包就读它**）
 - [`docs/CONVENTIONS.md`](docs/CONVENTIONS.md) — 工程约定
@@ -119,14 +122,14 @@ scripts/                    ★ 校验脚本（没有校验脚本的契约 = 装
 > ✅ **M1 契约侧硬前置已解除（2026-09-28 · v0.15）**：**ADR-0004 / 0005 / 0006** 已全部裁定 —— 境内 **9 层（82 台阶）** / 属性**上限不落库** / `realm_id` **`1~9`**。契约升 **v0.3**，`Role` / `RealmLevelConfig` 的字段定义已落笔。
 > 余下待裁项为**里程碑级**（M5 装备槽位 / M7 队伍人数），**不阻塞 M1**。
 >
-> 🔧 **M1 环境侧前置（实测 · v0.18 / v0.19 / **v0.20 更正**）**：
+> 🔧 **M1 环境侧前置** → **真源已移至 [`docs/ENVIRONMENT.md`](docs/ENVIRONMENT.md)**（v0.21 起，本文件不再复写版本号）：
 >
-> - ✅ UE **5.8.1** 已装（`F:/zxc/UE_5.8/`）；VS BuildTools `17.14.39` 齐备；
-> - ✅ **MSVC 合规** —— **v0.20 撤回** v0.18/v0.19 的「须先升级」**误报**：判据是 `cl.exe` 的 **`ProductVersion` = `14.44.35228`**，**不是目录名**（`14.44.35207` 只是微软的**家族基线名**，其内二进制已就地修补到 `35228`）；
-> - 🔴 `qiuyuan-dalu` **尚未 `git init`**，Git LFS 未配；
-> - ⚠️ **移动端出包链路未就绪**（v0.19 **更正**原「Android + IOS 已就绪」的说法）—— 平台**模块**在（`Binaries/Win64/<平台>/` 有 dll），但 **Android 缺 SDK/NDK**、**iOS 在 Windows 上物理出不了包**（须 Mac）。**不阻塞 M1**，见 [`docs/MOBILE-PLAN.md`](docs/MOBILE-PLAN.md) §2。
+> - ✅ **已就绪**：UE `5.8.1` ／ VS BuildTools `17.14.39` ／ **MSVC 合规**（判据是 `cl.exe` 的 **`ProductVersion` = `14.44.35228`**，**不是目录名** —— v0.20 撤回 v0.18/v0.19 的「须先升级」**误报**）／ Windows SDK `10.0.26100.0` ／ .NET 10 ／ MySQL `8.0.46` ／ Node 22 ／ Python 3.13 ／ Git `2.55` + LFS `3.7`；
+> - ✅ `qiuyuan-dalu` **已 `git init` + LFS + 目录骨架 + 首次推送**（2026-09-28）；
+> - 🔴 **当前唯一阻塞**：装齐 **Go / protoc / Luban** 三项工具链（[`ENVIRONMENT.md`](docs/ENVIRONMENT.md) §4.1）；
+> - ⚠️ **不阻塞 M1 的两项**：Redis 本机 `3.0.504`（过旧，M2+ 前升级）；移动端出包链路未就绪（Android 缺 SDK/NDK、iOS 须 Mac —— [`MOBILE-PLAN.md`](docs/MOBILE-PLAN.md) §2）。
 >
-> 详见 [`docs/PROJECT-STRUCTURE.md`](docs/PROJECT-STRUCTURE.md) §3.1；创建规格见 **ADR-0010**；手机端归置与出包见 **ADR-0011**。
+> 创建规格见 **ADR-0010**；手机端归置与出包见 **ADR-0011**；**环境台账与版本锁定见 ADR-0012 / 0013**。
 
 **校验脚本本地跑法**：
 
