@@ -55,6 +55,7 @@ records/                    ★ 完成记录（guild 侧编号 **`X-*`**；dalu 
   X-0010.md                    v0.24 server/ 结构定案：技术模块切（ADR-0016）
   X-0011.md                    v1.2 M1 工具链装机：Go 1.27.1 + Luban v5.1.0
   X-0012.md                    v0.25 UE 工程创建规格按 5.8 实测更正（ADR-0017）
+  X-0013.md                    v1.9 路线 B 实测：**非向导等价物**（ADR-0017 §七）
 registry/                   ★ 跨库登记（第三条铁律的落点）—— **全部是视图，非真源**
   cross-repo-ledger.md         跨库需求 / 交付台账（**索引视图**）
   agent-log.md                 按 agent 的完成记录视图（**派生视图**）

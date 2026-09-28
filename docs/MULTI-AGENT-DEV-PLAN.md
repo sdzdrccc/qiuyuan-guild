@@ -722,7 +722,7 @@ qiuyuan-dalu/
 > **③ 但「工程外的平台专属产出物」需要归置点** —— 脚本 / 清单 / 签名模板 / 机型表归 **`platforms/mobile/`**，
 > 因为「不新建客户端目录」**不等于**「不需要任何新目录」（ADR-0011 §四）。详见 **`docs/MOBILE-PLAN.md` §4**。
 
-> ### 📐 本节只是骨架 —— 施工图在 **`docs/PROJECT-STRUCTURE.md`**（**v1.8** · M1 施工图）
+> ### 📐 本节只是骨架 —— 施工图在 **`docs/PROJECT-STRUCTURE.md`**（**v1.9** · M1 施工图）
 >
 > 该文件展开三件本节未覆盖的事：
 > ① **`ue-client/` 作为「完整 UE 工程」的标准内部结构**（`Config/` `Content/` `Source/` `Plugins/` + 四个必须忽略的生成目录）；

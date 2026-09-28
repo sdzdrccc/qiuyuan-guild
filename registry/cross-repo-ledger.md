@@ -34,6 +34,7 @@
 | **X-0010** | **v0.24** **`server/` 内部结构定案：技术模块切**（**ADR-0016**）—— 一级目录 = 进程名（`gateway`/`login`/`game`/`platform`）；owner 写权改以**声明**（`OWNERS`）叠加；**回写方案 §2.1 领地路径** | guild | `qiuyuan-guild` | 本仓自办 | `待验收` | [records/X-0010.md](../records/X-0010.md) |
 | **X-0011** | **v1.2** **M1 工具链装机：Go 1.27.1 + Luban v5.1.0**（均装 `F:\zxc`）—— **端到端验证**（Luban 导表 207 Go + 53 JSON → **生成代码 `go build`/`go vet` 全过**）；**M1 环境侧阻塞全部解除**；附带：9-14 旧文档「加废弃横幅」**已决：不处理** | guild | `qiuyuan-guild` | 本仓自办 | `待验收` | [records/X-0011.md](../records/X-0011.md) |
 | **X-0012** | **v0.25** **UE 工程创建规格按 UE 5.8 实测更正**（**ADR-0017**）—— 向导**无**「Desktop + Mobile」（`EHardwareClass` 单选）、**无** Starter Content / 光追（5.6 起移除）；`HardwareTarget` 是**默认画质档**非平台开关 → 取 **`Desktop` + `Scalable`**；补**路径命名两条路**与**本机引擎启动方式**（无 Launcher / 无 VersionSelector / 未注册） | guild | `qiuyuan-guild` | 本仓自办 | `待验收` | [records/X-0012.md](../records/X-0012.md) |
+| **X-0013** | **v1.9** **路线 B（套模板）实测 + 更正：它不是向导等价物** —— 向导 `CreateProjectFromTemplate` 在「复制模板」外**另有 6 件事**（写八组 ini 默认值 / 写 `ProjectID` / 建 `Content/` / `.uproject` 反序列化重存 / 跑 `GenerateProjectFiles` / 两遍占位符替换）；脚本**只复刻复制规则**（已补 `Content/`）→ **可编译可开图但 ini 与向导不同**。更正 §3.2 与手册的「等价」表述（**ADR-0017 §七**） | guild + dalu | `qiuyuan-guild`（真源）／`qiuyuan-dalu`（手册与脚本） | 本仓自办（guild）＋ dalu 侧同改 | `待验收` | [records/X-0013.md](../records/X-0013.md) |
 
 > **⚠️ X-0009 附带登记（外部遗存文档 · 不归任何一库）**：
 > `F:/zxc/XiaomiMiMoProjects/.mimo-sessions/2026-09-14/…/虬渊大陆-MMORPG技术架构方案.md`

@@ -1004,9 +1004,23 @@ server/
 
 **六、本机引擎启动方式**（环境事实，同步 `ENVIRONMENT.md`）：**无 Launcher / 无 `UnrealVersionSelector` / 未在 `HKLM` 注册** → 用**命令行指定编辑器**启动（`UnrealEditor.exe <uproject>`）；`.uproject` 的 `EngineAssociation` **不可填 `"5.8"`**。
 
+**七、v1.9 附带更正 —— 路线 B「与向导等价」的说法不成立**（原写于 `PROJECT-STRUCTURE.md` §3.2）：
+
+核对 `GameProjectUtils::CreateProjectFromTemplate`（`Engine/Source/Editor/GameProjectGeneration/Private/GameProjectUtils.cpp`）后确认：向导在「复制模板」之外另有 **6 件事** —— **[1] 写八组 ini 默认值**（`AddHardwareConfigValues` / `AddLumenConfigValues` / 光追 / 阴影 / 后处理 / `WorldPartition` / UI DPI）、**[2] 写 `ProjectID`**（新 GUID）、**[3] 建 `Content/` 空目录**、**[4] `.uproject` 反序列化后重存**（清 `EngineAssociation` / `EpicSampleNameHash`）、**[5] 跑 `GenerateProjectFiles`**（`.sln` / `.vcxproj`）、**[6] 两遍占位符法替换**。
+
+→ **套模板只复刻复制规则**（脚本已补 `Content/`）→ 产物**可编译、可开图，但 ini 内容与向导产物不同**。
+故 §3.2 原句「`TemplateDefs.ini` 给出的、**与向导等价**的创建规则」**更正为「只覆盖复制环节」**，并加覆盖范围说明。
+**要「与向导一致」走路线 A**；逐项对照见 `qiuyuan-dalu/docs/UE-PROJECT-SETUP.md`（附录）。
+
+> **判据**：**「套模板」是按规则**复制**一个产物，「向导」是**执行一段程序**生成一个产物** ——
+> 前者只复刻了你**看得见的那部分规则**；程序里的其余步骤（写 ini / 生成工程文件 / 后处理钩子）
+> **不会自动出现在产物里**。凡断言「A 等价于 B」，**须核到 B 的完整执行路径**，而不是 B 的文档描述。
+> 与坑 23（引用哪个出处）同源，但错在**更上一层**：不是引用错处，而是**把「一部分」当成了「全部」**。
+
 ### 同步
 
 - `docs/PROJECT-STRUCTURE.md` **v1.7 → v1.8**：§3.2 重写 / §3.3 加第 6 项「命令行验证构建」/ §3.4 补注 / §7.2 更正 / §8 / §9
+- `docs/PROJECT-STRUCTURE.md` **v1.8 → v1.9**（**本 ADR §七 附带更正**）：§3.2 路线 B 标为**非向导等价物** + 覆盖范围说明；`qiuyuan-dalu/docs/UE-PROJECT-SETUP.md` 附录同步（含逐项对照表）；`qiuyuan-dalu/tools/ue/create-project.py` 补建 `Content/` 目录
 - `docs/DECISIONS.md`：**本 ADR** + 索引行 + **ADR-0010 加部分更正标注**
 - `docs/ENVIRONMENT.md` **v1.2 → v1.3**：补引擎注册与启动方式
 - `docs/MULTI-AGENT-DEV-PLAN.md` **v0.24 → v0.25**：**§14.1e 裁决 27**

@@ -1,6 +1,7 @@
 # PROJECT-STRUCTURE.md —— 工程结构详案
 
-> **层**：L4 规范层（本仓 `docs/`）　|　**状态**：v1.8（草案 · **M1 施工图**）
+> **层**：L4 规范层（本仓 `docs/`）　|　**状态**：v1.9（草案 · **M1 施工图**）
+> **v1.9 变更**：**§3.2「路线 B（套模板）」更正为「非向导等价物」** —— 原写「`TemplateDefs.ini` 给出的、**与向导等价**的创建规则」**有误**。实测 UE 5.8 源码 `GameProjectUtils::CreateProjectFromTemplate`：向导在「复制模板」之外另有 **6 件事**（写八组 ini 默认值 / 写 `ProjectID` / 建 `Content/` / `.uproject` 反序列化重存 / 跑 `GenerateProjectFiles` / 两遍占位符替换）。套模板脚本只复刻复制规则（已补 `Content/`）→ 产物**可编译可开图，但 ini 与向导不同**。§3.2 加**覆盖范围说明**。
 > **v1.8 变更**：**§3.2 创建向导选项 → 按 UE 5.8 引擎源码实测重写**（**ADR-0017**）—— 原「六选项」中**三项与 5.8 实际不符**：① 「Target Platform 勾 Desktop + Mobile」**无法照做**（`EHardwareClass` 只有 Desktop / Mobile **单选**，且其性质是**默认画质档**而非平台开关）；② ③ Starter Content / Ray Tracing **UE 5.6 起已从向导移除**。§3.2 另补 **「目录名 ≠ 工程名」的实操路径**与**本机引擎启动方式**（无 Launcher / 无 VersionSelector / 引擎未注册）。§3.4 §7.2 §9 同步。
 > **v1.7 变更**：§1 `server/` 行补**内部结构** —— 一级按**技术模块切**（**ADR-0016**）：`internal/{gateway, login, game}` + `platform/`；§9 待裁项「`server/` 结构」**关闭**（转已裁）。
 > **v1.6 变更**：§1 `server/` 加**进程形态指针** —— 新建 **`docs/SERVER-ARCH.md`**（服务端架构与拆分时机 · **ADR-0015**）；§9 加一项**待裁**（`server/` 内部结构）。**本文件只管 UE 工程与服务端的一级目录；进程形态不再在此展开**（判据同纪律①）。
@@ -181,17 +182,26 @@ DefaultGraphicsPerformance=Scalable     ; 或 Maximum
 | 路线 | 做法 | 评价 |
 |---|---|---|
 | **A · 向导 + 重命名**（GUI） | ① `Location` 指 `F:/zxc/Project/qiuyuan-dalu/`、`Name` 填 `QiuyuanDalu` → 得到 `qiuyuan-dalu/QiuyuanDalu/`；② 把该目录**重命名为 `ue-client/`** | 可行。**`.uproject` 与模块名不动** —— UE 工程**相对路径寻址**，目录可移动（模板已证：`TP_Blank/` 内**无任何绝对路径**） |
-| **B · 套模板**（命令行） | 把 `Templates/TP_Blank/` 复制为 `ue-client/`，按 `TemplateDefs.ini` 规则改名 | **可脚本化、可复现**（合「命令 + 输出」的记录纪律），且**天然满足「目录名 ≠ 工程名」** |
+| **B · 套模板**（命令行） | 把 `Templates/TP_Blank/` 复制为 `ue-client/`，按 `TemplateDefs.ini` 规则改名 | **可脚本化、可复现**（合「命令 + 输出」的记录纪律），且**天然满足「目录名 ≠ 工程名」**。⚠️ **非向导等价物** —— 见下方覆盖范围说明 |
 
-**`TemplateDefs.ini` 给出的、与向导等价的创建规则**（路线 B 的依据）：
+**`TemplateDefs.ini` 给出的创建规则**（路线 B 的依据 —— **只覆盖「复制」环节**）：
 
 | 规则 | 内容 |
 |---|---|
 | `FoldersToIgnore` | `Media`（模板预览图，不进工程） |
-| `FilesToIgnore` | `%TEMPLATENAME%.uproject`（**由向导重新生成**）、`Config/TemplateDefs.ini`、`%TEMPLATENAME%.sln` 等 |
+| `FilesToIgnore` | `%TEMPLATENAME%.uproject`（**由向导读它后重新序列化生成**，非直接复制）、`Config/TemplateDefs.ini`、`%TEMPLATENAME%.sln` 等 |
 | `FolderRenames` | `Source/TP_Blank` → `Source/<工程名>` |
 | `FilenameReplacements` / `ReplacementsInFiles` | 限定扩展名 **`cpp` / `h` / `ini` / `cs`**，把 `TP_Blank` / `TP_BLANK` / `tp_blank` → 工程名（**三种大小写都要覆盖**） |
 | `bIsBlank=True` | **不指定默认地图** → 这正是 §3.3 第 3 项「设默认地图 / GameMode」被列为**创建后必做**的原因 |
+
+> ⚠️ **路线 B 的覆盖范围（重要）**：向导的 `GameProjectUtils::CreateProjectFromTemplate`
+> 在「复制模板」之外另有 **6 件事** —— **[1] 写一批 ini 默认值**（`AddHardwareConfigValues` /
+> `AddLumenConfigValues` / 光追 / 阴影 / 后处理 / WorldPartition / UI DPI 等八组）、
+> **[2] 写 `ProjectID`**、**[3] 建 `Content/` 空目录**、**[4] `.uproject` 反序列化后重存**（清
+> `EngineAssociation`）、**[5] 跑 `GenerateProjectFiles`**（`.sln`）、**[6] 用两遍占位符法替换**。
+> 套模板脚本**只复刻复制规则**（已补 `Content/`）→ 产物**可编译、可开图**，但 **ini 内容与向导产物不同**。
+> 要「与向导一致」走 **路线 A**；操作细节与逐项对照见 `qiuyuan-dalu/docs/UE-PROJECT-SETUP.md`（附录）。
+
 
 > **两条硬约束**：路径**不得含中文或空格**；工程名须以字母开头、≤20 字符。
 > **先清空目标目录** —— `ue-client/` 现有一个 `.gitkeep` 占位，走哪条路都要先移掉（向导不接受非空目录）。
