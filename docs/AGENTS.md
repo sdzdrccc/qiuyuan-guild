@@ -35,6 +35,7 @@
 | 改契约 | `contracts/`（真源）→ **先开 ADR**（`docs/DECISIONS.md`） |
 | 查某条裁决的来由 | `docs/DECISIONS.md`（**唯一真源**）；大局裁决另见方案 **§14 台账** |
 | 查某个里程碑的范围与出口 | `docs/ROADMAP.md` 对应章节（in / out scope + 可复现判据） |
+| **建 UE 工程 / 查工程结构 / 手机端怎么预留** | `docs/PROJECT-STRUCTURE.md` —— **M1 施工图**（创建规格 + 目录全貌 + 预留判据） |
 | 改目录结构 / 命名 / 接口 | `docs/CONVENTIONS.md` |
 | 找该用哪个 skill | `docs/SKILL-ROUTING.md` |
 | 装 skill | `docs/SKILL-ROUTING.md` §准入 —— **先过安全审计** |

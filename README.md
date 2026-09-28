@@ -28,11 +28,12 @@
 
 ```
 docs/
-  MULTI-AGENT-DEV-PLAN.md   多 Agent 协作开发方案（总纲 · v0.17）
+  MULTI-AGENT-DEV-PLAN.md   多 Agent 协作开发方案（总纲 · v0.18）
   AGENTS.md                 ★ 跨库 AI 硬纪律（给 AI 看的，优先级高于临时指令）
   CONVENTIONS.md            ★ 工程约定（铁律级，升版需 ADR）
   DECISIONS.md              ★ ADR 台账 —— 「为什么这么定」的唯一真源
   ROADMAP.md                ★ 里程碑路线图 —— 84 项功能 → 17 个里程碑
+  PROJECT-STRUCTURE.md      ★ 工程结构详案 —— UE 创建规格 / 目录全貌 / 手机端预留（M1 施工图）
   SKILL-ROUTING.md          角色 → skill 路由表
 contracts/                  ★ 唯一真源（三方只读消费，禁止本地副本）
   data-contract.md            数据模型（**逻辑层**：实体 / 境界 / 灵根 / 属性 / 战斗公式 · v0.3）
@@ -43,6 +44,7 @@ records/                    ★ 完成记录（guild 侧编号 **`X-*`**；dalu 
   X-0002.md                    v0.15 境界口径裁定 + 审核机制补完
   X-0003.md                    v0.16 ROADMAP 表格列位复位 + 门禁补 R8
   X-0004.md                    v0.17 第一设计原则（世界真实性优先）
+  X-0005.md                    v0.18 UE 工程规格 + 手机端预留（ADR-0010）
 registry/                   ★ 跨库登记（第三条铁律的落点）—— **全部是视图，非真源**
   cross-repo-ledger.md         跨库需求 / 交付台账（**索引视图**）
   agent-log.md                 按 agent 的完成记录视图（**派生视图**）
@@ -70,10 +72,11 @@ scripts/                    ★ 校验脚本（没有校验脚本的契约 = 装
 
 ## 核心文档
 
-- [`docs/MULTI-AGENT-DEV-PLAN.md`](docs/MULTI-AGENT-DEV-PLAN.md) — 多 Agent 协作开发方案（**v0.17**）
+- [`docs/MULTI-AGENT-DEV-PLAN.md`](docs/MULTI-AGENT-DEV-PLAN.md) — 多 Agent 协作开发方案（**v0.18**）
 - [`docs/AGENTS.md`](docs/AGENTS.md) — **动手前先读这份**
 - [`docs/DECISIONS.md`](docs/DECISIONS.md) — **裁决台账**（改契约前必读；当前 **无待裁项**）
 - [`docs/ROADMAP.md`](docs/ROADMAP.md) — **里程碑路线图**（不知道下一步做什么就读它）
+- [`docs/PROJECT-STRUCTURE.md`](docs/PROJECT-STRUCTURE.md) — **工程结构详案**（**要建 UE 工程就读它**）
 - [`docs/CONVENTIONS.md`](docs/CONVENTIONS.md) — 工程约定
 - [`registry/cross-repo-ledger.md`](registry/cross-repo-ledger.md) — 跨库登记台账
 
@@ -110,8 +113,16 @@ scripts/                    ★ 校验脚本（没有校验脚本的契约 = 装
 | M2 | 首战 —— 移动 / 伤害结算 / 死亡复活 | 未开始 |
 | M3+ | 见 [`docs/ROADMAP.md`](docs/ROADMAP.md) | 未开始 |
 
-> ✅ **M1 的硬前置已解除（2026-09-28 · v0.15）**：**ADR-0004 / 0005 / 0006** 已全部裁定 —— 境内 **9 层（82 台阶）** / 属性**上限不落库** / `realm_id` **`1~9`**。契约升 **v0.3**，`Role` / `RealmLevelConfig` 的字段定义已落笔。
+> ✅ **M1 契约侧硬前置已解除（2026-09-28 · v0.15）**：**ADR-0004 / 0005 / 0006** 已全部裁定 —— 境内 **9 层（82 台阶）** / 属性**上限不落库** / `realm_id` **`1~9`**。契约升 **v0.3**，`Role` / `RealmLevelConfig` 的字段定义已落笔。
 > 余下待裁项为**里程碑级**（M5 装备槽位 / M7 队伍人数），**不阻塞 M1**。
+>
+> 🔧 **M1 环境侧前置（实测 · v0.18）**：
+>
+> - ✅ UE **5.8.1** 已装（`F:/zxc/UE_5.8/`）；移动端平台支持（Android + IOS）**已随引擎安装**；VS BuildTools `17.14.39` 齐备；
+> - 🔴 **MSVC `14.44.35207` 落在 UE 5.8 的 `BannedVisualCppVersions` 区间**（Template compile error，由 `14.44.35211` 修复）→ **须先升级**；
+> - 🔴 `qiuyuan-dalu` **尚未 `git init`**，Git LFS 未配。
+>
+> 详见 [`docs/PROJECT-STRUCTURE.md`](docs/PROJECT-STRUCTURE.md) §3.1；创建规格见 **ADR-0010**。
 
 **校验脚本本地跑法**：
 
