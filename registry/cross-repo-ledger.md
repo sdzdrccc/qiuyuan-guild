@@ -29,6 +29,7 @@
 | **X-0005** | **v0.18** UE 工程规格 + 手机端预留（ADR-0010）+ 环境实测 | guild | `qiuyuan-guild` | 本仓自办 | `待验收` | [records/X-0005.md](../records/X-0005.md) |
 | **X-0006** | **v0.19** 手机端专案化：归置 + 出包 + iOS 硬约束（ADR-0011） | guild | `qiuyuan-guild` | 本仓自办 | `待验收` | [records/X-0006.md](../records/X-0006.md) |
 | **X-0007** | **v0.21** 环境与工具链台账化（ADR-0012 / 0013）+ **`qiuyuan-dalu` 开工** | guild | `qiuyuan-guild` + `qiuyuan-dalu` | 本仓自办 | `待验收` | [records/X-0007.md](../records/X-0007.md) |
+| **X-0008** | **v0.22** **protoc 归位 M4**（ADR-0014）—— M1 阻塞收敛为 Go / Luban；附带登记**客户端协议层级差**（M2 前须裁） | guild | `qiuyuan-guild` | 本仓自办 | `待验收` | [records/X-0008.md](../records/X-0008.md) |
 
 > **⚠️ v0.19 补登留痕（双向核对第一次真正跑起来就抓到了问题）**：
 > **X-0003 ~ X-0006 四行是本轮补登的** —— 之前 **`records/` 有正文、`ledger` 无索引**，违反本文件「**有正文无索引 = 孤儿记录**」的查账规则。

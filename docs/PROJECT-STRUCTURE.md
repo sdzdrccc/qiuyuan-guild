@@ -101,7 +101,7 @@ ue-client/                         ← 这就是 UE 工程根（不是子目录�
 
 | # | 事项 | 详见 |
 |---|---|---|
-| 1 | 按台账 §4.1 装齐三项（**Go / protoc / Luban**） | `ENVIRONMENT.md` §4.1 |
+| 1 | 按台账 §4.1 装齐 **Go / Luban**（**两项** —— protoc 属 M4，见台账 §4.2） | `ENVIRONMENT.md` §4.1 |
 | 2 | 先 `git init` + LFS + `.gitignore`，**再**创建 UE 工程 | 本文件 §3.3 ／ 台账 §4.3 |
 
 **两条判据纪律**（本轮实测得来，务必记住）：
@@ -321,7 +321,8 @@ ue-client/Config/
 - [x] `qiuyuan-dalu` 做 `git init` + `git lfs install` + `.gitattributes` / `.gitignore` —— **2026-09-28 完成**
 - [x] 建 `platforms/mobile/` 并落文件清单（**`MOBILE-PLAN.md` §5**）—— 与 `git init` 同批
 - [x] **建立 `docs/ENVIRONMENT.md`**（环境与工具链台账）+ 版本锁定 —— **2026-09-28 完成**
-- [ ] **装齐三项工具链**：**Go** / **protoc** / **Luban** ← **当前唯一阻塞**（见 `ENVIRONMENT.md` §4.1）
+- [ ] **装齐两项工具链**：**Go** / **Luban** ← **当前唯一阻塞**（见 `ENVIRONMENT.md` §4.1）
+  > ⚠️ **v1.5 更正**：原写「三项（含 **protoc**）」**有误** —— protoc 服务于**内部跨进程 gRPC**，而 M1 阶段八类 Go 进程**合并为单进程**（上游 §3.1），进程内调用不跨网络 → **M1 用不上**。触发器在 **M4**（场景服独立）。见台账 §4.2。
 
 > **环境现状一律查 `ENVIRONMENT.md` §3** —— 本文件**不再复写任何版本号**（纪律①：同一事实不写两处）。
 

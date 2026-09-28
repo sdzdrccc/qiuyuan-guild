@@ -126,10 +126,11 @@ scripts/                    ★ 校验脚本（没有校验脚本的契约 = 装
 >
 > - ✅ **已就绪**：UE `5.8.1` ／ VS BuildTools `17.14.39` ／ **MSVC 合规**（判据是 `cl.exe` 的 **`ProductVersion` = `14.44.35228`**，**不是目录名** —— v0.20 撤回 v0.18/v0.19 的「须先升级」**误报**）／ Windows SDK `10.0.26100.0` ／ .NET 10 ／ MySQL `8.0.46` ／ Node 22 ／ Python 3.13 ／ Git `2.55` + LFS `3.7`；
 > - ✅ `qiuyuan-dalu` **已 `git init` + LFS + 目录骨架 + 首次推送**（2026-09-28）；
-> - 🔴 **当前唯一阻塞**：装齐 **Go / protoc / Luban** 三项工具链（[`ENVIRONMENT.md`](docs/ENVIRONMENT.md) §4.1）；
+> - 🔴 **当前唯一阻塞**：装齐 **Go / Luban** **两项**工具链（[`ENVIRONMENT.md`](docs/ENVIRONMENT.md) §4.1）；
+>   *（**protoc 不在其列** —— ADR-0014 归位 **M4**：它服务于内部跨进程 gRPC，而 M1 阶段八类 Go 进程合并为单进程，用不上。见台账 §4.2）*
 > - ⚠️ **不阻塞 M1 的两项**：Redis 本机 `3.0.504`（过旧，M2+ 前升级）；移动端出包链路未就绪（Android 缺 SDK/NDK、iOS 须 Mac —— [`MOBILE-PLAN.md`](docs/MOBILE-PLAN.md) §2）。
 >
-> 创建规格见 **ADR-0010**；手机端归置与出包见 **ADR-0011**；**环境台账与版本锁定见 ADR-0012 / 0013**。
+> 创建规格见 **ADR-0010**；手机端归置与出包见 **ADR-0011**；**环境台账与版本锁定见 ADR-0012 / 0013**；**工具链归位（protoc → M4）见 ADR-0014**。
 
 **校验脚本本地跑法**：
 
