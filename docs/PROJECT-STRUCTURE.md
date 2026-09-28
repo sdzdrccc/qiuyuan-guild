@@ -1,6 +1,7 @@
 # PROJECT-STRUCTURE.md —— 工程结构详案
 
-> **层**：L4 规范层（本仓 `docs/`）　|　**状态**：v1.2（草案 · **M1 施工图**）
+> **层**：L4 规范层（本仓 `docs/`）　|　**状态**：v1.3（草案 · **M1 施工图**）
+> **v1.3 变更**：§3.1 第 2 项**推翻 v1.2 的结论** —— 「MSVC 被禁」是**误判**。错在**拿目录名当版本号**：实测 `cl.exe` 的 `ProductVersion` = **`14.44.35228`**（微软「就地修补」，目录名仍写 `14.44.35207`）→ **合规、无需升级**。附 UE 源码依据（读 `ProductVersion` 优先）与正确验证命令。
 > **v1.2 变更**：§3.1 第 2 项「MSVC 被禁」**细化为可执行** —— 补根因（装的是**锁定版组件**，**不随 VS 主程序滚动**）、五步升级操作、**验证命令**、两条退路；写明**有效可用区间 `14.44.35211`~`14.44.99999`**（**Banned 优先于 Preferred**）。
 > **回答三问**：① `qiuyuan-dalu` 整个是什么结构　② UE 工程怎么创建　③ 手机端怎么预留
 > **v1.1 变更**：① §1 目录树**新增 `platforms/`**（平台专属产出物归置点）；② §3.1 第 6 项**更正** —— 原写「Android+IOS 已就绪·勾 Mobile 即生效」是**错的**（平台模块在 ≠ 能出包，iOS 在 Windows 上物理出不了包）；③ §7 加**归置指针**，判据与归置分家；④ §9 待办与待裁同步。
@@ -99,7 +100,7 @@ ue-client/                         ← 这就是 UE 工程根（不是子目录�
 | # | 项 | 实测结果 | 处置 |
 |---|---|---|---|
 | 1 | **UE 引擎** | ✅ **5.8.1**（`F:/zxc/UE_5.8/`，`Build.version` = 5.8.1-56057345） | 已就绪 |
-| 2 | **MSVC 工具链** | ⚠️ **14.44.35207** —— **落在 UE 5.8 的禁用区间** | 🔴 **须先升级**（见下） |
+| 2 | **MSVC 工具链** | ✅ **`ProductVersion` = `14.44.35228`**（目录名 `14.44.35207` **不是版本号**） | 已就绪（见下） |
 | 3 | **Windows SDK** | ⚠️ 已装 `10.0.26100.0`；UE 5.8 的 `MainVersion` 是 `10.0.22621.0`（`Min` = `19041`） | 可用（在 Min~Max 内）；建议补装 22621 免告警 |
 | 4 | **Visual Studio** | ✅ Build Tools 2022 `17.14.39`（UE 要求 ≥ 17.8） | 已就绪 |
 | 5 | **.NET（UBT 依赖）** | ✅ 引擎自带 `Engine/Binaries/ThirdParty/DotNet/10.0` | 已就绪 |
@@ -110,51 +111,61 @@ ue-client/                         ← 这就是 UE 工程根（不是子目录�
 > **第 6 项的更正（v0.19）** —— 本条原写「**已就绪 · 勾 Mobile 即生效**」，**是错的**。
 > Launcher 预编译版里 `Engine/Platforms/{Android,IOS}/` **只有 `Plugins/`**，平台模块以 dll 形式住在 `Engine/Binaries/Win64/<平台>/`。
 > **「模块在」≠「能出包」**：Android 还缺 SDK / NDK / JDK；**iOS 在 Windows 上物理上出不了包**（依赖 Xcode，仅 macOS）。
-> 与第 2 项同一条纪律：**「装了」≠「能用」**。出包链路与前置见 **`MOBILE-PLAN.md` §2**。
+> 与第 2 项同属「**判据要看对字段**」一族 —— 第 6 项是「看似能用、其实不能用」，第 2 项是「看似不能用、其实能用」。出包链路与前置见 **`MOBILE-PLAN.md` §2**。
 
-#### 🔴 唯一真正的阻塞：MSVC 版本被禁（第 2 项）
+#### ✅ 「MSVC 被禁」是误判 —— 判据要看 `cl.exe` 的 `ProductVersion`（第 2 项）
 
-UE 5.8 的 `Engine/Config/Windows/Windows_SDK.json` 明列：
+**结论（v0.20 实测）**：本机 MSVC **完全合规、无需任何升级**。上一版（v1.2）把它列为「唯一阻塞」，**是误报**。
 
-```json
-"BannedVisualCppVersions": [
-    "14.50.0-14.50.35722",
-    "14.44.0-14.44.35210",        ← 本机 14.44.35207 正落此区间
-    "14.40.0-14.43.99999",
-    "14.39.0-14.39.99999"
-]
+**判据陷阱**（本节的价值全在这里）：
+
+| 看什么 | 值 | 会得出 |
+|---|---|---|
+| ❌ 目录名 `VC/Tools/MSVC/` **`14.44.35207`** | `14.44.35207` | **落在禁用区间 → 误判为阻塞** |
+| ✅ `cl.exe` 的 **`ProductVersion`** | **`14.44.35228.0`** | **合规可用** |
+
+**目录名只是微软的「家族基线名」，不是编译器版本。** 微软用**就地修补（Servicing）**：
+包 `Microsoft.VC.14.44.17.14.Servicing.Compilers`（版本 `14.44.35228`）把二进制更新到 `35228`，
+而**目录名保持 `14.44.35207` 不变**。
+
+`cl.exe` 里两个版本号含义不同：
+
+| 字段 | 值 | 含义 |
+|---|---|---|
+| `FileVersion` | `19.44.35228.0` | 编译器内核版本（`19.x`） |
+| **`ProductVersion`** | **`14.44.35228.0`** | **工具集版本（`14.x`）—— UE 读的就是它** |
+
+**UE 怎么判**（源码 `UnrealBuildTool/Platform/Windows/MicrosoftPlatformSDK.cs` → `IsValidToolChainDirMSVC()`）：
+
+```csharp
+FileVersionInfo VersionInfo = FileVersionInfo.GetVersionInfo(CompilerExe.FullName);
+if (VersionInfo.ProductMajorPart != 0)
+    Version = new VersionNumber(ProductMajorPart, ProductMinorPart, ProductBuildPart);  // ← 读 ProductVersion
+else
+    VersionNumber.TryParse(ToolChainDir.GetDirectoryName(), out Version);              // ← 读不到才回退目录名
 ```
 
-**原因**（同文件注释）：`14.44.35207` 有 **Template compile error**，**由 `14.44.35211` 修复**。
+→ UE 拿到 **`14.44.35228`**：不在 `BannedVisualCppVersions`（`14.44.0-14.44.35210`），
+且在 `PreferredVisualCppVersions`（`14.44.35207-14.44.99999`）内 → **接受**。
 
-**本机 VS 补丁号已是 `17.14.39`（2026-08），但 MSVC *工具链* 仍停在 `35207`（17.14 首发）** —— 两者**独立更新**，补丁号新不代表工具链新。
+**正确验证命令**（**别用 `ls` 看目录名**）：
 
-**根因**（v0.19 实测）：本机装的是**锁定版组件** `Component.VC.14.44.17.14.x86.x64`（包版本 `17.14.36510.44`）。
-**锁定版 MSVC 不随 VS 主程序滚动** —— 所以主程序升到 `17.14.37614.0`，工具链仍锁在首发。修法即下方第 4 步。
-
-**有效区间**（易踩）：`PreferredVisualCppVersions` 含 `14.44.35207-14.44.99999`，**但 `BannedVisualCppVersions` 优先**。
-实际可用 = **`14.44.35211` ~ `14.44.99999`**（即 VS 2022 17.14.6 及以后，`14.44.35211` 随 17.14.6 发布）。
-
-**处置**（**路径很轻，但必须手动** —— GUI + UAC + 约 1~2 GB 下载，AI 代跑不了）：
-
-1. 关掉 VS 与一切正在编译的进程 → 开始菜单搜 **Visual Studio Installer** → 打开（UAC 授权）
-2. 找到 **Build Tools 2022** 那一行 → 点 **「修改」**
-3. 切到 **「单个组件」** 页 → 搜索框输入 `v143`
-4. 勾选 **`MSVC v143 - VS 2022 C++ x64/x86 生成工具(最新)`**
-   （若该框**已勾选**却仍是旧版：先取消勾选 → 点「修改」卸载 → 再回来勾上重装 —— 微软官方给的强制刷新手法）
-5. 点右下 **「修改」** → 等下载安装 → 按提示重启（可跳过）
-
-**验证**（**看实物，不看声明** —— 与「装了 ≠ 能用」同源）：
-
-```bash
-ls "F:/zxc/Microsoft Visual Studio/2022/BuildTools/VC/Tools/MSVC/"
-# 期望出现 ≥ 14.44.35211 的目录；旧的 14.44.35207 留着不用管 —— UE 会自动挑合规的那个
+```powershell
+(Get-Item "F:\zxc\Microsoft Visual Studio\2022\BuildTools\VC\Tools\MSVC\*\bin\Hostx64\x64\cl.exe").VersionInfo.ProductVersion
+# 期望 ≥ 14.44.35211
 ```
 
-**若搜不到 ≥ 35211**：说明该通道的锁定组件无更高补丁。两条退路 —— ① 装 **VS 2026**（UE 的**首选**是 `14.50.35717+`，代价大）；② 改走 **clang-cl**（UE 支持，需另验证）。
-**切勿**改引擎的 `Windows_SDK.json` 去放行 `35207` —— 那是引擎文件，且官方注释明说它有 template 编译错误。
+> **与第 6 项那条纪律同源、方向相反** —— 第 6 项是「**看似能用，其实不能用**」（模块在 ≠ 能出包）；
+> 本节是「**看似不能用，其实能用**」。**两次栽在同一个动作上：拿一个「长得像版本号」的东西下了结论。**
+> **判据必须落在「引擎真正读取的那个字段」上，而不是最显眼的那个名字上。**
+> 「真能编译」的终审 → 留到 M1 建工程时（`ROADMAP.md` M1 第 0 项）。
 
-> **版本锁定**（写进 `CONVENTIONS.md`）：**UE 5.8.1** ／ **MSVC ≥ 14.44.35211** ／ Windows SDK ≥ 10.0.22621。
+> **附：本次 VS 侧操作的实际收获**（大人按 v1.2 步骤跑了一次安装，82 个包 0 失败）
+> —— 把「锁定版组件 `Component.VC.14.44.17.14.x86.x64`」换成了**滚动版** `Component.VC.Tools.x86.x64`（「最新」），
+> 并补装了 CRT / ATL / MFC / PGO / CA 等包。**编译器内核未被替换**（`cl.exe` 时间戳仍是 2026-08-26），
+> 即 **8 月 26 日装机时就已是 `35228`**。这次操作无害、且对未来有利（滚动组件会随 VS 更新）。
+
+> **版本口径**（写进 `CONVENTIONS.md`）：**UE 5.8.1** ／ **MSVC `ProductVersion` ≥ 14.44.35211**（本机实测 `14.44.35228` ✅）／ Windows SDK ≥ 10.0.22621。
 
 #### 创建前的顺序（第 8 项）
 
@@ -360,7 +371,7 @@ ue-client/Config/
 
 **M1 开工前置**（硬）：
 
-- [ ] **升级 MSVC** 至 ≥ 14.44.35211（当前 14.44.35207 **被 UE 5.8 禁用** —— §3.1）
+- [x] ~~升级 MSVC~~ —— **实测无需**：`cl.exe` 的 `ProductVersion` = `14.44.35228`，本就合规（§3.1）
 - [ ] `qiuyuan-dalu` 做 `git init` + `git lfs install` + 写 `.gitattributes` / `.gitignore`
 - [ ] 建 `platforms/mobile/` 并落文件清单（**`MOBILE-PLAN.md` §5**）—— **与 `git init` 同批**，不单独建
 - [ ] 锁定版本号（**UE 5.8.1 / MSVC ≥ 14.44.35211**）写进 `CONVENTIONS.md`
