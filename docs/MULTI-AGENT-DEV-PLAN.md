@@ -1,9 +1,15 @@
 # 虬渊大陆 · 多 Agent 协作开发方案
 
-> 版本 v0.24（草案 · **`server/` 结构定：技术模块切**）
+> 版本 v0.25（草案 · **UE 工程创建规格按 5.8 实测更正**）
 > 日期 2026-09-28
 > **文档归属**：`F:/zxc/Project/qiuyuan-guild`（协作规范中枢）
 > **描述对象**：Godot 原型（验证方）+ `F:/zxc/Project/qiuyuan-dalu`（UE5 正式工程）
+>
+> **v0.25 变更**（**真源也会过期 —— UE 工程创建规格回到引擎源码更正**）：
+> ① 大人问「列一下创建 ue 项目的步骤」，核对时**回到 UE 5.8 引擎源码**验证 `PROJECT-STRUCTURE.md` §3.2（即 **ADR-0010** 的规格）→ **六项里三项不成立**；
+> ② **ADR-0017** —— 向导**现存项只有** `Languages` / `HardwareTarget` / `GraphicsPreset` / `Variants` / `XR`：原第 **3** 项「Target Platform 勾 Desktop + Mobile」**无法照做**（`EHardwareClass` 只有 Desktop / Mobile **单选**，且其性质是**默认画质档**而非平台开关）；第 **5 / 6** 项（Starter Content / Ray Tracing）**UE 5.6 起已移除**；
+> ③ **「手机端预留」判据更正** —— 它**不靠创建时的一次点击**（UE 默认全平台开放、向导不写 `TargetPlatforms`），实质是**约束资产规格 + 抽象输入**（与 `MOBILE-PLAN.md` 一致）；
+> ④ **补实操缺口** —— 向导按 `<父目录>/<工程名>/` 建工程，**无法一次做到「目录 `ue-client` + 工程名 `QiuyuanDalu`」**（给两条路）；另补**本机引擎启动方式**（无 Launcher / 无 `UnrealVersionSelector` / 未注册）。
 >
 > **v0.24 变更**（**`server/` 内部结构定案：技术模块切**）：
 > ① **`server/` 一级按技术模块切**（**ADR-0016**）—— 子树名 = 上游 §3.1 九类进程中的 Go 类（**进程名即目录名**）；M1 落 `internal/{gateway, login, game}` + `platform/`；
@@ -716,12 +722,13 @@ qiuyuan-dalu/
 > **③ 但「工程外的平台专属产出物」需要归置点** —— 脚本 / 清单 / 签名模板 / 机型表归 **`platforms/mobile/`**，
 > 因为「不新建客户端目录」**不等于**「不需要任何新目录」（ADR-0011 §四）。详见 **`docs/MOBILE-PLAN.md` §4**。
 
-> ### 📐 本节只是骨架 —— 施工图在 **`docs/PROJECT-STRUCTURE.md`**（v1.1 · M1 施工图）
+> ### 📐 本节只是骨架 —— 施工图在 **`docs/PROJECT-STRUCTURE.md`**（**v1.8** · M1 施工图）
 >
 > 该文件展开三件本节未覆盖的事：
 > ① **`ue-client/` 作为「完整 UE 工程」的标准内部结构**（`Config/` `Content/` `Source/` `Plugins/` + 四个必须忽略的生成目录）；
-> ② **UE 工程创建向导六选项**逐项取值（含 ★ **Target Platform 勾 Desktop + Mobile**）；
-> ③ **手机端「预留」的操作判据** —— 只做「零成本且事后不可补」的（勾 Mobile / 输入抽象 / 资产按移动端预算 / 保留无损源），**不做适配**。
+> ② **UE 工程创建向导选项**逐项取值 —— **v1.8 起按 UE 5.8 实测**：实际要动的只有 **模板** + `Languages` + `HardwareTarget` + `GraphicsPreset`；原「勾 Desktop + Mobile」「Starter Content」「Ray Tracing」**三项已作废**（**ADR-0017**）；
+> ③ **手机端「预留」的操作判据** —— 只做「零成本且事后不可补」的（**资产按移动端预算 / 输入抽象 / 保留无损源**），**不做适配**。
+> **注**：「创建时勾 Mobile」**不再属此列** —— UE 5.8 向导无此项，且默认即全平台开放（**ADR-0017**）。
 >
 > **手机端的【归置 + 出包】另有专章** → **`docs/MOBILE-PLAN.md`**（方案是什么、东西放哪、PC 做完怎么变安装包）。
 > 判据与归置**分家**：`PROJECT-STRUCTURE.md` §7 答「动不动手」，`MOBILE-PLAN.md` 答「放哪 / 怎么出包」。
@@ -1569,6 +1576,7 @@ skill 是**可执行的指令 + 脚本**，能碰文件系统、shell 与密钥�
 | **24** | **资产命名按场合分工** | **引擎内**（`Content/` 的 `.uasset` / `.umap`）取 **Epic 前缀**（`SM_` / `WBP_`）；**引擎外**（源文件 / 生成图 / 交付包）取**上游 §5.4 kebab**（`building-…-01-front`）。**两者是同一资产的两个名字，不是二选一** | [ADR-0013](DECISIONS.md) |
 | **25** | **服务端架构专章化 + 补录前 ADR 时代裁决** | 新建 **`docs/SERVER-ARCH.md`** 为服务端**单一入口**（九类进程 / 起步 8 合 1 / **四条拆分前提** / 何时拆 / 分线扩容）；**「服务端重写 Go」（v0.11）追溯补录为 ADR-0015** —— 该裁决**早于 ADR 机制实例化（v0.14）**，故长期未进台账；附带登记一处**已被否决的历史方案**（真源污染 + 编号撞车） | [ADR-0015](DECISIONS.md) |
 | **26** | **`server/` 内部结构：技术模块切** | 一级目录 = **进程名**（`gateway` / `login` / `game` / `platform`）；**owner 写权用声明叠加**（`OWNERS`），确需再分才建 owner 子包（M1 不建）。**两套坐标正交**：目录管运行时、声明管写权 | [ADR-0016](DECISIONS.md) |
+| **27** | **UE 工程创建规格按 5.8 实测更正** | 向导**无**「Desktop + Mobile」（`EHardwareClass` 单选）、**无** Starter Content / 光追（5.6 起移除）；该下拉是**默认画质档**、不是平台开关 → 取 **`Desktop` + `Scalable`**。**部分更正 ADR-0010** | [ADR-0017](DECISIONS.md) |
 
 > **23 的来源**：**大人裁决**（原话「把开发这个游戏用到的应用和版本记录到一个文档专门维护。**这应该是项目开始之前必有的功能**，再考虑下还缺少什么，然后开工 git」）。
 

@@ -32,13 +32,14 @@
 | ADR-0007 | 记录增「**执行环境指纹**」——仅供回溯，**非质量判据** | `accepted` | 2026-09-28 | — |
 | ADR-0008 | 审核判据**一律二值**，**禁主观评分**；量化只用四个客观计数 | `accepted` | 2026-09-28 | — |
 | ADR-0009 | **第一设计原则**：世界真实性优先（还原真实修真世界，不是做功能） | `accepted` | 2026-09-28 | — |
-| ADR-0010 | UE 工程创建规格 + **手机端预留**纪律（只留口子，不做适配） | `accepted` | 2026-09-28 | — |
+| ADR-0010 | UE 工程创建规格 + **手机端预留**纪律（只留口子，不做适配） | `accepted` | 2026-09-28 | **部分更正见 ADR-0017** |
 | ADR-0011 | 手机端**专案化**：归置点 `platforms/mobile/`、出包链路、**iOS 硬约束**（须 Mac） | `accepted` | 2026-09-28 | — |
 | ADR-0012 | 环境与工具链**台账化** —— 真源落 `docs/ENVIRONMENT.md`，版本变更须 ADR | `accepted` | 2026-09-28 | — |
 | ADR-0013 | 资产命名**按场合分工** —— 引擎内 Epic 前缀 ／ 引擎外上游 kebab | `accepted` | 2026-09-28 | — |
 | ADR-0014 | **protoc 归位 M4** —— 内部跨进程 gRPC 才需要；M1 阻塞收敛为 **Go / Luban** | `accepted` | 2026-09-28 | 部分推翻 ADR-0012 |
 | ADR-0015 | 服务端架构**专章化**（`docs/SERVER-ARCH.md`）+ **追溯补录**「服务端重写 Go」裁决 | `accepted` | 2026-09-28 | — |
 | ADR-0016 | **`server/` 内部结构：技术模块切** —— 一级 = 进程名（`gateway`/`login`/`game`/`platform`）；owner 写权用**声明**叠加 | `accepted` | 2026-09-28 | 关闭 ADR-0015 §6 待裁 |
+| ADR-0017 | UE 工程创建规格**按 UE 5.8 实测更正** —— 向导无「Desktop + Mobile」、无 Starter Content / 光追；`HardwareTarget` 是**画质档**非平台开关 | `accepted` | 2026-09-28 | 部分更正 ADR-0010 |
 
 ---
 
@@ -521,14 +522,16 @@
 
 **二、创建规格（六项，M1 执行）**：
 
+> ⚠️ **v1.8 起部分更正** —— 见 **ADR-0017**：本表第 **3** 项（「Desktop + Mobile」）**无法照做**（`EHardwareClass` 只有 Desktop / Mobile **单选**，且其性质是**默认画质档**而非平台开关）；第 **5 / 6** 项（Starter Content / Ray Tracing）**UE 5.6 起已从向导移除**，无须操作。**第 1 / 2 / 4 项不变。**
+
 | # | 选项 | 取值 |
 |---|---|---|
 | 1 | 模板 | **空白（Blank）** |
 | 2 | 语言 | ★ **C++** |
-| 3 | Target Platform | ★ **Desktop + Mobile** |
+| 3 | Target Platform | → **见 ADR-0017**：实际项名 `HardwareTarget`，取 **`Desktop`** |
 | 4 | Quality Preset | **Scalable**（**推导建议，可复核**） |
-| 5 | Starter Content | **不勾** |
-| 6 | Ray Tracing | **不勾** |
+| 5 | Starter Content | → **UE 5.6 起向导已无此项**（ADR-0017） |
+| 6 | Ray Tracing | → **同上已废弃**（ADR-0017） |
 
 > **第 4 项留痕**：Epic 官方指引为「Maximum → PC／主机，**Scalable → 移动设备**」。
 > 本项取 **Scalable**，因它**不损失 PC 能力**（只是默认值更保守，PC 画质可在 `DeviceProfile` 单独开回），
@@ -547,7 +550,7 @@
 
 | ✅ 现在做（零成本 / 不可后补） | ❌ 现在不做（要投入 / 可后补） |
 |---|---|
-| 创建时**勾 Mobile 平台** | 竖屏 UI 布局 |
+| 创建时**勾 Mobile 平台** → **无需操作**（UE 默认全平台开放；见 **ADR-0017**） | 竖屏 UI 布局 |
 | **输入抽象**：走 Enhanced Input 的 `IA_*` / `IMC_*`，不读键码 | DeviceProfile 分级调优 |
 | **资产按移动端预算生成**（上游 §4.4） | ASTC 贴图生成 |
 | **保留无损源 + 原始高精度贴图**（上游 §4.3） | Android / iOS 打包流水线 |
@@ -944,6 +947,76 @@ server/
 
 > **可复用判据（留痕）**：目录切分该按「**运行时归属**」还是「**写权归属**」？答案通常是**两个坐标分层** ——
 > **物理目录表达运行时**（可拆可挪），**写权用声明**（可变可换主）。把两者压成一层，必然牺牲其中一个。
+
+---
+
+## ADR-0017 —— UE 工程创建规格：**按 UE 5.8 引擎源码实测更正**
+
+- **状态**：`accepted`
+- **来源**：**大人提问**（原话「帮我列一下创建ue项目的步骤」）+ **实测**（回到引擎源码核对）
+- **supersedes**：**部分更正 ADR-0010 §二**（第 3 / 5 / 6 项）
+
+### 背景
+
+大人要「创建 UE 项目的步骤」。核对时**没有停在真源**（`PROJECT-STRUCTURE.md` §3.2 即 **ADR-0010** 落下的规格），
+而是回到**引擎源码**验证 —— 结果 **§3.2 六项里三项在 UE 5.8 不存在或无法照做**。
+
+**证据（均为一手源码，非界面印象）**：
+
+| 证据 | 位置 | 说明 |
+|---|---|---|
+| `ETemplateSetting` 枚举 | `Engine/Source/Editor/GameProjectGeneration/Classes/TemplateProjectDefs.h` | 向导**现存项**：`Languages` / `HardwareTarget` / `GraphicsPreset` / `Variants` / `XR`；**`StarterContent` 标注 `UE_DEPRECATED(5.6, …)`**、`Raytracing` 项名即 `Raytracing_DEPRECATED` |
+| `EHardwareClass` 枚举 | `Engine/Source/Editor/HardwareTargeting/Public/HardwareTargetingSettings.h` | **只有 `Desktop` / `Mobile` 两个值**（`Unspecified` 隐藏）→ **单选，无「Desktop and Mobile」** |
+| `AddHardwareConfigValues()` | `…/GameProjectGeneration/Private/GameProjectUtils.cpp` | 向导把这两个下拉写进 **`Config/DefaultEngine.ini`** 的 `[/Script/HardwareTargeting.HardwareTargetingSettings]`；**不写 `.uproject` 的 `TargetPlatforms`** |
+| 设置应用表 | `…/HardwareTargeting/Private/HardwareTargetingModule.cpp` | 按 `bLowEndMobile` / `bAnyPC` / `bHighEndPC` 等**组合**批量改 `URendererSettings` → **该下拉的实质是「默认画质档」，不是平台开关** |
+
+### 裁决
+
+**一、向导选项按实测取值（四项）**：
+
+| # | 向导项 | 取值 |
+|---|---|---|
+| 1 | 模板 | **游戏 → 空白**（引擎内 `TP_Blank`） |
+| 2 | `Languages` | **C++** |
+| 3 | `HardwareTarget` | **`Desktop`** |
+| 4 | `GraphicsPreset` | **`Scalable`**（沿用 ADR-0010 第 4 项，含其反方留痕） |
+
+**二、ADR-0010 §二 第 3 项「Target Platform 勾 Desktop + Mobile」作废。** 两项理由：① **不可多选**（`EHardwareClass` 只有两个值）；② **性质误读** —— 它是**默认画质档**，不是**平台预留**。原句「**这是手机端预留最重要的一次点击**」**不成立**。
+
+**三、ADR-0010 §二 第 5 / 6 项（Starter Content / Ray Tracing）无须操作** —— UE 5.6 起已从向导移除。**M1 不做任何动作** —— 原意「不引入示例内容与光追」已由引擎默认值满足。
+
+**四、「手机端预留」的落点更正**：
+
+| 层 | 事实 |
+|---|---|
+| 平台支持 | **引擎级**（`Engine/Platforms/{Windows,Android,IOS}`），本机已装 —— **与创建时的选择无关** |
+| 工程限定平台 | `.uproject` 的可选字段 `TargetPlatforms`；**向导不写它** → **不写 = 全平台开放**（最宽松状态） |
+| 不可后补的两条 | 仍是 **资产按移动端预算** 与 **输入抽象**（ADR-0010 §四 **不变**） |
+
+> **判据留痕**：**「预留」的实质是「约束」，不是「一次点击」。**
+> 凡把某项预留归因于「创建时勾一个框」的结论，都要**回到引擎源码确认那个框真正控制什么**。
+
+**五、路径与命名（补 ADR-0010 §一 的实操缺口）**：
+
+向导固定按 **`<父目录>/<工程名>/`** 建工程 → **无法一次做到**「目录 `ue-client` + 工程名 `QiuyuanDalu`」。
+两条路：**A** 向导建到 `qiuyuan-dalu/` 下，再**重命名目录**为 `ue-client/`；
+**B** 直接**套用 `Templates/TP_Blank/`**（该模板**纯相对路径、无绝对路径**；改名规则见随附的 `TemplateDefs.ini`）。
+
+**六、本机引擎启动方式**（环境事实，同步 `ENVIRONMENT.md`）：**无 Launcher / 无 `UnrealVersionSelector` / 未在 `HKLM` 注册** → 用**命令行指定编辑器**启动（`UnrealEditor.exe <uproject>`）；`.uproject` 的 `EngineAssociation` **不可填 `"5.8"`**。
+
+### 同步
+
+- `docs/PROJECT-STRUCTURE.md` **v1.7 → v1.8**：§3.2 重写 / §3.3 加第 6 项「命令行验证构建」/ §3.4 补注 / §7.2 更正 / §8 / §9
+- `docs/DECISIONS.md`：**本 ADR** + 索引行 + **ADR-0010 加部分更正标注**
+- `docs/ENVIRONMENT.md` **v1.2 → v1.3**：补引擎注册与启动方式
+- `docs/MULTI-AGENT-DEV-PLAN.md` **v0.24 → v0.25**：**§14.1e 裁决 27**
+- `registry/cross-repo-ledger.md`：补 **`X-0012`**
+- `records/X-0012.md`：本轮记录
+
+> **可复用判据（留痕）**：**真源也会过期。** 「按真源执行」不等于「按事实执行」——
+> 当真源描述的是**某个软件的具体界面 / 选项**时，**该软件一升级，真源即失真**。
+> **判据**：凡真源涉及**外部软件的 UI 或行为**，落笔前**回到该软件本体核对**（此处是引擎源码）；核对不到再退回官方文档，**绝不用界面印象**。
+> 与坑 16（MSVC 读哪个字段）/ 坑 20（protoc 服务哪条链路）/ 坑 23（引用哪个出处）**同源**。
 
 ---
 

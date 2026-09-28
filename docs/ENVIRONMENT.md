@@ -1,10 +1,15 @@
 # 开发环境与工具链台账（ENVIRONMENT）
 
-> **层**：L4 规范层（本仓 `docs/`）　|　**状态**：v1.2（**唯一真源** · 开工前置物）
+> **层**：L4 规范层（本仓 `docs/`）　|　**状态**：v1.3（**唯一真源** · 开工前置物）
 > **回答**：开发这个游戏**用到哪些应用**、**锁定在哪个版本**、**本机装没装**、**怎么校验**、**还缺什么**。
 > **上游依据**：《技术架构与技术选型》**§八 技术选型总表** + §3.1 进程划分 + §3.2 通信协议 + §6.2 Luban + §7.4 GM 后台（需求层）。
 > **为什么要这份文件**：环境是**一次性的地基**——版本错了要重装、缺了要停工，且**事后返工成本远高于开工前对齐**。
 > 与 `contracts/` 同级对待：**它是真源，不是备忘**。
+>
+> **v1.3 变更**（**补一行「引擎怎么启动」的环境事实** · 随 **ADR-0017**）：
+> 新增 **§2.1.2 引擎注册与启动方式** —— 本机**无 Epic Launcher / 无 `UnrealVersionSelector` / 引擎未在 `HKLM` 注册**（只有 `4.0`）
+> → `.uproject` 的 `EngineAssociation` **不能填 `"5.8"`**；**启动与构建一律走命令行指定引擎**。
+> §2.1 表 UE 行「获取」列同步更正为「**本机为独立安装**」。
 >
 > **v1.2 变更**（**M1 两项工具装机完成 → M1 硬前置全部解除**）：
 > ① **Go 1.27.1** 装入 **`F:\zxc\go`**（官方 zip 直装 + sha256 校验；`GOPATH=F:\zxc\gopath`／`GOPROXY=goproxy.cn`，详见 §2.2.1）；
@@ -67,7 +72,7 @@
 
 | 应用 | 锁定版本 | 获取 | 校验命令 |
 |---|---|---|---|
-| Unreal Engine | **5.8.1** | Epic Launcher 或源码 | `cat F:/zxc/UE_5.8/Engine/Build/Build.version` |
+| Unreal Engine | **5.8.1** | **本机为独立安装**（`F:\zxc\UE_5.8`，**非** Launcher 管理 —— 见 §2.1.2） | `cat F:/zxc/UE_5.8/Engine/Build/Build.version` |
 | VS 2022 BuildTools | **17.14.x** | Visual Studio Installer | `"C:/Program Files (x86)/Microsoft Visual Studio/Installer/vswhere.exe" -all -property installationVersion` |
 | MSVC v143 | **≥ 14.44.35211** | VS Installer → 单个组件 → `v143` | 见 §2.1.1 ✓ **判据不是目录名** |
 | Windows SDK | **≥ 10.0.22621** | VS Installer → 单个组件 | `ls "C:/Program Files (x86)/Windows Kits/10/Include/"` |
@@ -84,6 +89,28 @@
 - ⚠️ **目录名 `14.44.35207` 不是版本号** —— 微软用**就地修补（Servicing）**更新二进制，目录名保持「家族基线名」不变。
 - UE 源码判据：`UnrealBuildTool/Platform/Windows/MicrosoftPlatformSDK.cs` → `IsValidToolChainDirMSVC()` **先读 `ProductVersion`，读不到才回退目录名**。
 - **禁止**改引擎的 `Windows_SDK.json` 去放行旧版本。
+
+#### 2.1.2 引擎注册与启动方式（**本机实测 · 2026-09-28**）
+
+**本机引擎是「独立安装」，不在 Epic 生态里注册** —— 三处与常规安装不同：
+
+| 项 | 本机实况 | 影响 |
+|---|---|---|
+| **Epic Launcher** | ❌ **未装** | 不能从 Launcher 启动引擎或工程 |
+| **`UnrealVersionSelector.exe`** | ❌ **不存在**（`Engine/Binaries/Win64/` 下无此文件） | 右键 `.uproject` 的「切换引擎版本 / 生成工程文件」**不可用** |
+| **引擎注册** | `HKLM\SOFTWARE\EpicGames\Unreal Engine\` 下**只有 `4.0`**（无 `5.8`）；`HKCU\SOFTWARE\Epic Games\Unreal Engine\Builds` **为空** | `.uproject` 的 `EngineAssociation` **不能填 `"5.8"`**（无注册项可解析） |
+
+**→ 启动与构建一律用命令行指定引擎**（最稳、可复现、可写进记录）：
+
+| 目的 | 命令 |
+|---|---|
+| **打开工程** | `"F:/zxc/UE_5.8/Engine/Binaries/Win64/UnrealEditor.exe" "<工程根>/QiuyuanDalu.uproject"` |
+| **生成 VS 工程文件**（`.sln`，替代右键菜单） | `Engine/Binaries/DotNET/UnrealBuildTool/UnrealBuildTool.exe -projectfiles -project="<…>.uproject" -game -progress` |
+| **编译 Editor 目标**（判据是**能编译**，非「能打开」） | `Engine/Build/BatchFiles/Build.bat <Project>Editor Win64 Development -project="<…>.uproject"` |
+
+> **可选项**：若要让 `.uproject` 双击可开，可把引擎注册进 `HKCU\SOFTWARE\Epic Games\Unreal Engine\Builds`
+> （**值名** = 任意标识、**值数据** = `F:/zxc/UE_5.8`），再在 `.uproject` 写 `"EngineAssociation": "<该标识>"`。
+> **本项目不依赖此路径** —— 判据：**能复现的命令优于文件关联**。
 
 ### 2.2 服务端
 

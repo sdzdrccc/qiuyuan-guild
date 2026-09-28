@@ -1,6 +1,7 @@
 # PROJECT-STRUCTURE.md —— 工程结构详案
 
-> **层**：L4 规范层（本仓 `docs/`）　|　**状态**：v1.7（草案 · **M1 施工图**）
+> **层**：L4 规范层（本仓 `docs/`）　|　**状态**：v1.8（草案 · **M1 施工图**）
+> **v1.8 变更**：**§3.2 创建向导选项 → 按 UE 5.8 引擎源码实测重写**（**ADR-0017**）—— 原「六选项」中**三项与 5.8 实际不符**：① 「Target Platform 勾 Desktop + Mobile」**无法照做**（`EHardwareClass` 只有 Desktop / Mobile **单选**，且其性质是**默认画质档**而非平台开关）；② ③ Starter Content / Ray Tracing **UE 5.6 起已从向导移除**。§3.2 另补 **「目录名 ≠ 工程名」的实操路径**与**本机引擎启动方式**（无 Launcher / 无 VersionSelector / 引擎未注册）。§3.4 §7.2 §9 同步。
 > **v1.7 变更**：§1 `server/` 行补**内部结构** —— 一级按**技术模块切**（**ADR-0016**）：`internal/{gateway, login, game}` + `platform/`；§9 待裁项「`server/` 结构」**关闭**（转已裁）。
 > **v1.6 变更**：§1 `server/` 加**进程形态指针** —— 新建 **`docs/SERVER-ARCH.md`**（服务端架构与拆分时机 · **ADR-0015**）；§9 加一项**待裁**（`server/` 内部结构）。**本文件只管 UE 工程与服务端的一级目录；进程形态不再在此展开**（判据同纪律①）。
 > **v1.5 变更**：§3.3 / §9 阻塞项由**三项**（含 protoc）更正为**两项**（**Go / Luban**）—— protoc 属 **M4**（`ENVIRONMENT.md` §4.2 / **ADR-0014**）。
@@ -123,33 +124,114 @@ ue-client/                         ← 这就是 UE 工程根（不是子目录�
 反了的话，UE 生成的 `Binaries/` `Intermediate/` `Saved/` 会**先落盘**，容易误提交 ——
 **先让 `.gitignore` 挡着，再让 UE 生成。**（台账 §4.3 第 4 项的实操依据。）
 
-### 3.2 创建向导的六个选择（**逐项给建议**）
+### 3.2 创建向导的选项（**v1.8 按 UE 5.8 源码实测重写** · **ADR-0017**）
 
-| # | 选项 | 建议 | 理由 / 代价 |
+> ⚠️ **本节原列「六选项」，其中三项在 UE 5.8 里不存在或无法照做。**
+> 依据是**引擎源码**，不是界面印象：`Engine/Source/Editor/GameProjectGeneration/Classes/TemplateProjectDefs.h`
+> 的 `ETemplateSetting` 枚举 —— 向导**现存项只有** `Languages` / `HardwareTarget` / `GraphicsPreset` / `Variants` / `XR`。
+
+**M1 要动的四项**：
+
+| # | 向导项（**实际名**） | 取值 | 理由 / 代价 |
 |---|---|---|---|
-| 1 | **模板** | **游戏 → 空白（Blank）** | 第三人称模板会塞进一整套 Starter Content 与高模角色；M1 要的只是「能进图」 |
-| 2 | **Blueprint / C++** | ★ **C++** | GAS、网络、存档、配置读取走 C++（上游 §2.2）；纯蓝图工程后期加 C++ 要重新编译整套 |
-| 3 | **Target Platform** | ★ **Desktop + Mobile 都勾** | **这是手机端预留最重要的一次点击**。少勾 Mobile，平台配置与着色器格式缺失，后补要动工程设置 |
-| 4 | **Quality Preset** | **Scalable**（**建议 · 可复核**） | Epic 官方指引：「Maximum 用于 PC / 主机，**Scalable 用于移动设备**」。Scalable 只是**改默认值**（默认关抗锯齿、运动模糊等耗资源项），PC 画质可在 DeviceProfile 单独开回；反之从 Maximum 起步要清理一批默认依赖。**反方留痕见 §3.4** |
-| 5 | **Starter Content** | **不勾** | 引入一堆高模 + 示例材质，与「资产按移动端预算生成」直接冲突（上游 §4.4） |
-| 6 | **Ray Tracing** | **不勾** | 移动端无硬件光追；PC 端后期按需开 |
+| 1 | **模板** | **游戏 → 空白** | 引擎内是 `Templates/TP_Blank`（**C++ 版**）与 `TP_BlankBP`（蓝图版）；选 C++ 即 `TP_Blank`。第三人称模板会塞进一整套示例内容；M1 要的只是「能进图」 |
+| 2 | **`Languages`**（语言） | ★ **C++** | GAS、网络、存档、配置读取走 C++（上游 §2.2）；纯蓝图工程后期加 C++ 要重新编译整套 |
+| 3 | **`HardwareTarget`**（硬件目标） | **`Desktop`** | ⚠️ **原「勾 Desktop + Mobile」作废** —— 见下「更正说明」 |
+| 4 | **`GraphicsPreset`** | **`Scalable`**（**建议 · 可复核**） | Epic 官方指引：「Maximum 用于 PC / 主机，**Scalable 用于移动设备**」。Scalable 只是**改默认值**（默认关抗锯齿、运动模糊等耗资源项），PC 画质可在 `DeviceProfile` 单独开回；反之从 Maximum 起步要清理一批默认依赖。**反方留痕见 §3.4** |
 
-**路径**：先把 `F:/zxc/Project/qiuyuan-dalu/ue-client/` 建好（**空目录**），创建向导里路径指到它、工程名填 `QiuyuanDalu`。
-（路径**不得含中文或空格**；工程名须以字母开头、≤20 字符。）
+**向导上已不存在、故 M1 无需操作的项**（**本次更正的重点**）：
 
-引擎已装于 `F:/zxc/UE_5.8/` —— 从 Launcher 或直接跑 `Engine/Binaries/Win64/UnrealEditor.exe` 打开编辑器。
+| 原第 # | 原项 | UE 5.8 实际 |
+|---|---|---|
+| 5 | Starter Content | ❌ **已移除** —— 枚举项标注 `UE_DEPRECATED(5.6, "Ability to add Starter Content has been removed")` |
+| 6 | Ray Tracing | ❌ **已废弃** —— 枚举项名即 `Raytracing_DEPRECATED` |
+| — | `Variants` / `XR` | 存在，但**模板未定义变体、M1 不做 XR** → **不动** |
 
-### 3.3 创建后必做（五项）
+#### 更正说明（**ADR-0010 §二 第 3 项**）
+
+原文写：「**Target Platform** ★ **Desktop + Mobile 都勾** —— **这是手机端预留最重要的一次点击**」。**两处都不成立**：
+
+| # | 原判断 | 实测 |
+|---|---|---|
+| ① | 是个**可多选**的平台开关 | `HardwareTarget` 取值来自枚举 `EHardwareClass`，**只有 `Desktop` / `Mobile` 两个值，单选**（`Unspecified` 隐藏）。**没有「Desktop and Mobile」这一项** |
+| ② | 管的是「**平台预留**」 | 它管的是**默认画质档** —— 源码 `HardwareTargetingModule.cpp` 按 `bLowEndMobile` / `bAnyPC` / `bHighEndPC` 等组合**批量应用一批 `URendererSettings`**，落点为 `Config/DefaultEngine.ini`：见下 |
+
+```ini
+[/Script/HardwareTargeting.HardwareTargetingSettings]
+TargetedHardwareClass=Desktop           ; 或 Mobile（单选）
+DefaultGraphicsPerformance=Scalable     ; 或 Maximum
+```
+
+**那「手机端预留」的落点究竟在哪？—— 不在创建向导里：**
+
+| 层 | 事实 |
+|---|---|
+| **平台支持** | 是**引擎级**的（`Engine/Platforms/{Windows,Android,IOS}`）—— 本机**已装**（`ENVIRONMENT.md` §2.4）。**与工程创建时的任何选择无关** |
+| **工程是否限定平台** | `.uproject` 的可选字段 `TargetPlatforms`。**向导不写它**（实测 `GameProjectUtils.cpp` 的创建流程只写 ini，不碰该字段）→ **不写 = 全平台开放**，反而是最宽松的状态 |
+| **真正不可后补的两条** | 仍是 **「资产按移动端预算生成」** 与 **「输入抽象（Enhanced Input，不读键码）」**（§7.2）—— 这两条**与创建向导无关**，它们是**纪律** |
+
+> **结论**：原「创建时勾 Mobile」**既无对应操作、也无必要**（UE 默认全平台开放）。
+> **手机端预留的实质是「约束资产规格 + 抽象输入」，不是「一次点击」** —— 与 `MOBILE-PLAN.md` 的判断一致。
+
+#### 路径与命名（**目录名 ≠ 工程名**）
+
+**先认清向导的行为**：它按 **`<父目录>/<工程名>/`** 建工程（面板上就是 `Name` + `Location` 两格）。
+**因此向导无法一次做到**「目录叫 `ue-client`、工程名叫 `QiuyuanDalu`」。两条路：
+
+| 路线 | 做法 | 评价 |
+|---|---|---|
+| **A · 向导 + 重命名**（GUI） | ① `Location` 指 `F:/zxc/Project/qiuyuan-dalu/`、`Name` 填 `QiuyuanDalu` → 得到 `qiuyuan-dalu/QiuyuanDalu/`；② 把该目录**重命名为 `ue-client/`** | 可行。**`.uproject` 与模块名不动** —— UE 工程**相对路径寻址**，目录可移动（模板已证：`TP_Blank/` 内**无任何绝对路径**） |
+| **B · 套模板**（命令行） | 把 `Templates/TP_Blank/` 复制为 `ue-client/`，按 `TemplateDefs.ini` 规则改名 | **可脚本化、可复现**（合「命令 + 输出」的记录纪律），且**天然满足「目录名 ≠ 工程名」** |
+
+**`TemplateDefs.ini` 给出的、与向导等价的创建规则**（路线 B 的依据）：
+
+| 规则 | 内容 |
+|---|---|
+| `FoldersToIgnore` | `Media`（模板预览图，不进工程） |
+| `FilesToIgnore` | `%TEMPLATENAME%.uproject`（**由向导重新生成**）、`Config/TemplateDefs.ini`、`%TEMPLATENAME%.sln` 等 |
+| `FolderRenames` | `Source/TP_Blank` → `Source/<工程名>` |
+| `FilenameReplacements` / `ReplacementsInFiles` | 限定扩展名 **`cpp` / `h` / `ini` / `cs`**，把 `TP_Blank` / `TP_BLANK` / `tp_blank` → 工程名（**三种大小写都要覆盖**） |
+| `bIsBlank=True` | **不指定默认地图** → 这正是 §3.3 第 3 项「设默认地图 / GameMode」被列为**创建后必做**的原因 |
+
+> **两条硬约束**：路径**不得含中文或空格**；工程名须以字母开头、≤20 字符。
+> **先清空目标目录** —— `ue-client/` 现有一个 `.gitkeep` 占位，走哪条路都要先移掉（向导不接受非空目录）。
+
+#### 引擎与启动（**本机实测**）
+
+引擎在 **`F:/zxc/UE_5.8/`**（**非** `C:` 默认位）。**本机三处与常规安装不同**（真源见 `ENVIRONMENT.md` §2.1.2）：
+
+| 项 | 本机实况 | 影响 |
+|---|---|---|
+| **Epic Launcher** | ❌ **未装** | 不能从 Launcher 启动 |
+| **`UnrealVersionSelector.exe`** | ❌ **不存在** | 右键 `.uproject` 的「切换引擎版本 / 生成工程文件」**不可用** |
+| **引擎注册** | `HKLM\SOFTWARE\EpicGames\Unreal Engine\` 下**只有 `4.0`**；`HKCU\...\Unreal Engine\Builds` **为空** | `.uproject` 的 `EngineAssociation` **不能填 `"5.8"`**（无注册项可解析） |
+
+→ **推荐启动方式：直接指定编辑器**（最稳、可复现、可写进记录）
+
+```
+"F:/zxc/UE_5.8/Engine/Binaries/Win64/UnrealEditor.exe" "<工程根>/QiuyuanDalu.uproject"
+```
+
+首次打开时工程内**无 `Binaries/`** → 编辑器会提示「模块缺失，是否重新编译？」→ **选「是」**（编译 `QiuyuanDalu` 模块）。
+> 生成 VS 工程文件（`.sln`）同理走命令行：`UnrealBuildTool.exe -projectfiles -project="…" -game -progress`。
+
+
+### 3.3 创建后必做（六项）
 
 | # | 事项 | 说明 |
 |---|---|---|
 | 1 | 启用 **`GameplayAbilities`** 插件 | GAS 是上游 §2.3 定的核心方案。UE5 自带但**默认未启用** |
 | 2 | 确认 **`EnhancedInput`** 已启用 | UE5 默认启用；它是「输入抽象」的载体（§7.3 纪律 1） |
-| 3 | 设**默认地图 / 默认 GameMode** | M1 的空场景 + 最小 GameMode |
-| 4 | 写 `.gitignore` / `.gitattributes` | 挡 UE 生成目录；`.uasset/.umap/.fbx/.png/.wav` 走 LFS（§4） |
-| 5 | **首次提交** | 提交 `uproject` / `Config/` / `Content/` / `Source/` / `Plugins/` 与两份 ignore 文件 |
+| 3 | 设**默认地图 / 默认 GameMode** | M1 的空场景 + 最小 GameMode。**模板 `bIsBlank=True` 不带默认地图**，此项必做 |
+| 4 | ~~写 `.gitignore` / `.gitattributes`~~ | ✅ **已完成（2026-09-28）** —— 挡 UE 生成目录；`.uasset/.umap/.fbx/.png/.wav` 走 LFS（§4）。**已先于工程创建落盘**（§3.1 顺序纪律） |
+| 5 | ~~首次提交~~ | ✅ **已完成（2026-09-28）** —— 骨架首推 `61dbaca`。**工程内容生成后需再提一次**（提交 `uproject` / `Config/` / `Content/` / `Source/` / `Plugins/`） |
+| 6 | **命令行验证构建** | ★ **判据是「能编译」，不是「能打开」** —— 依据 §3.1 纪律「不看装了没，看能不能编译」。命令：`Engine/Build/BatchFiles/Build.bat QiuyuanDaluEditor Win64 Development -project="…/QiuyuanDalu.uproject"`。**这是 M1 第 0 项「建工程骨架」的出口判据** |
 
 ### 3.4 Quality Preset 的反方留痕（§3.2 第 4 项）
+
+> **v1.8 补注**：向导上 `HardwareTarget` 与 `GraphicsPreset` 是**配对的两个下拉**，两者组合决定一套默认渲染设置
+> （源码 `HardwareTargetingModule.cpp`：`bLowEndMobile` = Mobile + Scalable ／ `bHighEndPC` = Desktop + Maximum）。
+> **本次取 `Desktop` + `Scalable`** —— 表明 M1 面向 PC，同时保持保守的默认画质。
 
 上游《技术架构》§0.3 有句「**原型期：原生 UE5，全画质**」。若照此取 **Maximum**：
 
@@ -269,7 +351,7 @@ ue-client/Config/
 
 | 项 | ✅ 现在做（零成本 / 事后不可补） | ❌ 现在不做（要投入 / 事后可补） |
 |---|---|---|
-| 平台配置 | 创建时**勾 Mobile** | — |
+| 平台支持 | **无需操作** —— 引擎级已装（`Engine/Platforms/{Windows,Android,IOS}`）；向导**不写 `TargetPlatforms`** 即全平台开放。（**v1.8 更正**：原写「创建时勾 Mobile」，UE 5.8 向导**无此项**，详见 §3.2「更正说明」） | — |
 | 目录命名 | `ue-client/`（天然支持多端并列） | — |
 | **输入抽象** | 全走 Enhanced Input 的 `IA_*` / `IMC_*`，**不读键码** | — |
 | 资产规格 | 按**移动端预算**生成（上游 §4.4 那张表） | — |
@@ -305,7 +387,7 @@ ue-client/Config/
 | 本文件章节 | 真源 | 关系 |
 |---|---|---|
 | §2 UE 工程结构 | Epic 官方目录约定 | 引用 |
-| §3.2 创建选项 | — | **本文件推导**，落 ADR-0010 |
+| §3.2 创建选项 | **UE 5.8 引擎源码**（`TemplateProjectDefs.h` 的 `ETemplateSetting` ／ `HardwareTargetingModule.cpp`） | **实测更正**（v1.8）；落 **ADR-0010 + ADR-0017** |
 | §4 Content 组织 | Epic 官方 + Allar 风格指南 | 引用 |
 | §6 配置分层 | 上游《技术架构》§2.1 / §4.5 | 承接 |
 | §7 手机端预留 | 上游《技术架构》**§4 全节** | **承接** —— 上游已写得很细，本文件只做「M1 该做什么」的过滤 |
@@ -326,6 +408,8 @@ ue-client/Config/
 - [x] **建立 `docs/ENVIRONMENT.md`**（环境与工具链台账）+ 版本锁定 —— **2026-09-28 完成**
 - [x] ~~**装齐两项工具链**：**Go** / **Luban**~~ → ✅ **2026-09-28 完成**（Go 1.27.1 / Luban v5.1.0，见 `ENVIRONMENT.md` §1）
   > ⚠️ **v1.5 更正**：原写「三项（含 **protoc**）」**有误** —— protoc 服务于**内部跨进程 gRPC**，而 M1 阶段八类 Go 进程**合并为单进程**（上游 §3.1），进程内调用不跨网络 → **M1 用不上**。触发器在 **M4**（场景服独立）。见台账 §4.2。
+- [ ] **创建 `ue-client/` 工程内容** ← ★ **M1 第 0 项，下一步就做它**（规格见 **§3.2**；依据 **ADR-0010 + ADR-0017**）
+  > **现状**：`ue-client/` 内**只有 `.gitkeep` 占位**。**动手前先清空该目录**（向导不接受非空目录）。
 
 > **环境现状一律查 `ENVIRONMENT.md` §3** —— 本文件**不再复写任何版本号**（纪律①：同一事实不写两处）。
 

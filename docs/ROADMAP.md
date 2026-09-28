@@ -10,6 +10,7 @@
 > **v0.20 变更**：**protoc 移出 M1 阻塞项** —— 原「缺三项（Go / protoc / Luban）」中 **protoc 判错**：它服务于**内部跨进程 gRPC**，而 M1 阶段八类 Go 进程**合并为单进程**（上游 §3.1），进程内调用不跨网络 → **用不上**。M1 阻塞收敛为**两项**（**Go / Luban**），protoc 归 **M4**（`ENVIRONMENT.md` §4.2）。
 > **v0.21 变更**：§9 加 **`SERVER-ARCH.md`** —— 服务端架构与拆分时机（**ADR-0015**）。M1 In scope 第 0 项「建工程骨架」的**服务端侧**自此有落点（此前 `server/` 在本仓只占一行）。
 > **v0.22 变更**：§9 `SERVER-ARCH.md` 描述补 **`server/` 内部结构（技术模块切 · ADR-0016）** —— M1 In scope 第 0 项的服务端侧判据至此**齐备**。
+> **v0.23 变更**：M1 In scope 第 0 项「建工程骨架」的 **UE 侧规格**补 **ADR-0017** —— 创建向导选项按 **UE 5.8 实测**更正（原「勾 Desktop + Mobile」「Starter Content」「Ray Tracing」三项作废）。至此第 0 项的**双端判据齐备**（服务端 → `SERVER-ARCH.md`；UE 侧 → `PROJECT-STRUCTURE.md` §3.2）。
 
 ---
 
@@ -91,7 +92,7 @@
 
 | # | 内容 | 对应 `MMO功能清单` |
 |---|---|---|
-| **0** | **建工程骨架**：UE 工程创建（规格见 **ADR-0010** / 施工图 `PROJECT-STRUCTURE.md`）+ 目录落位（含 **`platforms/mobile/`** —— **ADR-0011** / `MOBILE-PLAN.md` §5）。**`git init` + LFS + 骨架 + 首次推送已于 2026-09-28 完成**；**环境工具链（Go / Luban —— protoc 属 M4，见 §4.2）见 `ENVIRONMENT.md` §4.1** | — |
+| **0** | **建工程骨架**：UE 工程创建（规格见 **ADR-0010 + ADR-0017** / 施工图 `PROJECT-STRUCTURE.md` §3.2）+ 目录落位（含 **`platforms/mobile/`** —— **ADR-0011** / `MOBILE-PLAN.md` §5）。**`git init` + LFS + 骨架 + 首次推送已于 2026-09-28 完成**；**环境工具链（Go / Luban —— protoc 属 M4，见 §4.2）见 `ENVIRONMENT.md` §4.1** | — |
 | 1 | **账号**：注册 / 登录 / 登出（REST） | A-账号 |
 | 2 | **角色创建**：命名、性别 | A-角色创建与捏人 |
 | 3 | **灵根觉醒**：七大品级概率表 → 生成灵根组合 + 每根纯度 | A-灵根觉醒 |
