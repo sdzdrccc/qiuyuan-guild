@@ -1,6 +1,8 @@
 # PROJECT-STRUCTURE.md —— 工程结构详案
 
-> **层**：L4 规范层（本仓 `docs/`）　|　**状态**：v1.4（草案 · **M1 施工图**）
+> **层**：L4 规范层（本仓 `docs/`）　|　**状态**：v1.6（草案 · **M1 施工图**）
+> **v1.6 变更**：§1 `server/` 加**进程形态指针** —— 新建 **`docs/SERVER-ARCH.md`**（服务端架构与拆分时机 · **ADR-0015**）；§9 加一项**待裁**（`server/` 内部结构）。**本文件只管 UE 工程与服务端的一级目录；进程形态不再在此展开**（判据同纪律①）。
+> **v1.5 变更**：§3.3 / §9 阻塞项由**三项**（含 protoc）更正为**两项**（**Go / Luban**）—— protoc 属 **M4**（`ENVIRONMENT.md` §4.2 / **ADR-0014**）。
 > **v1.4 变更**：**环境事实全部迁出** → 新建真源 **`docs/ENVIRONMENT.md`**。§3.1 由 84 行实测表**收成指针**（依据纪律①：**同一事实不写两处**）；§9 待办同步（`git init` / `platforms/mobile/` / 版本锁定 **均已办**，仅剩**装齐 Go / protoc / Luban**）。
 > **v1.3 变更**：§3.1 第 2 项**推翻 v1.2 的结论** —— 「MSVC 被禁」是**误判**。错在**拿目录名当版本号**：实测 `cl.exe` 的 `ProductVersion` = **`14.44.35228`**（微软「就地修补」，目录名仍写 `14.44.35207`）→ **合规、无需升级**。附 UE 源码依据（读 `ProductVersion` 优先）与正确验证命令。
 > **v1.2 变更**：§3.1 第 2 项「MSVC 被禁」**细化为可执行** —— 补根因（装的是**锁定版组件**，**不随 VS 主程序滚动**）、五步升级操作、**验证命令**、两条退路；写明**有效可用区间 `14.44.35211`~`14.44.99999`**（**Banned 优先于 Preferred**）。
@@ -44,7 +46,7 @@ qiuyuan-dalu/                      ← monorepo 根（Git 仓库根，须 git in
 ├─ ue-client/                      ★ UE5 工程（完整工程 · 单工程多平台 · 见 §2）
 ├─ platforms/                      ★ 平台专属产出物（**工程外** · 只建 mobile）
 │  └─ mobile/                      手机端（M1 建 · 见 `MOBILE-PLAN.md` §5）
-├─ server/                         ★ 服务端 · Go（重写 · 方案 §8.5）
+├─ server/                         ★ 服务端 · Go（重写 · 方案 §8.5）｜**进程形态见 `SERVER-ARCH.md`**
 ├─ data/                           ★ 配置表（Luban 表源 + 生成物）· **双端共享**
 ├─ admin/                          GM 后台（Vue3）
 ├─ db/                             迁移 SQL
@@ -335,6 +337,7 @@ ue-client/Config/
 **待裁**：
 
 - [x] ~~Quality Preset 取 Scalable 还是 Maximum~~ → 建议 Scalable，见 §3.4
+- [ ] **`server/` 内部结构**（技术模块 vs agent 领地）—— 见 **`SERVER-ARCH.md` §6**（**ADR-0015**）；**建 `server/` 前须定**
 - [ ] **iOS 商业化走法**（只上 Android / 买 Mac / macOS CI）—— 见 `MOBILE-PLAN.md` §2.4；**不阻塞任何里程碑**
 
 ---
