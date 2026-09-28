@@ -1,6 +1,7 @@
 # PROJECT-STRUCTURE.md —— 工程结构详案
 
-> **层**：L4 规范层（本仓 `docs/`）　|　**状态**：v1.6（草案 · **M1 施工图**）
+> **层**：L4 规范层（本仓 `docs/`）　|　**状态**：v1.7（草案 · **M1 施工图**）
+> **v1.7 变更**：§1 `server/` 行补**内部结构** —— 一级按**技术模块切**（**ADR-0016**）：`internal/{gateway, login, game}` + `platform/`；§9 待裁项「`server/` 结构」**关闭**（转已裁）。
 > **v1.6 变更**：§1 `server/` 加**进程形态指针** —— 新建 **`docs/SERVER-ARCH.md`**（服务端架构与拆分时机 · **ADR-0015**）；§9 加一项**待裁**（`server/` 内部结构）。**本文件只管 UE 工程与服务端的一级目录；进程形态不再在此展开**（判据同纪律①）。
 > **v1.5 变更**：§3.3 / §9 阻塞项由**三项**（含 protoc）更正为**两项**（**Go / Luban**）—— protoc 属 **M4**（`ENVIRONMENT.md` §4.2 / **ADR-0014**）。
 > **v1.4 变更**：**环境事实全部迁出** → 新建真源 **`docs/ENVIRONMENT.md`**。§3.1 由 84 行实测表**收成指针**（依据纪律①：**同一事实不写两处**）；§9 待办同步（`git init` / `platforms/mobile/` / 版本锁定 **均已办**，仅剩**装齐 Go / protoc / Luban**）。
@@ -46,7 +47,7 @@ qiuyuan-dalu/                      ← monorepo 根（Git 仓库根，须 git in
 ├─ ue-client/                      ★ UE5 工程（完整工程 · 单工程多平台 · 见 §2）
 ├─ platforms/                      ★ 平台专属产出物（**工程外** · 只建 mobile）
 │  └─ mobile/                      手机端（M1 建 · 见 `MOBILE-PLAN.md` §5）
-├─ server/                         ★ 服务端 · Go（重写 · 方案 §8.5）｜**进程形态见 `SERVER-ARCH.md`**
+├─ server/                         ★ 服务端 · Go（重写 · 方案 §8.5）｜**进程形态 + 内部结构见 `SERVER-ARCH.md` §6**（技术模块切 · ADR-0016）
 ├─ data/                           ★ 配置表（Luban 表源 + 生成物）· **双端共享**
 ├─ admin/                          GM 后台（Vue3）
 ├─ db/                             迁移 SQL
@@ -337,7 +338,7 @@ ue-client/Config/
 **待裁**：
 
 - [x] ~~Quality Preset 取 Scalable 还是 Maximum~~ → 建议 Scalable，见 §3.4
-- [ ] **`server/` 内部结构**（技术模块 vs agent 领地）—— 见 **`SERVER-ARCH.md` §6**（**ADR-0015**）；**建 `server/` 前须定**
+- [x] ~~**`server/` 内部结构**（技术模块 vs agent 领地）~~ → **已裁：技术模块切**（**ADR-0016**）；见 `SERVER-ARCH.md` §6
 - [ ] **iOS 商业化走法**（只上 Android / 买 Mac / macOS CI）—— 见 `MOBILE-PLAN.md` §2.4；**不阻塞任何里程碑**
 
 ---

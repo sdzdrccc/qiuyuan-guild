@@ -36,7 +36,7 @@ docs/
   PROJECT-STRUCTURE.md      ★ 工程结构详案 —— UE 创建规格 / 目录全貌 / 手机端判据（M1 施工图 · v1.6）
   ENVIRONMENT.md            ★ 环境与工具链台账 —— **应用 / 锁定版本 / 实测现状的唯一真源**
   MOBILE-PLAN.md            ★ 手机端专案书 —— 方案 / 出包链路 / 归置表 / 启停判据
-  SERVER-ARCH.md            ★ 服务端架构与拆分时机 —— 九类进程 / 起步 8 合 1 / 四条拆分前提 / 何时拆
+  SERVER-ARCH.md            ★ 服务端架构与拆分时机 —— 九类进程 / 起步 8 合 1 / 四条拆分前提 / 何时拆 / **`server/` 内部结构（技术模块切）**
   SKILL-ROUTING.md          角色 → skill 路由表
 contracts/                  ★ 唯一真源（三方只读消费，禁止本地副本）
   data-contract.md            数据模型（**逻辑层**：实体 / 境界 / 灵根 / 属性 / 战斗公式 · v0.3）
@@ -52,6 +52,7 @@ records/                    ★ 完成记录（guild 侧编号 **`X-*`**；dalu 
   X-0007.md                    v0.21 环境台账 + dalu 开工（ADR-0012 / 0013）
   X-0008.md                    v0.22 protoc 归位 M4（ADR-0014）
   X-0009.md                    v0.23 服务端架构专章化 + 补录 Go 裁决（ADR-0015）
+  X-0010.md                    v0.24 server/ 结构定案：技术模块切（ADR-0016）
 registry/                   ★ 跨库登记（第三条铁律的落点）—— **全部是视图，非真源**
   cross-repo-ledger.md         跨库需求 / 交付台账（**索引视图**）
   agent-log.md                 按 agent 的完成记录视图（**派生视图**）
@@ -140,7 +141,7 @@ scripts/                    ★ 校验脚本（没有校验脚本的契约 = 装
 
 ```bash
 node scripts/check-data.js             # 数据契约一致性 + 文档表格结构 + 原则锚点（9 规则）
-node scripts/check-data.js --self-test # ★ 反向测试（27 用例，注入坏样本断言必失败）
+node scripts/check-data.js --self-test # ★ 反向测试（33 用例，注入坏样本断言必失败）
 node scripts/check-asset-ref.js        # 资产引用 + 跨层一致性（5 规则）
 ```
 

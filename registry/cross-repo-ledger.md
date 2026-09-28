@@ -31,6 +31,7 @@
 | **X-0007** | **v0.21** 环境与工具链台账化（ADR-0012 / 0013）+ **`qiuyuan-dalu` 开工** | guild | `qiuyuan-guild` + `qiuyuan-dalu` | 本仓自办 | `待验收` | [records/X-0007.md](../records/X-0007.md) |
 | **X-0008** | **v0.22** **protoc 归位 M4**（ADR-0014）—— M1 阻塞收敛为 Go / Luban；附带登记**客户端协议层级差**（M2 前须裁） | guild | `qiuyuan-guild` | 本仓自办 | `待验收` | [records/X-0008.md](../records/X-0008.md) |
 | **X-0009** | **v0.23** 服务端架构**专章化**（`docs/SERVER-ARCH.md` · **ADR-0015**）+ **追溯补录「服务端重写 Go」裁决** + 登记一处**已被否决的外部历史方案** | guild | `qiuyuan-guild` | 本仓自办 | `待验收` | [records/X-0009.md](../records/X-0009.md) |
+| **X-0010** | **v0.24** **`server/` 内部结构定案：技术模块切**（**ADR-0016**）—— 一级目录 = 进程名（`gateway`/`login`/`game`/`platform`）；owner 写权改以**声明**（`OWNERS`）叠加；**回写方案 §2.1 领地路径** | guild | `qiuyuan-guild` | 本仓自办 | `待验收` | [records/X-0010.md](../records/X-0010.md) |
 
 > **⚠️ X-0009 附带登记（外部遗存文档 · 不归任何一库）**：
 > `F:/zxc/XiaomiMiMoProjects/.mimo-sessions/2026-09-14/…/虬渊大陆-MMORPG技术架构方案.md`
