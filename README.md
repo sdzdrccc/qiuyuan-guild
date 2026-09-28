@@ -53,6 +53,7 @@ records/                    ★ 完成记录（guild 侧编号 **`X-*`**；dalu 
   X-0008.md                    v0.22 protoc 归位 M4（ADR-0014）
   X-0009.md                    v0.23 服务端架构专章化 + 补录 Go 裁决（ADR-0015）
   X-0010.md                    v0.24 server/ 结构定案：技术模块切（ADR-0016）
+  X-0011.md                    v1.2 M1 工具链装机：Go 1.27.1 + Luban v5.1.0
 registry/                   ★ 跨库登记（第三条铁律的落点）—— **全部是视图，非真源**
   cross-repo-ledger.md         跨库需求 / 交付台账（**索引视图**）
   agent-log.md                 按 agent 的完成记录视图（**派生视图**）
@@ -129,9 +130,9 @@ scripts/                    ★ 校验脚本（没有校验脚本的契约 = 装
 >
 > 🔧 **M1 环境侧前置** → **真源已移至 [`docs/ENVIRONMENT.md`](docs/ENVIRONMENT.md)**（v0.21 起，本文件不再复写版本号）：
 >
-> - ✅ **已就绪**：UE `5.8.1` ／ VS BuildTools `17.14.39` ／ **MSVC 合规**（判据是 `cl.exe` 的 **`ProductVersion` = `14.44.35228`**，**不是目录名** —— v0.20 撤回 v0.18/v0.19 的「须先升级」**误报**）／ Windows SDK `10.0.26100.0` ／ .NET 10 ／ MySQL `8.0.46` ／ Node 22 ／ Python 3.13 ／ Git `2.55` + LFS `3.7`；
+> - ✅ **已就绪**：UE `5.8.1` ／ VS BuildTools `17.14.39` ／ **MSVC 合规**（判据是 `cl.exe` 的 **`ProductVersion` = `14.44.35228`**，**不是目录名** —— v0.20 撤回 v0.18/v0.19 的「须先升级」**误报**）／ Windows SDK `10.0.26100.0` ／ .NET 10 ／ **Go `1.27.1`** ／ **Luban `v5.1.0`** ／ MySQL `8.0.46` ／ Node 22 ／ Python 3.13 ／ Git `2.55` + LFS `3.7`；
 > - ✅ `qiuyuan-dalu` **已 `git init` + LFS + 目录骨架 + 首次推送**（2026-09-28）；
-> - 🔴 **当前唯一阻塞**：装齐 **Go / Luban** **两项**工具链（[`ENVIRONMENT.md`](docs/ENVIRONMENT.md) §4.1）；
+> - ✅ **M1 环境侧阻塞已全部解除**（2026-09-28 装机）—— **Go 1.27.1**（`F:\zxc\go`）+ **Luban v5.1.0**（`F:\zxc\Luban`）已装且**端到端验证**（Luban 导表 → 生成的 Go 代码编译通过）。**环境侧无阻塞项**（[`ENVIRONMENT.md`](docs/ENVIRONMENT.md) §3 / §4.1）；
 >   *（**protoc 不在其列** —— ADR-0014 归位 **M4**：它服务于内部跨进程 gRPC，而 M1 阶段八类 Go 进程合并为单进程，用不上。见台账 §4.2）*
 > - ⚠️ **不阻塞 M1 的两项**：Redis 本机 `3.0.504`（过旧，M2+ 前升级）；移动端出包链路未就绪（Android 缺 SDK/NDK、iOS 须 Mac —— [`MOBILE-PLAN.md`](docs/MOBILE-PLAN.md) §2）。
 >
