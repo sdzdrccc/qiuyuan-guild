@@ -28,12 +28,13 @@
 
 ```
 docs/
-  MULTI-AGENT-DEV-PLAN.md   多 Agent 协作开发方案（总纲 · v0.18）
+  MULTI-AGENT-DEV-PLAN.md   多 Agent 协作开发方案（总纲 · v0.19）
   AGENTS.md                 ★ 跨库 AI 硬纪律（给 AI 看的，优先级高于临时指令）
   CONVENTIONS.md            ★ 工程约定（铁律级，升版需 ADR）
   DECISIONS.md              ★ ADR 台账 —— 「为什么这么定」的唯一真源
   ROADMAP.md                ★ 里程碑路线图 —— 84 项功能 → 17 个里程碑
-  PROJECT-STRUCTURE.md      ★ 工程结构详案 —— UE 创建规格 / 目录全貌 / 手机端预留（M1 施工图）
+  PROJECT-STRUCTURE.md      ★ 工程结构详案 —— UE 创建规格 / 目录全貌 / 手机端判据（M1 施工图 · v1.1）
+  MOBILE-PLAN.md            ★ 手机端专案书 —— 方案 / 出包链路 / 归置表 / 启停判据
   SKILL-ROUTING.md          角色 → skill 路由表
 contracts/                  ★ 唯一真源（三方只读消费，禁止本地副本）
   data-contract.md            数据模型（**逻辑层**：实体 / 境界 / 灵根 / 属性 / 战斗公式 · v0.3）
@@ -45,6 +46,7 @@ records/                    ★ 完成记录（guild 侧编号 **`X-*`**；dalu 
   X-0003.md                    v0.16 ROADMAP 表格列位复位 + 门禁补 R8
   X-0004.md                    v0.17 第一设计原则（世界真实性优先）
   X-0005.md                    v0.18 UE 工程规格 + 手机端预留（ADR-0010）
+  X-0006.md                    v0.19 手机端专案化：归置 + 出包 + iOS 硬约束（ADR-0011）
 registry/                   ★ 跨库登记（第三条铁律的落点）—— **全部是视图，非真源**
   cross-repo-ledger.md         跨库需求 / 交付台账（**索引视图**）
   agent-log.md                 按 agent 的完成记录视图（**派生视图**）
@@ -72,11 +74,12 @@ scripts/                    ★ 校验脚本（没有校验脚本的契约 = 装
 
 ## 核心文档
 
-- [`docs/MULTI-AGENT-DEV-PLAN.md`](docs/MULTI-AGENT-DEV-PLAN.md) — 多 Agent 协作开发方案（**v0.18**）
+- [`docs/MULTI-AGENT-DEV-PLAN.md`](docs/MULTI-AGENT-DEV-PLAN.md) — 多 Agent 协作开发方案（**v0.19**）
 - [`docs/AGENTS.md`](docs/AGENTS.md) — **动手前先读这份**
-- [`docs/DECISIONS.md`](docs/DECISIONS.md) — **裁决台账**（改契约前必读；当前 **无待裁项**）
+- [`docs/DECISIONS.md`](docs/DECISIONS.md) — **裁决台账**（改契约前必读）
 - [`docs/ROADMAP.md`](docs/ROADMAP.md) — **里程碑路线图**（不知道下一步做什么就读它）
 - [`docs/PROJECT-STRUCTURE.md`](docs/PROJECT-STRUCTURE.md) — **工程结构详案**（**要建 UE 工程就读它**）
+- [`docs/MOBILE-PLAN.md`](docs/MOBILE-PLAN.md) — **手机端专案书**（**手机端的东西放哪 / 怎么出安装包就读它**）
 - [`docs/CONVENTIONS.md`](docs/CONVENTIONS.md) — 工程约定
 - [`registry/cross-repo-ledger.md`](registry/cross-repo-ledger.md) — 跨库登记台账
 
@@ -99,7 +102,7 @@ scripts/                    ★ 校验脚本（没有校验脚本的契约 = 装
 | 引擎路线 | **Godot 原型验证 → UE5 交付**。投入只往「迁移时零成本保留」的层放：数据 / 契约 / 资产源 |
 | 服务端 | **Go**（重写）；原型 Java 侧降为验证器，只作协议与数据表来源 |
 | 配置表 | 正式工程 **Luban**；原型继续开发用 **JSON**（契约定义**数据模型**，不定义文件格式） |
-| 客户端 | `ue-client/`；UE 工程名 **`QiuyuanDalu`**；移动端是**构建配置**，不是新目录 |
+| 客户端 | `ue-client/`（**单工程多平台**）；UE 工程名 **`QiuyuanDalu`**；移动端是**构建配置**，不是新目录；工程外平台产出物归 **`platforms/mobile/`** |
 | 资产线 | **只走 GBE 五层流水线**（gbe-studio → gbe-assets）；原型侧 `docs/17` 的 Tripo 链降为「Codex 侧一句话调用壳」 |
 
 ## 当前状态
@@ -116,13 +119,14 @@ scripts/                    ★ 校验脚本（没有校验脚本的契约 = 装
 > ✅ **M1 契约侧硬前置已解除（2026-09-28 · v0.15）**：**ADR-0004 / 0005 / 0006** 已全部裁定 —— 境内 **9 层（82 台阶）** / 属性**上限不落库** / `realm_id` **`1~9`**。契约升 **v0.3**，`Role` / `RealmLevelConfig` 的字段定义已落笔。
 > 余下待裁项为**里程碑级**（M5 装备槽位 / M7 队伍人数），**不阻塞 M1**。
 >
-> 🔧 **M1 环境侧前置（实测 · v0.18）**：
+> 🔧 **M1 环境侧前置（实测 · v0.18 / v0.19 更正）**：
 >
-> - ✅ UE **5.8.1** 已装（`F:/zxc/UE_5.8/`）；移动端平台支持（Android + IOS）**已随引擎安装**；VS BuildTools `17.14.39` 齐备；
+> - ✅ UE **5.8.1** 已装（`F:/zxc/UE_5.8/`）；VS BuildTools `17.14.39` 齐备；
 > - 🔴 **MSVC `14.44.35207` 落在 UE 5.8 的 `BannedVisualCppVersions` 区间**（Template compile error，由 `14.44.35211` 修复）→ **须先升级**；
-> - 🔴 `qiuyuan-dalu` **尚未 `git init`**，Git LFS 未配。
+> - 🔴 `qiuyuan-dalu` **尚未 `git init`**，Git LFS 未配；
+> - ⚠️ **移动端出包链路未就绪**（v0.19 **更正**原「Android + IOS 已就绪」的说法）—— 平台**模块**在（`Binaries/Win64/<平台>/` 有 dll），但 **Android 缺 SDK/NDK**、**iOS 在 Windows 上物理出不了包**（须 Mac）。**不阻塞 M1**，见 [`docs/MOBILE-PLAN.md`](docs/MOBILE-PLAN.md) §2。
 >
-> 详见 [`docs/PROJECT-STRUCTURE.md`](docs/PROJECT-STRUCTURE.md) §3.1；创建规格见 **ADR-0010**。
+> 详见 [`docs/PROJECT-STRUCTURE.md`](docs/PROJECT-STRUCTURE.md) §3.1；创建规格见 **ADR-0010**；手机端归置与出包见 **ADR-0011**。
 
 **校验脚本本地跑法**：
 

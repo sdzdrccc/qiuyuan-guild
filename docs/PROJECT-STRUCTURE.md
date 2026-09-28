@@ -1,7 +1,9 @@
 # PROJECT-STRUCTURE.md —— 工程结构详案
 
-> **层**：L4 规范层（本仓 `docs/`）　|　**状态**：v1（草案 · **M1 施工图**）
+> **层**：L4 规范层（本仓 `docs/`）　|　**状态**：v1.1（草案 · **M1 施工图**）
 > **回答三问**：① `qiuyuan-dalu` 整个是什么结构　② UE 工程怎么创建　③ 手机端怎么预留
+> **v1.1 变更**：① §1 目录树**新增 `platforms/`**（平台专属产出物归置点）；② §3.1 第 6 项**更正** —— 原写「Android+IOS 已就绪·勾 Mobile 即生效」是**错的**（平台模块在 ≠ 能出包，iOS 在 Windows 上物理出不了包）；③ §7 加**归置指针**，判据与归置分家；④ §9 待办与待裁同步。
+> **归置与出包** → **`docs/MOBILE-PLAN.md`**（手机端专案书）。
 > **与方案 §3 的关系**：方案 §3 只画到**一级目录**；本文件展开到**可施工**的粒度。
 > **上游依据**：`10-MMO化/技术架构与技术选型.md` §2（客户端架构）/ §4（手机端方案）—— 本文件**承接**它们，不复写。
 
@@ -36,12 +38,14 @@ qiuyuan-dalu/                      ← monorepo 根（Git 仓库根，须 git in
 ├─ records/                        每任务完成记录（强制产出 · 同仓铁律）
 ├─ tests/                          qa 的领地（验收脚本）
 │
-├─ ue-client/                      ★ UE5 工程（完整工程 · 见 §2）
+├─ ue-client/                      ★ UE5 工程（完整工程 · 单工程多平台 · 见 §2）
+├─ platforms/                      ★ 平台专属产出物（**工程外** · 只建 mobile）
+│  └─ mobile/                      手机端（M1 建 · 见 `MOBILE-PLAN.md` §5）
 ├─ server/                         ★ 服务端 · Go（重写 · 方案 §8.5）
 ├─ data/                           ★ 配置表（Luban 表源 + 生成物）· **双端共享**
 ├─ admin/                          GM 后台（Vue3）
 ├─ db/                             迁移 SQL
-├─ tools/                          校验 / 构建脚本
+├─ tools/                          跨平台通用脚本（校验 / 生成）
 │
 ├─ .gitattributes                  ★ Git LFS 标记（美术资产不上 LFS 必崩）
 ├─ .gitignore
@@ -98,9 +102,14 @@ ue-client/                         ← 这就是 UE 工程根（不是子目录�
 | 3 | **Windows SDK** | ⚠️ 已装 `10.0.26100.0`；UE 5.8 的 `MainVersion` 是 `10.0.22621.0`（`Min` = `19041`） | 可用（在 Min~Max 内）；建议补装 22621 免告警 |
 | 4 | **Visual Studio** | ✅ Build Tools 2022 `17.14.39`（UE 要求 ≥ 17.8） | 已就绪 |
 | 5 | **.NET（UBT 依赖）** | ✅ 引擎自带 `Engine/Binaries/ThirdParty/DotNet/10.0` | 已就绪 |
-| 6 | **移动端平台支持** | ✅ `Android` + `IOS` 的 TargetPlatform **已随引擎安装** | 已就绪 —— 勾 Mobile 即生效 |
+| 6 | **移动端平台支持** | ⚠️ `Android` + `IOS` 的 **UBT 平台模块**已随引擎安装（`Engine/Binaries/Win64/{Android,IOS}/` 有 dll）—— **但这不等于「能出包」** | **不影响 M1**；出包链路见 `MOBILE-PLAN.md` §2 |
 | 7 | **Android SDK / NDK** | ❌ 未配（`ANDROID_HOME` 为空） | **不阻塞 M1**（M1 不打包）；将来跑 `Engine/Extras/Android/SetupAndroid.bat` |
 | 8 | **`git init` + Git LFS** | ❌ dalu 还不是 git 仓库 | 见下方顺序说明 |
+
+> **第 6 项的更正（v0.19）** —— 本条原写「**已就绪 · 勾 Mobile 即生效**」，**是错的**。
+> Launcher 预编译版里 `Engine/Platforms/{Android,IOS}/` **只有 `Plugins/`**，平台模块以 dll 形式住在 `Engine/Binaries/Win64/<平台>/`。
+> **「模块在」≠「能出包」**：Android 还缺 SDK / NDK / JDK；**iOS 在 Windows 上物理上出不了包**（依赖 Xcode，仅 macOS）。
+> 与第 2 项同一条纪律：**「装了」≠「能用」**。出包链路与前置见 **`MOBILE-PLAN.md` §2**。
 
 #### 🔴 唯一真正的阻塞：MSVC 版本被禁（第 2 项）
 
@@ -262,6 +271,9 @@ ue-client/Config/
 
 ## 7. 手机端预留：**只留口子，不做适配**
 
+> **分工**：本节只答「**现在动不动手**」（判据）；「**东西放哪、怎么变成安装包**」在 **`docs/MOBILE-PLAN.md`**。
+> 两节合起来才是完整的「提前准备」：**判据（做不做）+ 归置（放哪）+ 出包（怎么出）**。
+
 ### 7.1 判据（这一节的核心）
 
 `ROADMAP.md` §2 的 Out of scope 明写「**❌ 移动端适配**」。所以本节的「预留」**不是**做适配。
@@ -288,6 +300,9 @@ ue-client/Config/
 **读懂这张表的方法**：左栏全是「**一次点击**」或「**一条纪律**」，代价近零；
 右栏全是「**要排期的工作**」，且**事后都能补**。**唯一不可后补的是「资产规格」与「输入抽象」** —— 前者返工无捷径，后者会逼着重构玩法代码。
 
+> **右栏这些「后补」的东西要补到哪，事先已经定死了** —— 见 **`MOBILE-PLAN.md` §4 归置表 / §5 文件清单**。
+> 「后补」不等于「到时候再想」：**位置先定，内容后填**。
+
 ### 7.3 三条硬纪律
 
 | # | 纪律 | 为什么现在立 |
@@ -310,6 +325,7 @@ ue-client/Config/
 | §4 Content 组织 | Epic 官方 + Allar 风格指南 | 引用 |
 | §6 配置分层 | 上游《技术架构》§2.1 / §4.5 | 承接 |
 | §7 手机端预留 | 上游《技术架构》**§4 全节** | **承接** —— 上游已写得很细，本文件只做「M1 该做什么」的过滤 |
+| §1 `platforms/` / §7 归置指针 | **`MOBILE-PLAN.md` §4 / §5** | 分工：本文件答「动不动手」，彼答「放哪 / 怎么出包」 |
 
 **明确不做的事**：不把上游 §4.3 的「渲染管线改造清单」（Lumen→烘焙、Nanite→LOD、BC→ASTC…）抄进来。
 **那份清单是「做移动端时」的执行依据，不是 M1 的**。抄进来只会让 M1 的范围膨胀（违反范围闸门）。
@@ -322,19 +338,21 @@ ue-client/Config/
 
 - [ ] **升级 MSVC** 至 ≥ 14.44.35211（当前 14.44.35207 **被 UE 5.8 禁用** —— §3.1）
 - [ ] `qiuyuan-dalu` 做 `git init` + `git lfs install` + 写 `.gitattributes` / `.gitignore`
+- [ ] 建 `platforms/mobile/` 并落文件清单（**`MOBILE-PLAN.md` §5**）—— **与 `git init` 同批**，不单独建
 - [ ] 锁定版本号（**UE 5.8.1 / MSVC ≥ 14.44.35211**）写进 `CONVENTIONS.md`
 
-**已就绪**（实测，无需动作）：UE 5.8.1 ／ VS BuildTools 17.14.39 ／ .NET 10 ／ Android+IOS 平台支持 ／ `TP_Blank` 模板。
+**已就绪**（实测，无需动作）：UE 5.8.1 ／ VS BuildTools 17.14.39 ／ .NET 10 ／ `TP_Blank` 模板 ／ Android 与 iOS 的 **UBT 平台模块**（⚠️ **模块在 ≠ 能出包** —— §3.1 第 6 项）。
 
 **待补**：
 
 - [ ] `CONVENTIONS.md` §6.1 命名表补录 UE 资产前缀（§4 那张表）
 - [ ] `CONVENTIONS.md` §3 补「UE 版本锁定」条文
-- [ ] 上游《技术架构》§3.4 表结构漏列配置表 —— 已在 `registry/cross-repo-ledger.md`（X-0006）
+- [ ] 上游《技术架构》§3.4 表结构漏列配置表 —— 已在 `registry/cross-repo-ledger.md`（**U-0004**）
 
 **待裁**：
 
 - [x] ~~Quality Preset 取 Scalable 还是 Maximum~~ → 建议 Scalable，见 §3.4
+- [ ] **iOS 商业化走法**（只上 Android / 买 Mac / macOS CI）—— 见 `MOBILE-PLAN.md` §2.4；**不阻塞任何里程碑**
 
 ---
 
