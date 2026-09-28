@@ -1,7 +1,7 @@
 # PROJECT-STRUCTURE.md —— 工程结构详案
 
 > **层**：L4 规范层（本仓 `docs/`）　|　**状态**：v1.9（草案 · **M1 施工图**）
-> **v1.9 变更**：**§3.2「路线 B（套模板）」更正为「非向导等价物」** —— 原写「`TemplateDefs.ini` 给出的、**与向导等价**的创建规则」**有误**。实测 UE 5.8 源码 `GameProjectUtils::CreateProjectFromTemplate`：向导在「复制模板」之外另有 **6 件事**（写八组 ini 默认值 / 写 `ProjectID` / 建 `Content/` / `.uproject` 反序列化重存 / 跑 `GenerateProjectFiles` / 两遍占位符替换）。套模板脚本只复刻复制规则（已补 `Content/`）→ 产物**可编译可开图，但 ini 与向导不同**。§3.2 加**覆盖范围说明**。
+> **v1.9 变更**：**§3.2「路线 B（套模板）」更正为「非向导等价物」** —— 原写「`TemplateDefs.ini` 给出的、**与向导等价**的创建规则」**有误**。实测 UE 5.8 源码 `GameProjectUtils::CreateProjectFromTemplate`：向导在「复制模板」之外另有 **6 件事**（写八组 ini 默认值 / 写 `ProjectID` / 建 `Content/` / `.uproject` 反序列化重存 / 跑 `GenerateProjectFiles` / 两遍占位符替换）。套模板脚本只复刻复制规则（已补 `Content/`）→ 产物**可编译可开图，但 ini 与向导不同**。§3.2 加**覆盖范围说明**；另将「**先清空目标目录**」措辞精确化 —— **路线 A 的「改名」亦须先腾位**（目标名已存在则失败），闭环 `qiuyuan-dalu/records/T-0003.md` 遗留③。
 > **v1.8 变更**：**§3.2 创建向导选项 → 按 UE 5.8 引擎源码实测重写**（**ADR-0017**）—— 原「六选项」中**三项与 5.8 实际不符**：① 「Target Platform 勾 Desktop + Mobile」**无法照做**（`EHardwareClass` 只有 Desktop / Mobile **单选**，且其性质是**默认画质档**而非平台开关）；② ③ Starter Content / Ray Tracing **UE 5.6 起已从向导移除**。§3.2 另补 **「目录名 ≠ 工程名」的实操路径**与**本机引擎启动方式**（无 Launcher / 无 VersionSelector / 引擎未注册）。§3.4 §7.2 §9 同步。
 > **v1.7 变更**：§1 `server/` 行补**内部结构** —— 一级按**技术模块切**（**ADR-0016**）：`internal/{gateway, login, game}` + `platform/`；§9 待裁项「`server/` 结构」**关闭**（转已裁）。
 > **v1.6 变更**：§1 `server/` 加**进程形态指针** —— 新建 **`docs/SERVER-ARCH.md`**（服务端架构与拆分时机 · **ADR-0015**）；§9 加一项**待裁**（`server/` 内部结构）。**本文件只管 UE 工程与服务端的一级目录；进程形态不再在此展开**（判据同纪律①）。
@@ -204,7 +204,7 @@ DefaultGraphicsPerformance=Scalable     ; 或 Maximum
 
 
 > **两条硬约束**：路径**不得含中文或空格**；工程名须以字母开头、≤20 字符。
-> **先清空目标目录** —— `ue-client/` 现有一个 `.gitkeep` 占位，走哪条路都要先移掉（向导不接受非空目录）。
+> **先清空目标目录** —— 两条路都要求 `ue-client/` **先腾空**：路线 B 直接建到它；路线 A 要**把 `QiuyuanDalu/` 改名成它**，**目标名已存在则改名失败**。→ 先**删掉整个 `ue-client/`**（现仅一个 `.gitkeep` 占位）。**向导与脚本都不接受非空目标目录。**
 
 #### 引擎与启动（**本机实测**）
 
