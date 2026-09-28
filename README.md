@@ -28,7 +28,7 @@
 
 ```
 docs/
-  MULTI-AGENT-DEV-PLAN.md   多 Agent 协作开发方案（总纲 · v0.23）
+  MULTI-AGENT-DEV-PLAN.md   多 Agent 协作开发方案（总纲 · v0.26）
   AGENTS.md                 ★ 跨库 AI 硬纪律（给 AI 看的，优先级高于临时指令）
   CONVENTIONS.md            ★ 工程约定（铁律级，升版需 ADR · v0.4）
   DECISIONS.md              ★ ADR 台账 —— 「为什么这么定」的唯一真源
@@ -41,7 +41,7 @@ docs/
 contracts/                  ★ 唯一真源（三方只读消费，禁止本地副本）
   data-contract.md            数据模型（**逻辑层**：实体 / 境界 / 灵根 / 属性 / 战斗公式 · v0.3）
   asset-ref-contract.md       资产引用契约（格式 / 交付基准 / 装配 / 场景清单）
-  protocol-contract.md        协议契约（WS + REST，Go 重写的接口基线）
+  protocol-contract.md        协议契约（**客户端 ↔ 服务端 = WS + JSON**；**REST 属 GM 后台的那条线** —— §1 / §4）
 records/                    ★ 完成记录（guild 侧编号 **`X-*`**；dalu 侧用 `T-*`）
   X-0001.md                    v0.14 契约去物理化（**补记**，依据 `e77661f`）
   X-0002.md                    v0.15 境界口径裁定 + 审核机制补完
@@ -56,6 +56,7 @@ records/                    ★ 完成记录（guild 侧编号 **`X-*`**；dalu 
   X-0011.md                    v1.2 M1 工具链装机：Go 1.27.1 + Luban v5.1.0
   X-0012.md                    v0.25 UE 工程创建规格按 5.8 实测更正（ADR-0017）
   X-0013.md                    v1.9 路线 B 实测：**非向导等价物**（ADR-0017 §七）
+  X-0014.md                    v0.26 M1 出身收敛「北桢 · 槐阴村」+ 账号协议口径勘误（ADR-0018）
 registry/                   ★ 跨库登记（第三条铁律的落点）—— **全部是视图，非真源**
   cross-repo-ledger.md         跨库需求 / 交付台账（**索引视图**）
   agent-log.md                 按 agent 的完成记录视图（**派生视图**）
@@ -83,7 +84,7 @@ scripts/                    ★ 校验脚本（没有校验脚本的契约 = 装
 
 ## 核心文档
 
-- [`docs/MULTI-AGENT-DEV-PLAN.md`](docs/MULTI-AGENT-DEV-PLAN.md) — 多 Agent 协作开发方案（**v0.21**）
+- [`docs/MULTI-AGENT-DEV-PLAN.md`](docs/MULTI-AGENT-DEV-PLAN.md) — 多 Agent 协作开发方案（**v0.26**）
 - [`docs/AGENTS.md`](docs/AGENTS.md) — **动手前先读这份**
 - [`docs/DECISIONS.md`](docs/DECISIONS.md) — **裁决台账**（改契约前必读）
 - [`docs/ROADMAP.md`](docs/ROADMAP.md) — **里程碑路线图**（不知道下一步做什么就读它）
@@ -123,7 +124,7 @@ scripts/                    ★ 校验脚本（没有校验脚本的契约 = 装
 | 里程碑 | 内容 | 状态 |
 |---|---|---|
 | **M0** | 契约层地基（规则 / 契约 / 校验脚本） | ✅ **已完成** |
-| **M1** | **建号** —— 注册登录 → 建角（灵根/体质/出身）→ 属性面板 | ⏭ **下一步** |
+| **M1** | **建号** —— 注册登录 → 建角（灵根 / 体质 / **固定出身：北桢 · 槐阴村**）→ 属性面板 | ⏭ **下一步** |
 | M2 | 首战 —— 移动 / 伤害结算 / 死亡复活 | 未开始 |
 | M3+ | 见 [`docs/ROADMAP.md`](docs/ROADMAP.md) | 未开始 |
 
