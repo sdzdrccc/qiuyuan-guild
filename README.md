@@ -30,7 +30,8 @@
 docs/
   MULTI-AGENT-DEV-PLAN.md   多 Agent 协作开发方案（总纲 · v0.26）
   AGENTS.md                 ★ 跨库 AI 硬纪律（给 AI 看的，优先级高于临时指令）
-  CONVENTIONS.md            ★ 工程约定（铁律级，升版需 ADR · v0.4）
+  CONVENTIONS.md            ★ 工程约定（铁律级，升版需 ADR · v0.5）
+  REVIEW-PROCESS.md         ★ 审阅流程 —— 「审阅怎么审」的唯一真源（五步 / 判据来源 / 输出模板 / 三条纪律）
   DECISIONS.md              ★ ADR 台账 —— 「为什么这么定」的唯一真源
   ROADMAP.md                ★ 里程碑路线图 —— 84 项功能 → 17 个里程碑
   PROJECT-STRUCTURE.md      ★ 工程结构详案 —— UE 创建规格 / 目录全貌 / 手机端判据（M1 施工图 · v1.6）
@@ -57,13 +58,19 @@ records/                    ★ 完成记录（guild 侧编号 **`X-*`**；dalu 
   X-0012.md                    v0.25 UE 工程创建规格按 5.8 实测更正（ADR-0017）
   X-0013.md                    v1.9 路线 B 实测：**非向导等价物**（ADR-0017 §七）
   X-0014.md                    v0.26 M1 出身收敛「北桢 · 槐阴村」+ 账号协议口径勘误（ADR-0018）
+  X-0015.md                    ★ M1 波次 1 审阅（缺陷 6 条 + 契约变更包 7 节 + 门禁 4 脚本 + 提案 8 条）
+  X-0016.md                    ★ 审阅流程化 + 落 X-0015 §五 三条机制（REVIEW-PROCESS + skill `qiuyuan-review-pipeline`）
 registry/                   ★ 跨库登记（第三条铁律的落点）—— **全部是视图，非真源**
   cross-repo-ledger.md         跨库需求 / 交付台账（**索引视图**）
   agent-log.md                 按 agent 的完成记录视图（**派生视图**）
   schema-layers.md             三处 schema 层次登记（待建）
 scripts/                    ★ 校验脚本（没有校验脚本的契约 = 装饰品）
-  check-data.js               契约一致性 + 文档表格结构 + 原则锚点（9 规则 R1~R9 + `--self-test` 33 用例）
-  check-asset-ref.js          资产引用 + 跨层一致性（5 规则）
+  check-data.js               契约↔配置表内容 + 文档表格结构 + 原则锚点（R1~R10）
+  check-contract-gate.js      契约完备性闸门（G1：ROADMAP 声明「新增展开」的实体须真有展开节）
+  check-identifiers.js        跨文档标识符一致性（I1：引用的表名 / 键名须存在；退役名须标明）
+  check-records.js            记录与台账齐备（C1~C6：必备节 / 双向核对 / 二值 / 分级 / 同批记录 / 契约回执）
+  check-asset-ref.js          资产引用 + 跨层一致性（A1~A5）
+  # ★ 每个 check-*.js 都带两条：--self-test（反向测试）与 PENDING_RULES（待实现规则登记位）
 ```
 
 > **契约不含物理映射**（表名 / 前缀 / 主键命名 / 存储引擎 / 分片键）—— 归下游 `qiuyuan-dalu` 自决。详见 `docs/DECISIONS.md` ADR-0001。
@@ -92,7 +99,8 @@ scripts/                    ★ 校验脚本（没有校验脚本的契约 = 装
 - [`docs/PROJECT-STRUCTURE.md`](docs/PROJECT-STRUCTURE.md) — **工程结构详案**（**要建 UE 工程就读它**）
 - [`docs/MOBILE-PLAN.md`](docs/MOBILE-PLAN.md) — **手机端专案书**（**手机端的东西放哪 / 怎么出安装包就读它**）
 - [`docs/SERVER-ARCH.md`](docs/SERVER-ARCH.md) — **服务端架构与拆分时机**（**问「服务端现在几个进程 / 什么时候拆」就读它**）
-- [`docs/CONVENTIONS.md`](docs/CONVENTIONS.md) — 工程约定
+- [`docs/CONVENTIONS.md`](docs/CONVENTIONS.md) — 工程约定（**v0.5**）
+- [`docs/REVIEW-PROCESS.md`](docs/REVIEW-PROCESS.md) — **审阅流程**（**要审阅某个波次 / 里程碑 / 跨仓交付就读它**）
 - [`registry/cross-repo-ledger.md`](registry/cross-repo-ledger.md) — 跨库登记台账
 
 ## 三条铁律
@@ -144,8 +152,11 @@ scripts/                    ★ 校验脚本（没有校验脚本的契约 = 装
 **校验脚本本地跑法**：
 
 ```bash
-node scripts/check-data.js             # 数据契约一致性 + 文档表格结构 + 原则锚点（9 规则）
-node scripts/check-data.js --self-test # ★ 反向测试（33 用例，注入坏样本断言必失败）
-node scripts/check-asset-ref.js        # 资产引用 + 跨层一致性（5 规则）
+node scripts/check-data.js             # 契约↔配置表内容 + 文档表格结构 + 原则锚点（R1~R10）
+node scripts/check-contract-gate.js    # 契约完备性闸门（G1）
+node scripts/check-identifiers.js      # 跨文档标识符一致性（I1）
+node scripts/check-records.js          # 记录与台账齐备闸门（C1~C6）
+node scripts/check-asset-ref.js        # 资产引用 + 跨层一致性（A1~A5）
+# 任一脚本加 --self-test = ★ 反向测试（注入坏样本，断言必失败）
 ```
 

@@ -28,6 +28,30 @@ const ROOT = path.resolve(__dirname, '..');
 const CONTRACTS = path.join(ROOT, 'contracts');
 const STRICT = process.argv.includes('--strict');
 
+// ─────────────────────────────────────────────────────────────
+// 待实现规则登记位 —— 机制③（来源 X-0016 · 回应 X-0015 §五-③）
+// ─────────────────────────────────────────────────────────────
+/**
+ * 本脚本**承诺但尚未实现**的规则。非空时**启动即打印**（warn），`--strict` 时 err。
+ *
+ * 存在的理由：X-0015 §二-3 —— 「某脚本须加某规则」被写进**下游文档**里，
+ * 而脚本归 guild ⇒ **两不管**，那句承诺**没有任何落点**。此常量就是那个落点。
+ *
+ * ★ 硬约束：每项**必须带 `from`（来源记录号）**，否则不许加 —— 防它变成「永久待办黑洞」。
+ *   规则真做了 → **立即移出**本数组（删掉，不是注释掉）。
+ */
+const PENDING_RULES = [
+  // { id: 'R11', from: 'X-0000', desc: '…', due: 'M2' },
+];
+
+/** 纯函数：待实现规则的提示文本（空名单 → `null`，便于 `--self-test`） */
+function pendingNotice(list) {
+  if (!Array.isArray(list) || list.length === 0) return null;
+  return list
+    .map(r => `${r.id || '?'}(from ${r.from || '⚠缺来源'}${r.due ? ', due ' + r.due : ''})`)
+    .join(' / ');
+}
+
 const errors = [];
 const warns = [];
 const passes = [];
@@ -486,6 +510,174 @@ function missingAnchors(key, pairs) {
 })();
 
 // ─────────────────────────────────────────────────────────────
+// R10 · 配置表**内容**断言（v0.27 新增 · 来源 X-0015）
+//   缘起：R6 只查**文件名合法性**——于是「配置表内容全错」也能绿灯通过。
+//        而 `SPIRIT-ROOT-FORMULA.md` §6.3 与 `M1-IMPLEMENTATION.md` §3.2③
+//        **早就写明「表校验（check-data 须加）」**，却因为写在**下游文档**里、
+//        而脚本归 guild，**这句承诺无处追踪**，一直没人实现。
+//        → 实测证据：X-0015 §二 · 「门禁空过」一节。
+//   本规则只收**机械可比**的判据；语义判断一律留给人工检查点（§7.1 纪律 6）。
+//   四条子规则：
+//     ㈠ CSV 每个数据行的字段数 = `##var` 列数     ← 直接治 X-0015 §二-4 那个坑
+//     ㈡ `prob_ppm` 列合计 = 1000000（概率表）
+//     ㈢ `quality` 升序时倍率两列单调不减（裁定 K 的目的就是让这条能加上）
+//     ㈣ 用 `qydl_game_config` 的公式参数**手算**品级值，须与表内 ppm 一致
+// ─────────────────────────────────────────────────────────────
+
+const DALU_DATA = 'F:/zxc/Project/qiuyuan-dalu/data';
+
+/**
+ * 纯函数：解析 Luban CSV 表源（只认 A 列为 `##var` 的表）
+ * 返回 null = 不是本规则认得形态（不报错，直接跳过）
+ */
+function parseLubanCsv(text) {
+  const lines = String(text).replace(/^\uFEFF/, '').split(/\r?\n/).filter(l => l.trim() !== '');
+  if (lines.length === 0) return null;
+  const header = lines[0].split(',');
+  if (!/^##var\b/.test(header[0].trim())) return null;
+  const fields = header.slice(1).map(s => s.trim());
+  const rows = lines.slice(1).map((l, i) => {
+    const cells = l.split(',');
+    const rec = {
+      __line: i + 2,
+      __cells: cells.length,
+      __extra: cells.slice(fields.length + 1),
+    };
+    fields.forEach((f, k) => { rec[f] = (cells[k + 1] === undefined ? '' : cells[k + 1]).trim(); });
+    return rec;
+  });
+  return { fields, rows };
+}
+
+/** 纯函数：㈠ 字段数不齐的行（多出的格子 = 未转义逗号） */
+function csvWidthIssues(parsed) {
+  if (!parsed) return [];
+  const expect = parsed.fields.length + 1;
+  return parsed.rows
+    .filter(r => r.__cells !== expect)
+    .map(r => ({ line: r.__line, got: r.__cells, expect, extra: r.__extra }));
+}
+
+/** 纯函数：㈡ 概率合计（该表无 `prob_ppm` 列时返回 null） */
+function probPpmSum(parsed) {
+  if (!parsed || !parsed.fields.includes('prob_ppm')) return null;
+  return parsed.rows.reduce((a, r) => a + Number(r.prob_ppm || 0), 0);
+}
+
+/** 纯函数：㈢ 单调不减检查，返回第一个违例（无违例返回 null） */
+function firstMonotonicBreak(values) {
+  for (let i = 1; i < values.length; i++) {
+    if (!(Number(values[i]) >= Number(values[i - 1]))) {
+      return { index: i, prev: values[i - 1], cur: values[i] };
+    }
+  }
+  return null;
+}
+
+/** 纯函数：㈣ 公式① 复算（返回每行 {q, want, got, diff}） */
+function computeGradeFormula(parsed, params) {
+  if (!parsed || !params) return null;
+  const { v, anchor, p } = params;
+  if (![v, anchor, p].every(Number.isFinite)) return null;
+  if (!parsed.fields.includes('wuxing_min') || !parsed.fields.includes('damage_mult_ppm')) return null;
+  return parsed.rows.map(r => {
+    const nw = (Number(r.wuxing_min) + Number(r.wuxing_max)) / 2;
+    const nv = (Number(r.variant_min) + Number(r.variant_max)) / 2;
+    const C = nw + nv;
+    const nEff = nw + nv * v;
+    const want = Math.round(Math.pow(anchor / C, p) * Math.pow(nEff / C, p) * 1e6);
+    const got = Number(r.damage_mult_ppm);
+    const gotCul = Number(r.cultivation_mult_ppm);
+    return { q: r.quality, want, got, gotCul, diff: got - want, diffCul: gotCul - want };
+  });
+}
+
+(function r10() {
+  const datasDir = path.join(DALU_DATA, 'datas');
+  if (!fs.existsSync(datasDir)) {
+    ok('R10', '配置表表源目录未建立（`qiuyuan-dalu/data/datas/`）→ 跳过');
+    return;
+  }
+
+  const csvs = fs.readdirSync(datasDir).filter(f => f.endsWith('.csv'));
+  if (csvs.length === 0) {
+    warn('R10', '`data/datas/` 下无 CSV 表源 —— 跳过（骨架期）');
+    return;
+  }
+
+  const issues = [];
+  const parsedByTable = {};
+  for (const f of csvs) {
+    const parsed = parseLubanCsv(read(path.join(datasDir, f)));
+    if (!parsed) { warn('R10', f + ' 不是 Luban ##var 形态 → 跳过'); continue; }
+    parsedByTable[f.replace(/\.csv$/, '')] = parsed;
+
+    // ㈠ 字段数
+    for (const w of csvWidthIssues(parsed)) {
+      issues.push(`${f}:${w.line} 字段数 ${w.got} ≠ 表头 ${w.expect}` +
+        (w.extra.length ? `（多出 ${JSON.stringify(w.extra)} —— 疑似**未转义逗号**，会被 Luban 静默丢弃）` : ''));
+    }
+
+    // ㈡ 概率合计
+    const sum = probPpmSum(parsed);
+    if (sum !== null && sum !== 1000000) {
+      issues.push(f + ' 的 prob_ppm 合计 ' + sum + ' ≠ 1000000');
+    }
+  }
+
+  // ㈢ 倍率单调（表名含 spirit_root_grade 者）
+  const gradeEntry = Object.entries(parsedByTable)
+    .find(([name]) => /spirit_root_grade/.test(name));
+  if (gradeEntry) {
+    const [, parsed] = gradeEntry;
+    for (const col of ['damage_mult_ppm', 'cultivation_mult_ppm']) {
+      if (!parsed.fields.includes(col)) continue;
+      const values = parsed.rows.map(r => r[col]);
+      const brk = firstMonotonicBreak(values);
+      if (brk) {
+        issues.push(gradeEntry[0] + ' 的 ' + col + ' 在 quality 升序上**不单调**：' +
+        'q' + parsed.rows[brk.index - 1].quality + '=' + brk.prev +
+        ' → q' + parsed.rows[brk.index].quality + '=' + brk.cur);
+      }
+    }
+
+    // ㈣ 公式① 手算复现
+    const gc = parsedByTable['qydl_game_config'];
+    if (!gc) {
+      warn('R10', '找不到 `qydl_game_config.csv` → 公式① 手算复现（子规则㈣）跳过');
+    } else {
+      const key = {};
+      gc.rows.forEach(r => { key[r.key] = r.value; });
+      const params = {
+        v: Number(key.spirit_root_variant_value),
+        anchor: Number(key.spirit_root_anchor),
+        p: Number(key.spirit_root_p_damage_ppm) / 1e6,
+      };
+      const calc = computeGradeFormula(parsed, params);
+      if (!calc) {
+        warn('R10', '公式参数缺失（`spirit_root_variant_value` / `spirit_root_anchor` / `spirit_root_p_damage_ppm`）→ 手算复现跳过');
+      } else {
+        for (const row of calc) {
+          if (row.diff !== 0 || row.diffCul !== 0) {
+            issues.push(`${gradeEntry[0]} q${row.q} 表值与公式① 不符：公式 ${row.want} / 表 ${row.got}` +
+              (row.diffCul !== 0 ? `（修炼列 ${row.gotCul}）` : ''));
+          }
+        }
+        if (calc.every(r => r.diff === 0 && r.diffCul === 0)) {
+          ok('R10', `公式① 手算复现一致（${calc.length} 行 · v=${params.v} anchor=${params.anchor} p=${params.p}）`);
+        }
+      }
+    }
+  }
+
+  if (issues.length) {
+    issues.forEach(m => err('R10', m));
+  } else {
+    ok('R10', `配置表内容断言通过（${csvs.length} 张表：字段数 / 概率合计 / 倍率单调 / 公式复现）`);
+  }
+})();
+
+// ─────────────────────────────────────────────────────────────
 // --self-test · 反向测试（CONVENTIONS §7.1 纪律 2）
 //   「**没失败过的校验脚本 = 未被验证过的校验脚本**」
 //   注入坏样本，断言**必须被拦下**；再注入好样本，断言**不得误报**。
@@ -536,6 +728,34 @@ if (process.argv.includes('--self-test')) {
     ['R6', '有非占位文件却无配置表 → 必报错', configDirVerdict(['notes.txt']).kind === 'empty-err', true],
     ['R6', '有配置表 → 通过', configDirVerdict(['realm_level_config.json']).kind === 'ok', true],
     ['R6', '配置表名含大写 → 必报错', configDirVerdict(['Realm.json']).kind === 'badname', true],
+    // R10 · 配置表内容断言（v0.27 补齐 —— 本规则是 X-0015 的产物，故自带上反向测试）
+    ['R10', '非 ##var 形态 → 不认（不误报）', parseLubanCsv('a,b\n1,2') === null, true],
+    ['R10', '##var 表头 → 正常解析', (() => { const p = parseLubanCsv('##var,k,v\n,a,1\n'); return p && p.fields.length === 2 && p.rows.length === 1; })(), true],
+    ['R10', 'A 列空、字段从 B 列起 → 字段值正确', (() => { const p = parseLubanCsv('##var,k,v\n,x,7\n'); return p.rows[0].k === 'x' && p.rows[0].v === '7'; })(), true],
+    ['R10', '字段数多一格（未转义逗号）→ 必拦下', csvWidthIssues(parseLubanCsv('##var,a,b\n,1,2,3\n')).length === 1, true],
+    ['R10', '字段数齐 → 不得误报', csvWidthIssues(parseLubanCsv('##var,a,b\n,1,2\n')).length === 0, true],
+    ['R10', '未转义逗号的额外格子被点名', csvWidthIssues(parseLubanCsv('##var,a,comment\n,1,"x, y"\n'))[0].extra.join(',') === ' y"', true],
+    ['R10', 'prob_ppm 合计 ≠ 1000000 → 必拦下', probPpmSum(parseLubanCsv('##var,prob_ppm\n,900000\n')) === 900000, true],
+    ['R10', 'prob_ppm 合计 = 1000000 → 通过', probPpmSum(parseLubanCsv('##var,prob_ppm\n,900000\n,100000\n')) === 1000000, true],
+    ['R10', '无 prob_ppm 列 → 返回 null（不误报）', probPpmSum(parseLubanCsv('##var,prob_ppm_x\n,1\n')) === null, true],
+    ['R10', '倍率倒挂 → 必拦下', firstMonotonicBreak([1, 2, 1.5]) !== null, true],
+    ['R10', '倍率持平 → 视为单调（不减，非严格递增）', firstMonotonicBreak([1, 2, 2, 3]) === null, true],
+    ['R10', '倍率单调 → 不得误报', firstMonotonicBreak([1, 2, 3]) === null, true],
+    ['R10', '公式参数缺失 → 返回 null（不误判）', computeGradeFormula(parseLubanCsv('##var,quality,wuxing_min,wuxing_max,variant_min,variant_max,damage_mult_ppm,cultivation_mult_ppm\n,3,2,2,0,0,1000000,1000000\n'), { v: NaN, anchor: 2, p: 0.3 }) === null, true],
+    ['R10', '公式① 双灵根锚点 → 恰为 1000000', (() => {
+      const p = parseLubanCsv('##var,quality,wuxing_min,wuxing_max,variant_min,variant_max,damage_mult_ppm,cultivation_mult_ppm\n,3,2,2,0,0,1000000,1000000\n');
+      const r = computeGradeFormula(p, { v: 2, anchor: 2, p: 0.3 });
+      return r && r[0].want === 1000000 && r[0].diff === 0;
+    })(), true],
+    ['R10', '公式① 值与表值不符 → 必拦下', (() => {
+      const p = parseLubanCsv('##var,quality,wuxing_min,wuxing_max,variant_min,variant_max,damage_mult_ppm,cultivation_mult_ppm\n,6,0,0,1,1,1000000,1000000\n');
+      const r = computeGradeFormula(p, { v: 2, anchor: 2, p: 0.3 });
+      return r && r[0].diff !== 0;
+    })(), true],
+    // PEND 待实现规则登记位（机制③ · 来源 X-0016）
+    ['PEND', '空名单 → 不告警（不打破现状）', pendingNotice([]) === null, true],
+    ['PEND', '非空 → 生成提示（含来源）', pendingNotice([{ id: 'R11', from: 'X-0000' }]) === 'R11(from X-0000)', true],
+    ['PEND', '缺 from → 显式标记（不许静默）', /⚠缺来源/.test(pendingNotice([{ id: 'R11' }])), true],
   ];
 
   const fails = cases.filter(([, , got, want]) => got !== want);
@@ -562,6 +782,8 @@ console.log(c(1, '\n[check-data] 数据契约一致性校验'));
 console.log(c(DIM, `  契约目录  ${CONTRACTS}`));
 console.log(c(DIM, `  模式      ${STRICT ? 'strict（警告即失败）' : '常规'}\n`));
 
+// 机制③：待实现规则必须让人看见（不许静默 · 来源 X-0016）
+{ const pend = pendingNotice(PENDING_RULES); if (pend) (STRICT ? err : warn)('PEND', `${PENDING_RULES.length} 条「已承诺未实现」规则：${pend}`); }
 for (const p of passes) console.log(`  ${c(GREEN, '✓')} ${c(DIM, p.rule)}  ${p.msg}`);
 for (const w of warns) console.log(`  ${c(YELLOW, '⚠')} ${c(DIM, w.rule)}  ${w.msg}`);
 for (const e of errors) console.log(`  ${c(RED, '✗')} ${c(DIM, e.rule)}  ${e.msg}`);

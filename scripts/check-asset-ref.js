@@ -25,6 +25,30 @@ const ROOT = path.resolve(__dirname, '..');
 const CONTRACT = path.join(ROOT, 'contracts', 'asset-ref-contract.md');
 const STRICT = process.argv.includes('--strict');
 
+// ─────────────────────────────────────────────────────────────
+// 待实现规则登记位 —— 机制③（来源 X-0016 · 回应 X-0015 §五-③）
+// ─────────────────────────────────────────────────────────────
+/**
+ * 本脚本**承诺但尚未实现**的规则。非空时**启动即打印**（warn），`--strict` 时 err。
+ *
+ * 存在的理由：X-0015 §二-3 —— 「某脚本须加某规则」被写进**下游文档**里，
+ * 而脚本归 guild ⇒ **两不管**，那句承诺**没有任何落点**。此常量就是那个落点。
+ *
+ * ★ 硬约束：每项**必须带 `from`（来源记录号）**，否则不许加 —— 防它变成「永久待办黑洞」。
+ *   规则真做了 → **立即移出**本数组（删掉，不是注释掉）。
+ */
+const PENDING_RULES = [
+  // { id: 'A6', from: 'X-0000', desc: '…', due: 'M2' },
+];
+
+/** 纯函数：待实现规则的提示文本（空名单 → `null`，便于 `--self-test`） */
+function pendingNotice(list) {
+  if (!Array.isArray(list) || list.length === 0) return null;
+  return list
+    .map(r => `${r.id || '?'}(from ${r.from || '⚠缺来源'}${r.due ? ', due ' + r.due : ''})`)
+    .join(' / ');
+}
+
 const GBE_ASSETS = 'F:/zxc/Project/gbe-assets';
 const L2_ASSET_SCHEMA = path.join(GBE_ASSETS, 'catalog', 'schema', 'asset.v2.schema.json');
 const GBE_KITS = path.join(GBE_ASSETS, 'kits');
@@ -239,6 +263,8 @@ console.log(c(DIM, `  契约      ${CONTRACT}`));
 console.log(c(DIM, `  上游(L2)  ${GBE_ASSETS}`));
 console.log(c(DIM, `  模式      ${STRICT ? 'strict（警告即失败）' : '常规'}\n`));
 
+// 机制③：待实现规则必须让人看见（不许静默 · 来源 X-0016）
+{ const pend = pendingNotice(PENDING_RULES); if (pend) (STRICT ? err : warn)('PEND', `${PENDING_RULES.length} 条「已承诺未实现」规则：${pend}`); }
 for (const p of passes) console.log(`  ${c(GREEN, '✓')} ${c(DIM, p.rule)}  ${p.msg}`);
 for (const w of warns) console.log(`  ${c(YELLOW, '⚠')} ${c(DIM, w.rule)}  ${w.msg}`);
 for (const e of errors) console.log(`  ${c(RED, '✗')} ${c(DIM, e.rule)}  ${e.msg}`);

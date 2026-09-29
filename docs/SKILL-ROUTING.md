@@ -39,8 +39,9 @@
 | `qiuyuan-guild-plan-iterate` | 本方案自身的迭代流程 | `arch`（改动本方案时） |
 | `grill-me` | 对方案/设计做穷尽式质询，逼到共识 | `arch`（重大设计评审） |
 | `git-proxy-push-retry` | 本环境 git 推送受限时的绕行 | `ledger`（按需） |
+| **`qiuyuan-review-pipeline`** | **审阅流程**（五步 + 输出模板 + 三条纪律；真源 `docs/REVIEW-PROCESS.md`） | **`review` / 任何要审阅的 agent** |
 
-> **这七个是资产，不是待办。** 它们经过真实项目打磨，**优先于 hub 上的同类**。
+> **这八个是资产，不是待办。** 它们经过真实项目打磨，**优先于 hub 上的同类**。
 
 ---
 
@@ -70,7 +71,8 @@
 | **`qa`** | 质量 / 测试类 —— **待检索 hub** | hub | ⏳ 待检 |
 | | `Godot Project Checklist`（思路可借鉴，非直接可用） | hub | ⏳ 待检 |
 | **`ledger`** | `git-version-gate` | L0 | ✅ 已有 |
-| **`review`** | `Self-Improving Agent`（结构化错误/修正日志） | hub | ⏳ 待装 |
+| **`review`** | **`qiuyuan-review-pipeline`（审阅流程 · 本项目自建）** | **L0 自建** | ✅ **已有** |
+| | `Self-Improving Agent`（结构化错误/修正日志） | hub | ⏳ 待装 |
 | | `ontology`（结构化知识图谱，可验证记忆） | hub | ⏳ 待装 |
 
 ### 2.3 跨库职能（**只读上游，走各自流程**）
@@ -216,3 +218,4 @@
 | 日期 | 变更 |
 |---|---|
 | 2026-09-27 | 首版建立（Phase 0）。路由已定；**UE5 类 skill 待检索**；**安装待 Phase 1 启动前确认**。 |
+| 2026-09-30 | 新增 L0 自建 skill **`qiuyuan-review-pipeline`**（审阅流程 · 来源 `X-0016`）；登记入 §1.1 与 §2.2 `review` 行。 |
