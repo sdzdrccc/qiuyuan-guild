@@ -406,12 +406,14 @@ $ <命令>
 node scripts/check-data.js            # 契约 ↔ 配置表**内容** + 文档表格结构 + 第一原则锚点（R1~R10）
 node scripts/check-contract-gate.js   # 契约完备性：ROADMAP 声明「新增展开」的实体，contracts/ 须真有展开节（G1）
 node scripts/check-identifiers.js     # 跨文档标识符：文档引用的配置表 / DB 表须存在；退役名须同行标明（I1）
-node scripts/check-records.js         # 记录与台账齐备：必备节 / 双向核对 / 二值 / **分级** / 同批记录 / **契约回执**（C1~C6）
+node scripts/check-records.js         # 记录与台账齐备：必备节 / 双向核对 / 二值 / **分级** / 同批记录 / **契约回执** / **纪元自洽** / **未覆盖声明**（C1~C8）
+node scripts/check-doc-anchors.js     # 文档 ↔ 门禁锚定：脚本清单 / 规则 ID / skill 版本 三处同步（D1~D4）
 node scripts/check-asset-ref.js       # 场景引用 ↔ 资源清单 ↔ 实际资产（A1~A5）
 node scripts/check-interfaces.js      # 跨模块接口 ↔ 契约（**待建**）
-node scripts/gen-agent-log.js         # 由台账**生成** `agent-log` 视图（**待建 · P2 · 来源 `X-0016`**）
+node scripts/gen-agent-log.js         # 由台账**生成** `agent-log` 视图（**待建 · P2**）
 
 # ★ 每个 check-*.js 都必须带两条：--self-test（反向测试）与 PENDING_RULES（待实现规则登记位）
+# ★ 本清单由 `check-doc-anchors.js` 的 `D1` **双向核对** —— 加脚本忘了写这里，门禁会红
 ```
 
 > **没有校验脚本的契约 = 装饰品。**

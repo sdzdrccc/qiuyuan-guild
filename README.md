@@ -28,10 +28,10 @@
 
 ```
 docs/
-  MULTI-AGENT-DEV-PLAN.md   多 Agent 协作开发方案（总纲 · v0.26）
+  MULTI-AGENT-DEV-PLAN.md   多 Agent 协作开发方案（总纲 · v0.27）
   AGENTS.md                 ★ 跨库 AI 硬纪律（给 AI 看的，优先级高于临时指令）
   CONVENTIONS.md            ★ 工程约定（铁律级，升版需 ADR · v0.5）
-  REVIEW-PROCESS.md         ★ 审阅流程 —— 「审阅怎么审」的唯一真源（五步 / 判据来源 / 输出模板 / 三条纪律）
+  REVIEW-PROCESS.md         ★ 审阅流程 —— 「审阅怎么审」的唯一真源（六步 / 判据来源 / 输出模板 / 五条纪律 · v1.2）
   DECISIONS.md              ★ ADR 台账 —— 「为什么这么定」的唯一真源
   ROADMAP.md                ★ 里程碑路线图 —— 84 项功能 → 17 个里程碑
   PROJECT-STRUCTURE.md      ★ 工程结构详案 —— UE 创建规格 / 目录全貌 / 手机端判据（M1 施工图 · v1.6）
@@ -60,6 +60,8 @@ records/                    ★ 完成记录（guild 侧编号 **`X-*`**；dalu 
   X-0014.md                    v0.26 M1 出身收敛「北桢 · 槐阴村」+ 账号协议口径勘误（ADR-0018）
   X-0015.md                    ★ M1 波次 1 审阅（缺陷 6 条 + 契约变更包 7 节 + 门禁 4 脚本 + 提案 8 条）
   X-0016.md                    ★ 审阅流程化 + 落 X-0015 §五 三条机制（REVIEW-PROCESS + skill `qiuyuan-review-pipeline`）
+  X-0017.md                    审阅模板补「执行环境」节（REVIEW-PROCESS v1.1）
+  X-0018.md                    ★ 审阅流程 v1.2 —— 补八条（复审销号 / 纪元所有权 / 独立复算 / 反事实复验 / 未覆盖声明 / 文档锚 / `--strict` / `C4` 误报源）+ 门禁 `C7`·`C8`·`D1`~`D4`
 registry/                   ★ 跨库登记（第三条铁律的落点）—— **全部是视图，非真源**
   cross-repo-ledger.md         跨库需求 / 交付台账（**索引视图**）
   agent-log.md                 按 agent 的完成记录视图（**派生视图**）
@@ -68,9 +70,11 @@ scripts/                    ★ 校验脚本（没有校验脚本的契约 = 装
   check-data.js               契约↔配置表内容 + 文档表格结构 + 原则锚点（R1~R10）
   check-contract-gate.js      契约完备性闸门（G1：ROADMAP 声明「新增展开」的实体须真有展开节）
   check-identifiers.js        跨文档标识符一致性（I1：引用的表名 / 键名须存在；退役名须标明）
-  check-records.js            记录与台账齐备（C1~C6：必备节 / 双向核对 / 二值 / 分级 / 同批记录 / 契约回执）
+  check-records.js            记录与台账齐备（C1~C8：必备节 / 双向核对 / 二值 / 分级 / 同批记录 / 契约回执 / 纪元自洽 / 未覆盖声明）
+  check-doc-anchors.js        文档↔门禁锚定（D1~D4：脚本清单 / 规则 ID / skill 版本 三处同步）
   check-asset-ref.js          资产引用 + 跨层一致性（A1~A5）
   # ★ 每个 check-*.js 都带两条：--self-test（反向测试）与 PENDING_RULES（待实现规则登记位）
+  # ★ 本清单由 `check-doc-anchors.js` 的 `D1` **双向核对**（三份真源：本节 / CONVENTIONS §7.1 / REVIEW-PROCESS §3）
 ```
 
 > **契约不含物理映射**（表名 / 前缀 / 主键命名 / 存储引擎 / 分片键）—— 归下游 `qiuyuan-dalu` 自决。详见 `docs/DECISIONS.md` ADR-0001。
@@ -91,7 +95,7 @@ scripts/                    ★ 校验脚本（没有校验脚本的契约 = 装
 
 ## 核心文档
 
-- [`docs/MULTI-AGENT-DEV-PLAN.md`](docs/MULTI-AGENT-DEV-PLAN.md) — 多 Agent 协作开发方案（**v0.26**）
+- [`docs/MULTI-AGENT-DEV-PLAN.md`](docs/MULTI-AGENT-DEV-PLAN.md) — 多 Agent 协作开发方案（**v0.27**）
 - [`docs/AGENTS.md`](docs/AGENTS.md) — **动手前先读这份**
 - [`docs/DECISIONS.md`](docs/DECISIONS.md) — **裁决台账**（改契约前必读）
 - [`docs/ROADMAP.md`](docs/ROADMAP.md) — **里程碑路线图**（不知道下一步做什么就读它）
@@ -155,8 +159,10 @@ scripts/                    ★ 校验脚本（没有校验脚本的契约 = 装
 node scripts/check-data.js             # 契约↔配置表内容 + 文档表格结构 + 原则锚点（R1~R10）
 node scripts/check-contract-gate.js    # 契约完备性闸门（G1）
 node scripts/check-identifiers.js      # 跨文档标识符一致性（I1）
-node scripts/check-records.js          # 记录与台账齐备闸门（C1~C6）
+node scripts/check-records.js          # 记录与台账齐备闸门（C1~C8）
+node scripts/check-doc-anchors.js      # 文档↔门禁锚定（D1~D4）
 node scripts/check-asset-ref.js        # 资产引用 + 跨层一致性（A1~A5）
 # 任一脚本加 --self-test = ★ 反向测试（注入坏样本，断言必失败）
+# 清单唯一真源 = docs/CONVENTIONS.md §7.1（本处为副本，由 D1 双向核对）
 ```
 

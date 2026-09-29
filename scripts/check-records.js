@@ -192,6 +192,26 @@ function declaresL3(text) {
   return /大人/.test(String(text));
 }
 
+/**
+ * 纯函数：是否为**审阅类记录**。
+ * 认法取 `REVIEW-PROCESS.md` §4 模板的**标题形态**：`# X-00NN <被审对象> 审阅 —— …`
+ *   · `审阅` 后**紧接分隔符**（可带一个括号补充）→ 是审阅记录；
+ *   · `审阅流程化` / `审阅模板补…` → 是**流程建设**记录，**不是**审阅记录。
+ * ★ 刻意取「紧接分隔符」而非「含『审阅』二字」—— 实测：后者把 `X-0016`（审阅流程化）
+ *   与 `X-0017`（审阅模板补节）一并误判为审阅记录。宁可漏认，不可误认。
+ */
+function isReviewRecord(text) {
+  const m = String(text).match(/^#\s+.*$/m);
+  if (!m) return false;
+  return /审阅\s*(?:[（(][^）)]*[）)])?\s*[—–-]{2,}/.test(m[0]);
+}
+
+/** 纯函数：是否有「本次未覆盖」节（主体名以它开头） */
+function hasUncoveredSection(text) {
+  const lines = String(text).split(/\r?\n/);
+  return lines.some(l => /^#{1,6}\s/.test(l) && /^本次未覆盖|^未覆盖/.test(headingName(l)));
+}
+
 /** 纯函数：从 ledger 抽出已登记的编号（只认 `**X-0001**` 形态的首列） */
 function ledgerEntries(text) {
   const out = new Set();
@@ -303,6 +323,51 @@ function epochSet(repo, epoch) {
   const raw = git(repo, ['rev-list', epoch]);
   if (raw === null) return null;
   return new Set(raw.split(/\r?\n/).filter(Boolean));
+}
+
+/** `a` 是否为 `b` 的祖先（git merge-base --is-ancestor） */
+function isAncestor(repo, a, b) {
+  try {
+    execFileSync('git', ['-C', repo, 'merge-base', '--is-ancestor', a, b],
+      { stdio: ['ignore', 'ignore', 'ignore'] });
+    return true;
+  } catch {
+    return false;
+  }
+}
+
+/**
+ * 纯函数：判定门禁纪元的**移动方向**（`X-0018` 复核修正 · 首版判据护反了方向）。
+ *
+ * 语义：`epochSet(ep)` = `git rev-list ep` = **ep 及其之前**的全部提交（即豁免区）
+ *   ⇒ **推进** = 豁免区变大 = **洗白存量**；**回拨** = 豁免区变小 = **变严**。
+ *
+ * @param {boolean} oldBeforeCur 历史值是否为当前值的**祖先**（= 当前值更新 = **推进**）
+ * @param {boolean} curBeforeOld 当前值是否为历史值的**祖先**（= 当前值更早 = **回拨**）
+ * @returns {'advance'|'rollback'|'same'|'unrelated'}
+ */
+function epochMove(oldBeforeCur, curBeforeOld) {
+  if (oldBeforeCur && curBeforeOld) return 'same';   // 互为祖先 ⇒ 同一提交
+  if (oldBeforeCur) return 'advance';                // 当前值更晚 ⇒ 推进 ⇒ 洗白存量
+  if (curBeforeOld) return 'rollback';               // 当前值更早 ⇒ 回拨 ⇒ 变严
+  return 'unrelated';                                // 无祖先关系 ⇒ 历史被改写
+}
+
+/**
+ * 从本脚本的 git 历史里提取**历次**写过的门禁纪元值（用于单调性核验）。
+ * 认法：diff 的**新增行**里 `[ROOT]: 'hash'` / `[DALU]: 'hash'`。
+ * 返回 { ROOT:Set, DALU:Set }；git 不可用 → null。
+ */
+function historicalEpochs(repo) {
+  const diff = git(repo, ['log', '--follow', '-p', '--', 'scripts/check-records.js']);
+  if (diff === null) return null;
+  const out = { ROOT: new Set(), DALU: new Set() };
+  for (const line of diff.split(/\r?\n/)) {
+    if (!/^\+\s*\[(ROOT|DALU)\]:\s*'[0-9a-f]{7,40}'/.test(line)) continue;
+    const m = line.match(/\[(ROOT|DALU)\]:\s*'([0-9a-f]{7,40})'/);
+    if (m) out[m[1]].add(m[2]);
+  }
+  return out;
 }
 
 /**
@@ -553,6 +618,114 @@ function daluRecordFiles() {
 })();
 
 // ─────────────────────────────────────────────────────────────
+// C7 · 门禁纪元自洽（来源 X-0018 · `REVIEW-PROCESS.md` S2）
+// ─────────────────────────────────────────────────────────────
+/**
+ * 治的是：`GATE_EPOCH` 的「**冻结不动**」**此前只活在代码注释里** ——
+ * 真源文档（`AGENTS` §3-6 / `REVIEW-PROCESS` §3-1）都只说「以它分界」，
+ * **没说谁能改、何时能改**。而它是「存量 vs 新增」的唯一分界，
+ * **一旦被推进，存量就被悄悄洗白**（这正是它存在的理由，也是它最大的风险）。
+ *
+ * ★ **方向（`X-0018` 复核修正 · 首版判据护反了方向）**：
+ *   `epochSet(ep)` = `git rev-list ep` = **ep 及其之前**的全部提交（= 豁免区）。
+ *   ⇒ **推进**（把 ep 改成**更新**的提交）= 豁免区**变大** = **洗白存量** → **err**；
+ *   ⇒ **回拨**（把 ep 改成**更早**的提交）= 豁免区**变小** = **变严**（存量转新增）→ **warn**。
+ *   首版写「回拨即 err」—— 恰好**放过**了真正危险的方向，正是纪律 2 说的「虚假的安心」。
+ *
+ * 三条机械判据：
+ *   ① 纪元必须**可解析**，且是 **HEAD 的祖先** —— 否则是「历史被改写」或「纪元被指向未来」；
+ *   ② 从 git 历史取**历次**纪元值，**当前值不得比历史值更晚**（推进 ⇒ err）；
+ *   ③ 与历史值**无祖先关系**（rebase / 换仓）⇒ err。提取失败 → warn（不假装能判）。
+ */
+(function c7() {
+  let bad = 0;
+  for (const repo of [ROOT, DALU]) {
+    const label = REPO_LABEL[repo];
+    const ep = GATE_EPOCH[repo];
+
+    if (git(repo, ['rev-parse', '--verify', `${ep}^{commit}`]) === null) {
+      err('C7', `${label}：门禁纪元 \`${ep}\` **无法解析**（不是本仓的提交？）`);
+      bad++;
+      continue;
+    }
+    if (!isAncestor(repo, ep, 'HEAD')) {
+      err('C7', `${label}：门禁纪元 \`${ep}\` **不是 HEAD 的祖先** —— 历史被改写，或纪元被指向未来`);
+      bad++;
+      continue;
+    }
+    ok('C7', `${label}：纪元 \`${ep}\` 可解析且是 HEAD 的祖先`);
+  }
+
+  // ② 单调性（推进 = 洗白存量；回拨 = 变严）
+  const hist = historicalEpochs(ROOT);
+  if (hist === null) {
+    warn('C7', 'git 不可用 → **纪元移动方向无法核验**（推进风险不设防）');
+    return;
+  }
+  const total = hist.ROOT.size + hist.DALU.size;
+  if (total === 0) {
+    warn('C7', '未能从 git 历史提取历次纪元值 → 方向核验跳过（不假装能判）');
+    return;
+  }
+  for (const key of ['ROOT', 'DALU']) {
+    const repo = key === 'ROOT' ? ROOT : DALU;
+    const cur = GATE_EPOCH[repo];   // ★ 键是**路径**，不是 'ROOT' / 'DALU' 字符串
+    for (const old of hist[key]) {
+      if (old === cur) continue;
+      if (git(repo, ['rev-parse', '--verify', `${old}^{commit}`]) === null) continue;
+      const mv = epochMove(isAncestor(repo, old, cur), isAncestor(repo, cur, old));
+      if (mv === 'advance') {
+        err('C7', `${REPO_LABEL[repo]}：纪元**被推进** \`${old}\` → \`${cur}\` —— 豁免区变大 ⇒ **存量被洗白**`);
+        bad++;
+      } else if (mv === 'rollback') {
+        warn('C7', `${REPO_LABEL[repo]}：纪元**被回拨** \`${old}\` → \`${cur}\` —— 变严（存量转新增），须**落记录 + 大人裁**`);
+      } else {
+        err('C7', `${REPO_LABEL[repo]}：纪元与历史值 \`${old}\` **无祖先关系** —— 历史被改写（rebase / 换仓？）`);
+        bad++;
+      }
+    }
+  }
+  if (bad === 0) ok('C7', `纪元未被推进（历史值 ${total} 个，无「当前值更晚」的情形）`);
+})();
+
+// ─────────────────────────────────────────────────────────────
+// C8 · 审阅记录须声明「本次未覆盖」（来源 X-0018 · `REVIEW-PROCESS.md` S5）
+// ─────────────────────────────────────────────────────────────
+/**
+ * 治的是：审阅**没覆盖什么**从不声明 —— 读者容易以为「全审了」。
+ * 实证：`X-0015` 那次**没审** `ue-client/` 的 C++、`admin/`、UE-MCP 链路，
+ *       但记录里**一处都没写明**。
+ * 只对**审阅类记录**生效（大标题含「审阅」）—— 其余记录不适用，避免噪声。
+ */
+(function c8() {
+  const files = guildRecordFiles();
+  if (files.length === 0) return;
+  const epoch = epochSet(ROOT, GATE_EPOCH[ROOT]);
+
+  const fresh = [], backlog = [];
+  let reviewed = 0;
+  for (const f of files) {
+    const t = read(path.join(GUILD_RECORDS, f)) || '';
+    if (!isReviewRecord(t)) continue;
+    reviewed++;
+    if (hasUncoveredSection(t)) continue;
+    (fileIsFresh(ROOT, `records/${f}`, epoch) === true ? fresh : backlog).push(f.replace(/\.md$/, ''));
+  }
+
+  if (reviewed === 0) { ok('C8', '暂无审阅类记录 → 本规则不适用'); return; }
+  for (const id of fresh) {
+    err('C8', id + '：审阅记录**缺「本次未覆盖」节**（`REVIEW-PROCESS.md` §4 模板 · ' +
+      '须写清没审什么，无则写「无」）');
+  }
+  if (backlog.length) {
+    warn('C8', `${backlog.length} 篇**存量**审阅记录缺「本次未覆盖」节（纪元 \`${GATE_EPOCH[ROOT]}\` 之前）：${backlog.join(' / ')}`);
+  }
+  if (!fresh.length && !backlog.length) {
+    ok('C8', `审阅记录已声明「本次未覆盖」（${reviewed} 篇）`);
+  }
+})();
+
+// ─────────────────────────────────────────────────────────────
 // --self-test · 反向测试（CONVENTIONS §7.1 纪律 2）
 // ─────────────────────────────────────────────────────────────
 
@@ -600,6 +773,15 @@ if (process.argv.includes('--self-test')) {
     ['C6', '无该节 → 不通过', contractReceiptPresence('# t\n\n## 改动清单\n- x') === false, true],
     ['C6', '只写「无」也算非空（要的是显式表态）', contractReceiptPresence('# t\n## 契约回执\n- 无') === true, true],
     ['C6', '★ 正文提到「契约回执」但无该节 → 不通过', contractReceiptPresence('# t\n- 按契约回执机制办\n\n## 改动清单\n- x') === false, true],
+    // C8 审阅记录须声明「本次未覆盖」（X-0018 · `REVIEW-PROCESS.md` S5）
+    ['C8', '大标题含「审阅」→ 判为审阅记录', isReviewRecord('# X-0015 M1 波次 1 审阅 —— 缺陷清单 · 契约变更包\n') === true, true],
+    ['C8', '★「审阅流程化」→ 非审阅记录（实测误报源）', isReviewRecord('# X-0016 审阅流程化 —— 落 X-0015 §五 三条机制（审核分级）\n') === false, true],
+    ['C8', '★「审阅模板补节」→ 非审阅记录（实测误报源）', isReviewRecord('# X-0017 审阅模板补「执行环境」节 —— 对齐 §5.2 与 ADR-0007\n') === false, true],
+    ['C8', '括号补充后接分隔符 → 仍认', isReviewRecord('# X-0020 M2 波次 1 审阅（dalu）—— 缺陷清单\n') === true, true],
+    ['C8', '有「本次未覆盖」节 → 通过', hasUncoveredSection('## 本次未覆盖\n- ue-client/ 的 C++\n') === true, true],
+    ['C8', '带中文序号的「十、未覆盖范围」亦认', hasUncoveredSection('## 十、未覆盖范围\n- 无\n') === true, true],
+    ['C8', '无该节 → 判缺', hasUncoveredSection('## 一、判定\n- 通过\n') === false, true],
+    ['C8', '★ 正文**提到**「未覆盖」但无节 → 不算通过（防假通过）', hasUncoveredSection('- 本次未覆盖 ue-client\n') === false, true],
     // C4 v2 触发级别（机制⑥ 落地载体 · 来源 X-0016）
     ['C4', '「触发级别：**L3 终审**」→ 级别 3', declaredLevel('## 审核\n- 触发级别：**L3 终审**\n- 结论：通过') === 3, true],
     ['C4', '「L1 消费者审」→ 级别 1', declaredLevel('## 审核\n- 触发级别：L1 消费者审\n- 结论：通过') === 1, true],
@@ -625,6 +807,12 @@ if (process.argv.includes('--self-test')) {
     ['PEND', '空名单 → 不告警（不打破现状）', pendingNotice([]) === null, true],
     ['PEND', '非空 → 生成提示（含来源）', pendingNotice([{ id: 'C7', from: 'X-0000' }]) === 'C7(from X-0000)', true],
     ['PEND', '缺 from → 显式标记（不许静默）', /⚠缺来源/.test(pendingNotice([{ id: 'C7' }])), true],
+    // C7 纪元移动方向（X-0018 复核修正 · 首版判据护反了方向）
+    ['C7', '★ 历史更早 → 判「推进」（洗白存量 · err）', epochMove(true, false) === 'advance', true],
+    ['C7', '★ 当前更早 → 判「回拨」（变严 · warn · 须落记录）', epochMove(false, true) === 'rollback', true],
+    ['C7', '同一提交 → 判「same」', epochMove(true, true) === 'same', true],
+    ['C7', '无祖先关系 → 判「unrelated」（历史被改写 · err）', epochMove(false, false) === 'unrelated', true],
+    ['C7', '★ 首版口径已被推翻：回拨**不得**判「推进」', epochMove(false, true) !== 'advance', true],
   ];
 
   const fails = cases.filter(([, , got, want]) => got !== want);

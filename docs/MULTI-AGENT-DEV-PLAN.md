@@ -1,9 +1,15 @@
 # 虬渊大陆 · 多 Agent 协作开发方案
 
-> 版本 v0.26（草案 · **M1 出身收敛 + 账号协议口径勘误**）
-> 日期 2026-09-28
+> 版本 v0.27（草案 · **脚本清单去重：§4.3 改指针**）
+> 日期 2026-09-30
 > **文档归属**：`F:/zxc/Project/qiuyuan-guild`（协作规范中枢）
 > **描述对象**：Godot 原型（验证方）+ `F:/zxc/Project/qiuyuan-dalu`（UE5 正式工程）
+>
+> **v0.27 变更**（**消除一处「同一事实写两处」** · `X-0018` · **非裁决**）：
+> §4.3 原复写了一份**三行脚本清单**，已过期（缺 `check-contract-gate` / `check-identifiers` / `check-records` / `check-doc-anchors`）——
+> 正是 `CONVENTIONS.md` §9 说的「**同一事实不写两处 = 迟早不一致**」。
+> → **§4.3 改为指针**（清单唯一真源 = `CONVENTIONS.md` §7.1），并由 `check-doc-anchors.js` **`D1`** 双向核对兜底。
+> 触发：`X-0018` 落 `D1` 门禁后**首跑即抓到** `CONVENTIONS.md` 同类漂移（列了不存在的 `check-interfaces.js`）。
 >
 > **v0.26 变更**（**M1 建号范围两处校正**）：
 > ① **M1 出身收敛** —— 大人裁定「**出身固定北桢的一个村**」→ 落实为 **「北桢洲 · 槐阴村」**（**ADR-0018** / 裁决 28）。该村是世界观库**已指定的首个出生点／新手村**（真源 `05-地点/槐阴村.md`）→ **固定它不是权宜，是照设定走**；
@@ -767,13 +773,12 @@ qiuyuan-dalu/
 
 ### 4.3 契约校验要能自动跑
 
-```bash
-node scripts/check-data.js        # 配置表 ↔ data-contract.md 一致性
-node scripts/check-asset-ref.js   # 场景引用 ↔ 资源清单 ↔ 实际资产
-node scripts/check-interfaces.js  # 跨模块接口 ↔ interfaces.md
-```
-
 **没有校验脚本的契约 = 装饰品。**
+
+> ★ **脚本清单的唯一真源是 `CONVENTIONS.md` §7.1**（`X-0018` 修正）。
+> 本节原复写了一份三行清单，**已过期**（缺 `check-contract-gate` / `check-identifiers` / `check-records` / `check-doc-anchors`）——
+> 正是 `CONVENTIONS.md` §9 说的「**同一事实不写两处 = 迟早不一致**」。
+> → **本节改为指针**；清单的同步由 `check-doc-anchors.js` **`D1`** 双向核对兜底。
 
 ### 4.4 三处 schema 的层次（v0.11 新增 · 裁决 14）
 
