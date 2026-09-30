@@ -382,12 +382,20 @@ function configDirVerdict(allFiles) {
 //   缘起：ROADMAP.md §1 的 M2~M17 行把「依赖」值填进了「状态」列。
 //        列数**恰好齐**（尾部空单元格补齐），所以任何「数管道」的检查都查不出来，
 //        最后由大人在 Obsidian 里肉眼发现 —— **门禁缺位**。
-//   三条判据（Obsidian / GitHub / markdown-it 通用）：
-//     ① 表格块**前一行必须为空行** —— 否则 markdown-it 不认它是表格，
-//        整块降级为段落。这是「表格怎么不渲染」的**经典原因**。
-//     ② 数据行列数须与表头一致。
-//     ③ 行尾空单元格 → **warn**（疑似列位错填；确为空时可忽略）。
-//   注：**列数一致 ≠ 列位正确** —— ②只拦「数得出来」的错，③才是防错位的软信号。
+//   两条判据（Obsidian / GitHub / markdown-it 通用）：
+//     ① 数据行列数须与表头一致。
+//     ② 行尾空单元格 → **warn**（疑似列位错填；确为空时可忽略）。
+//   注：**列数一致 ≠ 列位正确** —— ①只拦「数得出来」的错，②才是防错位的软信号。
+//
+//   ★★ 勘误（2026-09-30 · `X-0023`）：原 ①「表格块**前一行必须为空行**」**已删**。
+//     理由：该判据**依据的事实是错的** —— cmark-gfm 官方测试集明文有
+//       "a table can be recognised when separated from a paragraph of text without an empty line"
+//       （`test/extensions.txt` §Tables：`123\n456\n| a | b |\n| ---| --- |\nd | e` → **渲染出 `<table>`**）；
+//       实测 markdown-it 与 GitHub 线上渲染（`POST /markdown` · mode=gfm）**亦均能出表**。
+//     ⇒ 属「**判据过宽 → 误报**」：把**能正常渲染**的写法（尤其「标题 + 表格」）报成错误。
+//       实证：2026-09-30 在 dalu `docs/GUILD-PROPOSAL-X0015.md` 误报 3 处「`### 落点` + 表格」。
+//     **误报率高 = 没门禁**（`CONVENTIONS.md` §7.1 纪律 1）⇒ **删，而非降级**：
+//       留住一条基于错事实的 `warn` 仍是负债。（若要重新引入，须附**复现用例**。）
 // ─────────────────────────────────────────────────────────────
 
 const TROW = /^\s*\|.*\|\s*$/;            // 表头 / 数据行
@@ -411,11 +419,7 @@ function scanTables(text, file) {
     if (!TROW.test(lines[i]) || !TDELIM.test(lines[i + 1])) continue;
 
     out.tables++;
-    // ① 表格前一行须为空行
-    if (i > 0 && !inCode[i - 1] && lines[i - 1].trim() !== '') {
-      out.errors.push(`${file}:${i + 1} 表格前一行非空 —— markdown 不会渲染该表格`);
-    }
-    // ② ③ 逐行核对
+    // ① ② 逐行核对（原「表格前一行须为空行」判据已于 2026-09-30 删除 —— 见上方勘误）
     const cols = lines[i].split('|').length - 2;
     let j = i + 2;
     for (; j < lines.length && !inCode[j] && TROW.test(lines[j]); j++) {
@@ -456,7 +460,7 @@ function scanTables(text, file) {
   if (tables === 0) {
     err('R8', '未扫描到任何 Markdown 表格 —— 疑似扫描范围出错（禁止空集真空通过）');
   } else if (!errors.some(e => e.rule === 'R8')) {
-    ok('R8', `Markdown 表格结构合规（${tables} 张表：前空行 / 列数 / 尾格）`);
+    ok('R8', `Markdown 表格结构合规（${tables} 张表：列数 / 尾格）`);
   }
 })();
 
@@ -712,7 +716,7 @@ if (process.argv.includes('--self-test')) {
     ['R5', '契约有待裁项 + ADR proposed → 仍为 pending', classifyPending(4, 1) === 'pending', true],
     ['R5', 'ADR 台账缺失 → 判为无法核对', classifyPending(1, null) === 'adr-missing', true],
     // R8 · 表格结构（v0.4）
-    ['R8', '表格前一行非空 → 必报错', scanTables('段落文字\n| a | b |\n|---|---|\n| 1 | 2 |', 'x.md').errors.length > 0, true],
+    ['R8', '段落/标题紧接表格（无空行）→ **不得**报错（cmark-gfm `test/extensions.txt` §Tables 明文允许）', scanTables('段落文字\n| a | b |\n|---|---|\n| 1 | 2 |', 'x.md').errors.length === 0, true],
     ['R8', '数据行列数不齐 → 必报错', scanTables('\n| a | b |\n|---|---|\n| 1 |', 'x.md').errors.length > 0, true],
     ['R8', '行尾空单元格 → 必告警', scanTables('\n| a | b |\n|---|---|\n| 1 | |', 'x.md').warns.length > 0, true],
     ['R8', '标准表格 → 不得报错', scanTables('\n| a | b |\n|---|---|\n| 1 | 2 |', 'x.md').errors.length === 0, true],
