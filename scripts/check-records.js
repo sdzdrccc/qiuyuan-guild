@@ -22,6 +22,10 @@
  *   C4 审核分级须声明      ← 方案 §5.3（v2 升级：L0~L3 **必填**；改契约必须 L3 = arch + 大人）
  *   C5 改动须有同批记录     ← AGENTS.md §3 纪律 4（交付即产记录 · 与改动同仓）
  *   C6 下游卡契约回执      ← 机制⑦（来源 X-0016）—— dalu 卡须有**非空**「契约回执」节
+ *   C7 门禁纪元自洽        ← `REVIEW-PROCESS.md` §S2（来源 X-0018）—— 可解析 / 是 HEAD 祖先 / **未被推进**
+ *   C8 审阅记录须声明未覆盖 ← `REVIEW-PROCESS.md` §S5（来源 X-0018）—— 只对**审阅类**记录生效
+ *   ── 豁免（`WAIVED`）──     ← 来源 X-0016；`X-0019` 销号 31 项存量时扩为**三个命名空间**
+ *                               `commits`（C5）／ `sections`（C1 · **只对软性节**）／ `records`（C6）
  *
  * ── 存量与新增的切分（重要的诚实设计）──────────────────────
  *   C3 / C4 / C5 揭示的是**历史存量缺口**（14 篇记录无审核节、三笔 dalu 提交无记录）。
@@ -42,6 +46,9 @@
 const fs = require('fs');
 const path = require('path');
 const { execFileSync } = require('child_process');
+
+// 共享判据（单一真源）—— 与 `gen-agent-log.js` 同用，避免「同一事实写两处」
+const { headingName, sectionByKeyword, touchesContracts } = require('./lib/record-rules.js');
 
 const ROOT = path.resolve(__dirname, '..');
 const DALU = 'F:/zxc/Project/qiuyuan-dalu';
@@ -82,17 +89,79 @@ function pendingNotice(list) {
  *   存量项会**永久黄**，与 §四-3「不许给未来埋雷 / 不许永久误报」**自相矛盾**。
  *   此表就是那个「书面豁免」的落点：**豁免必须留证**（理由 · 裁定人 · 日期）。
  */
+/** 豁免留证的**统一落款** —— 每条理由末尾必带（机制要求：理由 · 裁定人 · 日期） */
+const W_AUTH = '大人 2026-09-30 授权「遗留问题全部解决」（`X-0019` 落笔）';
+const W_C1 = '存量：「审核」节自 `X-0015` 才要求；按 `X-0018` §六「不得回填历史」（回填会造假），不回填 · ' + W_AUTH;
+const W_C6 = '存量：「契约回执」机制 `X-0016` 才落，卡成文时无此节 · ' + W_AUTH;
+
 const WAIVED = {
-  // 提交级（C5）：'e1ff46e': '骨架期前置提交 · 大人 2026-09-30 裁定',
-  commits: {},
-  // 记录级（C6 契约回执）：'T-0001': '存量卡（机制上线前）· 大人 2026-09-30 裁定',
-  records: {},
+  /**
+   * C5 提交级 —— 键 = 提交**短哈希**（7 位）。
+   * 销号依据两类：**已补记**（写明记录号）或**机制前提交**（写明为何不属实质实现）。
+   */
+  commits: {
+    // ── dalu（5）──
+    e1ff46e: '已由 `T-0018` 补记（该记录头部明写这三笔提交为补记）· ' + W_AUTH,
+    a69fb87: '已由 `T-0018` 补记（该记录头部明写这三笔提交为补记）· ' + W_AUTH,
+    b306b9f: '已由 `T-0018` 补记（该记录头部明写这三笔提交为补记）· ' + W_AUTH,
+    '1d8c7b4': 'UE 工程作业手册 + 模板法创建脚本 —— 工具/文档，非功能实现 · ' + W_AUTH,
+    '61dbaca': '仓库开工 · 目录骨架，改动基本为 `.gitkeep` 占位（弱信号，但确实无同批记录）· ' + W_AUTH,
+    // ── guild（2）──
+    e77661f: '已由 `X-0001` 补记（该记录头部明写「补记依据 = git `e77661f`」）· ' + W_AUTH,
+    f473f76: '契约层地基**首批落盘**（v0.13）—— 记录机制当时**尚未实例化** · ' + W_AUTH,
+  },
+  /**
+   * C1 记录必备节 —— 键 = `X-00NN`。
+   * ★ 只对**软性节**（改动清单 / 验证证据 / 审核）生效；**「状态」/「执行者」不可豁免**
+   *   （它们一旦缺失，派生视图 `agent-log` 直接失效 —— 见 C1 的分级设计）。
+   */
+  sections: {
+    // 「审核」节自 `X-0015` 才进模板；`X-0008` ~ `X-0014` 成文时无此节
+    'X-0008': W_C1, 'X-0009': W_C1, 'X-0010': W_C1, 'X-0011': W_C1,
+    'X-0012': W_C1, 'X-0013': W_C1, 'X-0014': W_C1,
+  },
+  /** C6 契约回执 —— 键 = `T-000N`（dalu）。机制 `X-0016` 上线前的存量（`T-0018` 起已按新模板写）。 */
+  records: {
+    'T-0001': W_C6, 'T-0002': W_C6, 'T-0003': W_C6, 'T-0004': W_C6, 'T-0005': W_C6, 'T-0006': W_C6,
+    'T-0007': W_C6, 'T-0008': W_C6, 'T-0009': W_C6, 'T-0010': W_C6, 'T-0011': W_C6, 'T-0012': W_C6,
+    'T-0013': W_C6, 'T-0014': W_C6, 'T-0015': W_C6, 'T-0016': W_C6, 'T-0017': W_C6,
+  },
 };
 
 /** 纯函数：某 key 是否已豁免（命中 → 返回理由串；未命中 → `null`） */
 function waivedReason(table, key) {
   if (!table || !Object.prototype.hasOwnProperty.call(table, key)) return null;
   return table[key] || '（⚠ 无理由 · 违规 —— 豁免必须写清谁在什么时候放的）';
+}
+
+/** 纯函数：把待办项按花名册**分拣** —— 命中 → `waived`（仍打印）；未命中 → `kept`（照常报） */
+function splitWaived(items, table) {
+  const kept = [], waived = [];
+  for (const it of items) (waivedReason(table, it) ? waived : kept).push(it);
+  return { kept, waived };
+}
+
+/**
+ * 纯函数：把已豁免项**按理由归组** —— 理由相同的合并为一行。
+ *
+ * ★ 存在的理由（实测）：销号后 C1/C5/C6 的豁免项合计 **31 条**，逐条打印会把报告淹掉；
+ *   但它们**又必须逐条点名**（「存量不掩盖」原则）。归组 = 既点名、又不淹没。
+ */
+function waivedGroup(pairs) {
+  const by = new Map();
+  for (const [k, r] of pairs) {
+    const key = r || '（⚠ 无理由）';
+    if (!by.has(key)) by.set(key, []);
+    by.get(key).push(k);
+  }
+  return [...by.entries()]
+    .map(([reason, keys]) => ({ reason, keys: keys.sort() }))
+    .sort((a, b) => b.keys.length - a.keys.length);
+}
+
+/** 纯函数：渲染一组已豁免项（`ok` 的文案；便于反向测试） */
+function waivedLine(g) {
+  return `已豁免（留证）${g.keys.length} 项：${g.keys.join(' / ')} —— ${g.reason}`;
 }
 
 /**
@@ -134,17 +203,7 @@ function sectionPresence(text) {
   };
 }
 
-/**
- * 纯函数：标题的「主体名」—— 去掉 `#`、空白与常见序号前缀（`九、` / `7.`）。
- *
- * ★ 存在的理由（实测踩出来的误报）：`reviewSection` 原判据是「标题**含**『审核』」，
- *   于是把 `# X-0016 … ⑥ 审核分级` 这种**大标题**也认成了审核节 ⇒ 误报。
- *   → 收紧为「**主体名以某词开头**」，并要求其后不是汉字。
- */
-function headingName(line) {
-  const head = String(line).replace(/^#{1,6}\s*/, '').trim();
-  return head.replace(/^(?:[一二三四五六七八九十]+|\d+)\s*[、.．)）]\s*/, '');
-}
+// `headingName` 已移至共享模块 `scripts/lib/record-rules.js`（与 `gen-agent-log.js` 共用）
 
 /** 纯函数：抽出「审核」节正文（无该节返回 null）—— **主体名须以「审核」开头** */
 function reviewSection(text) {
@@ -182,10 +241,7 @@ function hasScoreLanguage(text) {
     /\d+(\.\d+)?\s*分|满意度|评分|打分|得分/.test(l));
 }
 
-/** 纯函数：记录是否涉及契约变更（改动清单里提到 `contracts/`） */
-function touchesContracts(text) {
-  return /contracts\//.test(String(text));
-}
+// `touchesContracts` 已移至共享模块 `scripts/lib/record-rules.js`（判据全文与踩坑史见该文件）
 
 /** 纯函数：记录是否声明了 L3 终审（须出现「大人」—— 方案 §5.3 L3 = arch + 大人） */
 function declaresL3(text) {
@@ -244,24 +300,7 @@ function commitNeedsRecord(files, implRe, recordRe) {
   return impl && !rec;
 }
 
-/**
- * 纯函数：抽出「主体名以 `kw` 开头且其后不是汉字」的节的正文（无 → `null`）。
- * `reviewSection` 的泛化；**同样要求主体开头**（防「标题里顺带提到该词」被误认）。
- */
-function sectionByKeyword(text, kw) {
-  const lines = String(text).split(/\r?\n/);
-  const re = new RegExp(`^${kw}(?![\\u4e00-\\u9fff])`);
-  let start = -1;
-  for (let i = 0; i < lines.length; i++) {
-    if (/^#{1,6}\s/.test(lines[i]) && re.test(headingName(lines[i]))) { start = i; break; }
-  }
-  if (start < 0) return null;
-  let end = lines.length;
-  for (let i = start + 1; i < lines.length; i++) {
-    if (/^#{1,6}\s/.test(lines[i])) { end = i; break; }
-  }
-  return lines.slice(start, end).join('\n');
-}
+// `sectionByKeyword` 已移至共享模块 `scripts/lib/record-rules.js`
 
 /**
  * 纯函数：是否含**非空**的「契约回执」节（机制⑦ · 下游卡义务 · 来源 X-0016）
@@ -416,13 +455,21 @@ function guildRecordFiles() {
     }
   }
   // 「改动清单 / 验证证据 / 审核」缺 → warn（存量缺口，逐条点名）
+  // ★ 软性节**可豁免**（`WAIVED.sections` · 须留证）；**硬性节（状态 / 执行者）不可豁免**
   const softName = { changes: '改动清单', evidence: '验证证据（或门禁）', review: '审核' };
+  const waivedPairs = [];
+  for (const k of ['changes', 'evidence', 'review']) {
+    const { kept, waived } = splitWaived(bad[k], WAIVED.sections);
+    bad[k] = kept;
+    for (const id of waived) if (!waivedPairs.some(p => p[0] === id)) waivedPairs.push([id, waivedReason(WAIVED.sections, id)]);
+  }
   for (const k of ['changes', 'evidence', 'review']) {
     if (bad[k].length) {
       warn('C1', `${bad[k].length} 篇记录缺「${softName[k]}」节：${bad[k].join(' / ')}`);
     }
   }
-  if (Object.values(bad).every(v => v.length === 0)) {
+  for (const g of waivedGroup(waivedPairs)) ok('C1', waivedLine(g));
+  if (Object.values(bad).every(v => v.length === 0) && waivedPairs.length === 0) {
     ok('C1', `记录必备节齐备（${files.length} 篇：状态 / 执行者 / 改动清单 / 验证证据 / 审核）`);
   }
 })();
@@ -542,29 +589,27 @@ const REPO_LABEL = { [DALU]: 'dalu', [ROOT]: 'guild' };
       warn('C5', `${label}：定位不到门禁纪元 \`${GATE_EPOCH[repo]}\`（历史被改写？）→ 全部按存量 warn`);
     }
 
-    const backlog = [];
+    const backlog = [];   // { h, label }
     const fresh = [];
     for (const cm of cs) {
       if (!commitNeedsRecord(cm.files, IMPL_RE[repo], RECORD_RE[repo])) continue;
-      const isBacklog = epoch === null ? true : epoch.has(cm.hash);
-      (isBacklog ? backlog : fresh).push(`${cm.hash.slice(0, 7)} ${cm.date} ${cm.subject.slice(0, 42)}`);
+      const h = cm.hash.slice(0, 7);
+      const label = `${h} ${cm.date} ${cm.subject.slice(0, 42)}`;
+      if (epoch === null || epoch.has(cm.hash)) backlog.push({ h, label });
+      else fresh.push(label);
     }
 
     // 存量里剔除**已豁免**者（「豁免也要留证」· 来源 X-0016 · 补 X-0015 §六「书面豁免」无实现位之缺）
-    const waived = [], kept = [];
-    for (const f of backlog) {
-      const h = f.slice(0, 7);
-      (waivedReason(WAIVED.commits, h) ? waived : kept).push(f);
-    }
+    const { kept, waived } = splitWaived(backlog.map(b => b.h), WAIVED.commits);
 
     for (const f of fresh) {
       err('C5', `${label}：提交改了实现/契约却**无同批记录** → ${f}`);
     }
     if (kept.length) {
-      warn('C5', `${label}：**存量** ${kept.length} 笔提交改了实现/契约却无同批记录（纪元 \`${GATE_EPOCH[repo]}\` 之前，须补记或书面豁免）：${kept.map(x => x.slice(0, 7)).join(' / ')}`);
+      warn('C5', `${label}：**存量** ${kept.length} 笔提交改了实现/契约却无同批记录（纪元 \`${GATE_EPOCH[repo]}\` 之前，须补记或书面豁免）：${kept.join(' / ')}`);
     }
-    for (const f of waived) {
-      ok('C5', `${label}：**已豁免**（留证）→ ${f.slice(0, 7)}：${waivedReason(WAIVED.commits, f.slice(0, 7))}`);
+    for (const g of waivedGroup(waived.map(h => [h, waivedReason(WAIVED.commits, h)]))) {
+      ok('C5', `${label}：${waivedLine(g)}`);
     }
     if (!fresh.length && !kept.length && !waived.length) {
       ok('C5', `${label}：改动与记录同批（近 ${cs.length} 笔提交无缺口）`);
@@ -595,11 +640,10 @@ function daluRecordFiles() {
   if (files.length === 0) { ok('C6', 'dalu 暂无 `T-*` 记录 → 本规则不适用'); return; }
 
   const epoch = epochSet(DALU, GATE_EPOCH[DALU]);
-  const fresh = [], backlog = [], waived = [];
+  const fresh = [], backlog = [], waivedIds = [];
   for (const f of files) {
     const id = f.replace(/\.md$/, '');
-    const why = waivedReason(WAIVED.records, id);
-    if (why) { waived.push(`${id}：${why}`); continue; }
+    if (waivedReason(WAIVED.records, id)) { waivedIds.push(id); continue; }
     const t = read(path.join(DALU_RECORDS, f)) || '';
     if (contractReceiptPresence(t)) continue;
     (fileIsFresh(DALU, `records/${f}`, epoch) === true ? fresh : backlog).push(id);
@@ -611,8 +655,8 @@ function daluRecordFiles() {
   if (backlog.length) {
     warn('C6', `dalu **存量** ${backlog.length} 篇 T-* 卡缺「契约回执」节（纪元 \`${GATE_EPOCH[DALU]}\` 之前，须补记或书面豁免 · 落 WAIVED.records）：${backlog.join(' / ')}`);
   }
-  for (const w of waived) ok('C6', `已豁免（留证）→ ${w}`);
-  if (!fresh.length && !backlog.length) {
+  for (const g of waivedGroup(waivedIds.map(id => [id, waivedReason(WAIVED.records, id)]))) ok('C6', waivedLine(g));
+  if (!fresh.length && !backlog.length && waivedIds.length === 0) {
     ok('C6', `下游卡契约回执齐备（${files.length} 篇 T-*，全含非空「契约回执」节）`);
   }
 })();
@@ -748,9 +792,14 @@ if (process.argv.includes('--self-test')) {
     ['C3', '★ 审核节内「某提案被否决」（讲机制）→ 不得误判', hasScoreLanguage('## 审核\n> 20（其他 agent 评分）**否决**并给出替代品') === false, true],
     ['C3', '无审核节 → 本规则不适用', hasScoreLanguage('# t\n- 结论：8 分') === false, true],
     ['C3', '「2 处待裁项」→ 不得误判为评分', hasScoreLanguage('## 审核\n- 检出 2 处待裁项') === false, true],
-    // C4 L3 终审
-    ['C4', '改动含 contracts/ → 判为涉契约', touchesContracts('- 修改 `contracts/data-contract.md` §3.2') === true, true],
-    ['C4', '未涉契约 → 不判', touchesContracts('- 修改 `docs/GLOSSARY.md`') === false, true],
+    // C4 L3 终审（★ v2 收窄 —— 原「正文出现 contracts/」误报 4 篇存量）
+    ['C4', '改动清单列契约文件 → 判为涉契约', touchesContracts('# t\n\n## 改动清单\n- 修改 `contracts/data-contract.md` §3.2\n') === true, true],
+    ['C4', '未涉契约 → 不判', touchesContracts('# t\n\n## 改动清单\n- 修改 `docs/GLOSSARY.md`\n') === false, true],
+    ['C4', '★ 头部「无变更（本次未动 contracts/）」→ 不得误判', touchesContracts('# t\n- 契约引用：**无变更**（本次未动 `contracts/`）\n\n## 改动清单\n- 新增 `docs/X.md`\n') === false, true],
+    ['C4', '★ 改动清单里「扫描 `contracts/` `docs/`」→ 不得误判（枚举范围，非改动）', touchesContracts('# t\n\n## 改动清单\n- 脚本扫描 `contracts/` `docs/` `registry/` 的全部 .md\n') === false, true],
+    ['C4', '★ 遗留问题「`contracts/x.md` 待补 → 转 M1」→ 不得误判', touchesContracts('# t\n\n## 改动清单\n- 新增 `docs/Y.md`\n\n## 遗留问题\n- `contracts/asset-ref-contract.md` 待补一条 → 转 M1\n') === false, true],
+    ['C4', '★ 无「改动清单」节 → 回退全文（宁可误报不可漏报）', touchesContracts('# t\n- 顺带改了 `contracts/protocol-contract.md` §1\n') === true, true],
+    ['C4', '★ 光写目录名（无文件名）→ 不算改动', touchesContracts('# t\n\n## 改动清单\n- 检查 `contracts/` 下的全文\n') === false, true],
     ['C4', '涉契约且出现「大人」→ 已声明 L3', declaresL3('L3 审核者：arch + 大人') === true, true],
     ['C4', '涉契约但未出现「大人」→ 未声明', declaresL3('结论：通过') === false, true],
     // C2 双向核对
@@ -803,6 +852,17 @@ if (process.argv.includes('--self-test')) {
     ['C5', '豁免名单命中 → 返回理由', waivedReason({ e1ff46e: '骨架期前置 · 大人 2026-09-30' }, 'e1ff46e') === '骨架期前置 · 大人 2026-09-30', true],
     ['C5', '未命中 → null', waivedReason({}, 'e1ff46e') === null, true],
     ['C5', '命中但空理由 → 显式标为违规', /无理由/.test(waivedReason({ x: '' }, 'x')), true],
+    // 豁免分拣 / 归组（`X-0019` 销号 31 项时新增 —— 逐条点名，又不淹没报告）
+    ['WAIVED', '分拣：命中 → waived，未命中 → kept', (() => { const r = splitWaived(['a', 'b'], { a: 'r' }); return r.kept.join(',') === 'b' && r.waived.join(',') === 'a'; })(), true],
+    ['WAIVED', '分拣：空花名册 → 全进 kept（不得静默吞掉）', (() => { const r = splitWaived(['a', 'b'], {}); return r.kept.length === 2 && r.waived.length === 0; })(), true],
+    ['WAIVED', '归组：同理由合并为一行', waivedGroup([['a', 'r'], ['b', 'r'], ['c', 's']]).length === 2, true],
+    ['WAIVED', '归组：组内按 key 升序', waivedGroup([['b', 'r'], ['a', 'r']])[0].keys.join(',') === 'a,b', true],
+    ['WAIVED', '归组：空理由归到「无理由」组（不静默）', /无理由/.test(waivedGroup([['a', '']])[0].reason), true],
+    ['WAIVED', '渲染：含条数 / 逐条点名 / 理由', (() => { const s = waivedLine({ keys: ['T-0001', 'T-0002'], reason: '存量' }); return s.includes('2 项') && s.includes('T-0001') && s.includes('存量'); })(), true],
+    ['WAIVED', '★ 花名册每条都须带理由与留证落款（不许裸豁免）', (() => {
+      const all = [...Object.values(WAIVED.commits), ...Object.values(WAIVED.sections), ...Object.values(WAIVED.records)];
+      return all.length > 0 && all.every(r => typeof r === 'string' && r.length > 8 && !/无理由/.test(r) && r.includes('2026-09-30'));
+    })(), true],
     // PEND 待实现规则登记位（机制③ · 来源 X-0016）
     ['PEND', '空名单 → 不告警（不打破现状）', pendingNotice([]) === null, true],
     ['PEND', '非空 → 生成提示（含来源）', pendingNotice([{ id: 'C7', from: 'X-0000' }]) === 'C7(from X-0000)', true],

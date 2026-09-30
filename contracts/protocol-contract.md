@@ -1,6 +1,6 @@
 # 协议契约（Protocol Contract）
 
-> **层**：L3 游戏侧（本仓 `contracts/`）　|　**状态**：v0.1 首版（Phase 0）
+> **层**：L3 游戏侧（本仓 `contracts/`）　|　**状态**：**v0.2**（2026-09-30 **M1 契约对齐** —— `DECISIONS.md` **ADR-0019**）
 > **真源**：本文件。客户端与服务端**双向**只读消费。
 > **来源**：从 Codex 原型的 `MessageTypes` + `docs/03-protocol-and-api.md`（216 行）**提炼**，非新设计。
 > **战略地位**：服务端**重写 Go**（已定）时，**Java 侧最有价值的产出就是本契约**（协议 + 数据表）——那 22 个 Spring 服务会被丢弃，本契约不会。
@@ -21,7 +21,7 @@
 **路径**：`/ws`　|　**格式**：JSON（统一消息信封）
 
 ```json
-{ "type": "login", "data": { "username": "zhang", "password": "123456" } }
+{ "type": "login", "data": { "phone": "13800000000", "password": "……" } }
 ```
 
 | 字段 | 规则 |
@@ -40,11 +40,16 @@
 | `type` | `data` | 说明 |
 |---|---|---|
 | `ping` | `{}` | 心跳 |
-| `register` | `{username, password, email}` | 游戏内注册 |
-| `login` | `{username, password}` | 登录（账号不存在则报错） |
-| `list_characters` | `{playerId}` | 列出该账号角色 |
-| `create_character` | `{playerId, name, gender}` | 建角；`gender 0=男/1=女`；**随机灵根/资质/体质/纯度** |
+| `register` | `{phone, password}` | 注册（**手机号即登录标识** —— ADR-0019 ①）；`username` / `email` **已废** |
+| `login` | `{phone, password}` | 登录（账号不存在则报错） |
+| `list_characters` | `{accountId}` | 列出该账号角色（**单角色制：长度 0 或 1** —— 裁定 B） |
+| `create_character` | `{accountId, name, gender}` | 建角；`gender 0=男/1=女`；**随机灵根/资质/体质/纯度**；**重名须拒**（裁定 C） |
 | `logout` | `{}` | 离开世界（广播 `player_left`）并返回登录态；**会话保留**，可重新登录 |
+
+> ★ **v0.2 改动（ADR-0019 ①④）**：`username` / `email` → **`phone`**；`playerId` → **`accountId`**
+> （与 `data-contract.md` §3.0 的 `account_id` 对齐）。
+> ⚠️ **本次只对 M1 域**（§2.1~§2.3 / §3.1~§3.3）。**§2.8 社交段 / §4 REST 段仍用旧名** ——
+> 属 **M7 / M17 域**，**已登记 §8 待办**（**不顺手改** · 范围闸门，ADR-0019 §「只登记不改」）。
 
 ### 2.2 世界与移动
 
@@ -57,7 +62,7 @@
 
 | `type` | `data` | 说明 |
 |---|---|---|
-| `breakthrough` | `{characterId, spiritPower}` | 突破上报（`spiritPower` = 突破前灵力） |
+| `breakthrough` | `{characterId, mp}` | 突破上报（`mp` = 突破前灵力 —— ADR-0019 ④） |
 | `get_attributes` | `{characterId}` | 查询属性面板 |
 | `meditation_start` | `{characterId}` | 开始打坐（服务端累计 **2/s**，聚灵阵 **×2**） |
 | `meditation_stop` | `{characterId}` | 停止并结算（返回 `meditation_result` + `character_attributes`） |
@@ -122,11 +127,11 @@
 | `type` | `data` | 说明 |
 |---|---|---|
 | `pong` | `{}` | 心跳回包 |
-| `login_ok` | `{playerId, username, token}` | `token` = 会话鉴权 |
+| `login_ok` | `{accountId, phone, token, hasCharacter}` | `token` = 会话鉴权；★ **`hasCharacter`** = 是否已有角色（**单角色制**下客户端据此决定进**建角屏**还是直接进游戏 —— ADR-0019 ①） |
 | `login_fail` | `{message}` | 登录失败 |
-| `register_ok` | `{playerId, username}` | 注册成功 |
+| `register_ok` | `{accountId, phone}` | 注册成功 |
 | `register_fail` | `{message}` | 注册失败 |
-| `characters` | `{playerId, characters:[...]}` | 角色列表 |
+| `characters` | `{accountId, characters:[...]}` | 角色列表（**单角色制：长度 0 或 1**） |
 | `create_ok` | `{character:{...}}` | 建角成功 |
 | `create_fail` | `{message}` | 建角失败 |
 | `logout_ok` | `{}` | 退出确认（客户端据此回登录界面） |
@@ -145,12 +150,15 @@
 
 | `type` | `data` | 说明 |
 |---|---|---|
-| `breakthrough_result` | `{success, chance, consumed, required, realmIndex, realmLevel, spiritPower}` | 突破结果（服务端权威） |
-| `character_attributes` | 属性面板 + `equipment` 摘要 | 数值**已含装备词条** |
-| `meditation_result` | `{characterId, gained, spiritPower, maxSpiritPower, meditating}` | 打坐结算 |
+| `breakthrough_result` | `{success, chance, consumed, required, realmId, layer, mp}` | 突破结果（服务端权威） |
+| `character_attributes` | 属性面板 + `equipment` 摘要 | 数值**已含装备词条与灵根增益**（`data-contract.md` §6.2） |
+| `meditation_result` | `{characterId, gained, mp, maxMp, meditating}` | 打坐结算 |
 
-> `character_attributes` 内容：气血 / 物攻 / 法攻 / 物防 / 法防 / 神识 / 命中 / 闪避 / 会心 / 格挡 / 破防 **+ 8 系元素攻抗** + `equipment`（已穿戴摘要）。
+> `character_attributes` 内容：气血 / 物攻 / 法攻 / 物防 / 法防 / 神识 / 命中 / 闪避 / **暴击率 / 暴击伤害 / 暴击抗性** / 格挡 / 破防 **+ 8 系元素攻抗** + `equipment`（已穿戴摘要）。
 > **字段语义与公式见 `data-contract.md` §6**（本契约不重复）。
+>
+> ★ **v0.2 三处改动（ADR-0019 ③④⑧）**：「会心」→「**暴击**」；`spiritPower` / `maxSpiritPower` → **`mp` / `maxMp`**；
+> `realmIndex` / `realmLevel` → **`realmId` / `layer`**（对齐 **ADR-0004 / ADR-0006** —— 原为**原型口径** `0~8` / `1~4`）。
 
 ### 3.4 战斗与法术
 
@@ -231,9 +239,9 @@
 
 ```json
 {
-  "id": 1, "playerId": 1, "name": "云中子", "gender": 0,
-  "realmIndex": 0, "realmLevel": 3,
-  "spiritPower": 320.0,
+  "id": 1, "accountId": 1, "name": "云中子", "gender": 0,
+  "realmId": 1, "layer": 3,
+  "mp": 320.0, "maxMp": 320.0,
   "roots": [
     { "rootType": 4, "purity": 88.0, "sortOrder": 0 },
     { "rootType": 0, "purity": 72.0, "sortOrder": 1 }
@@ -251,14 +259,18 @@
 | 字段 | 取值 | 权威处 |
 |---|---|---|
 | `rootType` | `0~7` = 金木水火土风雷冰 | `data-contract.md` §0 勘误一 |
-| `realmIndex` | **`0~8`** = 炼气…渡劫 | `data-contract.md` §0 勘误二 |
-| `realmLevel` | 炼气 `1~10`；其余 `1~4` = 初期/中期/后期/大圆满 | `data-contract.md` §4 |
-| `spiritualRootQuality` | `0~6` | `data-contract.md` §3.1 |
+| `realmId` | **`1~9`** = 炼气…渡劫（`0` = 凡人，未入道） | `data-contract.md` §4 · **ADR-0006** |
+| `layer` | 炼气 `1~10`；其余 **`1~9`**（第 9 层 = **圆满**） | `data-contract.md` §4 · **ADR-0004** |
+| `spiritualRootQuality` | `0~6`（编号按「神通 + 修炼」**双单调**重排 —— 裁定 K） | `data-contract.md` §3.2 |
 | `bodyTier` | `0~3` | `data-contract.md` §3.1 |
+| `roots[].purity` | **`1~100`**（均匀随机，**与品级无关** —— 裁定 G） | `data-contract.md` §3.2 |
 | `roots[].sortOrder` | **`0` = 主灵根 = 纯度最高者** | `data-contract.md` §3.2 |
 
-> ⚠️ **注意**：`spiritPower`（协议里的灵力）与 `data-contract` 的 `mp` 是同一资源。
-> 字段名不统一 **`spiritPower` vs `mp`** —— **M1 须统一并落 ADR**（Go 重写是统一的最佳时机，Java 侧保留原样）。
+> ✅ **灵力命名已统一（v0.2 · ADR-0019 ④）**：字段由 **`spiritPower` → `mp`**（上限 `maxMp`）——
+> 与 `data-contract.md` §3.1 的同名字段一致。**原「两个名字指同一资源」的状态已消除**
+> （此处原自陈「M1 须统一并落 ADR」—— **本条即那个 ADR**）。
+> ★ **同处一并勘误（ADR-0019 ⑧）**：`realmIndex` / `realmLevel` → **`realmId` / `layer`**，
+> 取值由**原型口径**（`0~8` / `1~4`）改回 **ADR-0004 / ADR-0006 的裁定值**（`1~9` / `1~9`）。
 
 ### 5.2 世界玩家对象
 
@@ -336,7 +348,11 @@ ID 格式 **`gong_<root>`**（`gong_jin` / `gong_mu` / `gong_shui` / `gong_huo` 
 
 ## 8. 待办（按里程碑补全 · 见 `docs/ROADMAP.md`）
 
-- [ ] **统一 `spiritPower` / `mp` 命名**（§5.1 备注）→ 落 ADR
+- [x] ✅ **统一 `spiritPower` / `mp` 命名** —— **已办（2026-09-30 · ADR-0019 ④）**：改为 `mp` / `maxMp`
+- [x] ✅ **`realmIndex` / `realmLevel` → `realmId` / `layer`** —— **已办（同批 · ADR-0019 ⑧）**，对齐 ADR-0004 / ADR-0006
+- [ ] ★ **`playerId` / `targetUsername` 等旧名统一**（**§2.8 社交段 / §4 REST 段**）——
+      与 `data-contract.md` 的 `Account` / `Role` 命名对齐。属 **M7 / M17 域**，**M1 不碰**
+      （ADR-0019 §「只登记不改」—— 判据：**发现缺口 ≠ 顺手改**）
 - [ ] 为每条消息补**字段类型与必填性**（当前多数仅有字段名）
 - [ ] 补 `character_attributes` 的**完整字段清单**（当前只列了分组）
 - [ ] 确认 `sceneId` 命名规范（与 `asset-ref-contract.md` §5.2 联动）
