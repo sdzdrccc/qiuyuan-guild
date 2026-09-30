@@ -40,7 +40,7 @@ docs/
   SERVER-ARCH.md            ★ 服务端架构与拆分时机 —— 九类进程 / 起步 8 合 1 / 四条拆分前提 / 何时拆 / **`server/` 内部结构（技术模块切）**
   SKILL-ROUTING.md          角色 → skill 路由表
 contracts/                  ★ 唯一真源（三方只读消费，禁止本地副本）
-  data-contract.md            数据模型（**逻辑层**：实体 / 境界 / 灵根 / 属性 / 战斗公式 · v0.4）
+  data-contract.md            数据模型（**逻辑层**：实体 / 境界 / 灵根 / 属性 / 战斗公式 · v0.5）
   asset-ref-contract.md       资产引用契约（格式 / 交付基准 / 装配 / 场景清单）
   protocol-contract.md        协议契约（**客户端 ↔ 服务端 = WS + JSON**；**REST 属 GM 后台的那条线** —— §1 / §4 · v0.2）
 records/                    ★ 完成记录（guild 侧编号 **`X-*`**；dalu 侧用 `T-*`）
