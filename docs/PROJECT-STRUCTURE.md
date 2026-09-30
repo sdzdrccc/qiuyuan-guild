@@ -1,6 +1,7 @@
 # PROJECT-STRUCTURE.md —— 工程结构详案
 
-> **层**：L4 规范层（本仓 `docs/`）　|　**状态**：v1.9（草案 · **M1 施工图**）
+> **层**：L4 规范层（本仓 `docs/`）　|　**状态**：v2.0（草案 · **M1 施工图**）
+> **v2.0 变更**：**§5「M1 需要的 C++ 骨架」第 2 条更正** —— 原写「**HTTP 客户端**封装（登录 / 建角走 **REST**，用引擎自带 `FHttpModule`）」**与契约矛盾**：契约 **§1** 定客户端 ↔ 服务端 = **WebSocket + JSON**（`/ws`），**REST 是 §4「GM 后台 ↔ 服务端」那条线**。★ **同源残留（`ROADMAP.md` §2 M1 第 1 项）已于 2026-09-28 更正（ADR-0018），本处当时漏改** —— 现补齐，并补 `Build.cs` 模块依赖说明（**不加 `WebSockets` 客户端连不上**）。闭合 `qiuyuan-dalu/records/T-0011.md` §六-2 遗留。
 > **v1.9 变更**：**§3.2「路线 B（套模板）」更正为「非向导等价物」** —— 原写「`TemplateDefs.ini` 给出的、**与向导等价**的创建规则」**有误**。实测 UE 5.8 源码 `GameProjectUtils::CreateProjectFromTemplate`：向导在「复制模板」之外另有 **6 件事**（写八组 ini 默认值 / 写 `ProjectID` / 建 `Content/` / `.uproject` 反序列化重存 / 跑 `GenerateProjectFiles` / 两遍占位符替换）。套模板脚本只复刻复制规则（已补 `Content/`）→ 产物**可编译可开图，但 ini 与向导不同**。§3.2 加**覆盖范围说明**；另将「**先清空目标目录**」措辞精确化 —— **路线 A 的「改名」亦须先腾位**（目标名已存在则失败），闭环 `qiuyuan-dalu/records/T-0003.md` 遗留③。
 > **v1.8 变更**：**§3.2 创建向导选项 → 按 UE 5.8 引擎源码实测重写**（**ADR-0017**）—— 原「六选项」中**三项与 5.8 实际不符**：① 「Target Platform 勾 Desktop + Mobile」**无法照做**（`EHardwareClass` 只有 Desktop / Mobile **单选**，且其性质是**默认画质档**而非平台开关）；② ③ Starter Content / Ray Tracing **UE 5.6 起已从向导移除**。§3.2 另补 **「目录名 ≠ 工程名」的实操路径**与**本机引擎启动方式**（无 Launcher / 无 VersionSelector / 引擎未注册）。§3.4 §7.2 §9 同步。
 > **v1.7 变更**：§1 `server/` 行补**内部结构** —— 一级按**技术模块切**（**ADR-0016**）：`internal/{gateway, login, game}` + `platform/`；§9 待裁项「`server/` 结构」**关闭**（转已裁）。
@@ -321,8 +322,11 @@ ue-client/Source/
 **M1 需要的 C++ 骨架**（最小集）：
 
 - `QiuyuanDaluGameMode` / `QiuyuanDaluPlayerController`
-- 一个 **HTTP 客户端**封装（登录 / 建角走 REST，用引擎自带 `FHttpModule`）
+- 一个 **WS 客户端**封装（登录 / 建角走 **WebSocket + JSON** —— 契约 §1；用引擎自带 **`WebSockets`** 模块）
 - 属性面板的**数据模型**（只读契约 §6 的派生结果，**不在客户端算属性** —— 服务端权威，上游 §2.4 铁律）
+
+> ★ **v2.0 更正（2026-09-30）**：原第 2 条写「**HTTP 客户端**封装（… 走 **REST**，用引擎自带 `FHttpModule`）」—— **与契约矛盾**。契约 **§1** 定客户端 ↔ 服务端 = **WebSocket + JSON**（`/ws`）；**REST 是 §4「GM 后台 ↔ 服务端」那条线**。同源残留（`ROADMAP.md` §2 M1 第 1 项）已于 2026-09-28 更正（**ADR-0018**），**本处当时漏改**。
+> ⇒ `QiuyuanDalu.Build.cs` 依赖须补 **`WebSockets`** · `UMG` · `Slate` · `SlateCore` · `Json` · `JsonUtilities` —— **不加 `WebSockets` 客户端连不上，不加 `UMG`/`Slate` 三屏做不出来**；施工清单见 `qiuyuan-dalu` 的 `docs/M1-IMPLEMENTATION.md` §5.1。
 
 ---
 
