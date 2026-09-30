@@ -40,9 +40,9 @@ docs/
   SERVER-ARCH.md            ★ 服务端架构与拆分时机 —— 九类进程 / 起步 8 合 1 / 四条拆分前提 / 何时拆 / **`server/` 内部结构（技术模块切）**
   SKILL-ROUTING.md          角色 → skill 路由表
 contracts/                  ★ 唯一真源（三方只读消费，禁止本地副本）
-  data-contract.md            数据模型（**逻辑层**：实体 / 境界 / 灵根 / 属性 / 战斗公式 · v0.5）
+  data-contract.md            数据模型（**逻辑层**：实体 / 境界 / 灵根 / 属性 / 战斗公式 · v0.6）
   asset-ref-contract.md       资产引用契约（格式 / 交付基准 / 装配 / 场景清单）
-  protocol-contract.md        协议契约（**客户端 ↔ 服务端 = WS + JSON**；**REST 属 GM 后台的那条线** —— §1 / §4 · v0.2）
+  protocol-contract.md        协议契约（**客户端 ↔ 服务端 = WS + JSON**；**REST 属 GM 后台的那条线** —— §1 / §4 · v0.3）
 records/                    ★ 完成记录（guild 侧编号 **`X-*`**；dalu 侧用 `T-*`）
   X-0001.md                    v0.14 契约去物理化（**补记**，依据 `e77661f`）
   X-0002.md                    v0.15 境界口径裁定 + 审核机制补完
@@ -63,6 +63,8 @@ records/                    ★ 完成记录（guild 侧编号 **`X-*`**；dalu 
   X-0017.md                    审阅模板补「执行环境」节（REVIEW-PROCESS v1.1）
   X-0018.md                    ★ 审阅流程 v1.2 —— 补八条（复审销号 / 纪元所有权 / 独立复算 / 反事实复验 / 未覆盖声明 / 文档锚 / `--strict` / `C4` 误报源）+ 门禁 `C7`·`C8`·`D1`~`D4`
   X-0019.md                    ★ 落 ADR-0019（7 节契约变更包 + 连带勘误）+ **销号 `X-0018` 遗留 7 项**（存量 35 项：判据修正 4 + 留证豁免 31）+ 建 `gen-agent-log.js`
+  X-0020.md                    ★ 落 ADR-0020（法术灵根准入禁止 —— 无对应灵根**不可学、不可放**）+ 销号 `X-0018` 遗留 7（**大人明确认可**）
+  X-0021.md                    ★ 落 ADR-0021（体质觉醒的灵根准入 —— **删 5 种五行灵体 · 留风雷冰 · `fit_root` 升为觉醒准入**）→ 派生「空池回落」待裁（阻塞 M1 波次 3）
 registry/                   ★ 跨库登记（第三条铁律的落点）—— **全部是视图，非真源**
   cross-repo-ledger.md         跨库需求 / 交付台账（**索引视图**）
   agent-log.md                 按 agent 的完成记录视图（**派生视图 · 由 `scripts/gen-agent-log.js` 生成，禁止手改**）
@@ -105,7 +107,7 @@ scripts/                    ★ 校验脚本（没有校验脚本的契约 = 装
 - [`docs/PROJECT-STRUCTURE.md`](docs/PROJECT-STRUCTURE.md) — **工程结构详案**（**要建 UE 工程就读它**）
 - [`docs/MOBILE-PLAN.md`](docs/MOBILE-PLAN.md) — **手机端专案书**（**手机端的东西放哪 / 怎么出安装包就读它**）
 - [`docs/SERVER-ARCH.md`](docs/SERVER-ARCH.md) — **服务端架构与拆分时机**（**问「服务端现在几个进程 / 什么时候拆」就读它**）
-- [`docs/CONVENTIONS.md`](docs/CONVENTIONS.md) — 工程约定（**v0.5**）
+- [`docs/CONVENTIONS.md`](docs/CONVENTIONS.md) — 工程约定（**v0.6**）
 - [`docs/REVIEW-PROCESS.md`](docs/REVIEW-PROCESS.md) — **审阅流程**（**要审阅某个波次 / 里程碑 / 跨仓交付就读它**）
 - [`registry/cross-repo-ledger.md`](registry/cross-repo-ledger.md) — 跨库登记台账
 

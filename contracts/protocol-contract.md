@@ -1,6 +1,6 @@
 # 协议契约（Protocol Contract）
 
-> **层**：L3 游戏侧（本仓 `contracts/`）　|　**状态**：**v0.2**（2026-09-30 **M1 契约对齐** —— `DECISIONS.md` **ADR-0019**）
+> **层**：L3 游戏侧（本仓 `contracts/`）　|　**状态**：**v0.3**（2026-09-30 **体质灵根准入** —— `DECISIONS.md` **ADR-0021**；上一版 v0.2 = M1 契约对齐 · ADR-0019）
 > **真源**：本文件。客户端与服务端**双向**只读消费。
 > **来源**：从 Codex 原型的 `MessageTypes` + `docs/03-protocol-and-api.md`（216 行）**提炼**，非新设计。
 > **战略地位**：服务端**重写 Go**（已定）时，**Java 侧最有价值的产出就是本契约**（协议 + 数据表）——那 22 个 Spring 服务会被丢弃，本契约不会。
@@ -43,7 +43,7 @@
 | `register` | `{phone, password}` | 注册（**手机号即登录标识** —— ADR-0019 ①）；`username` / `email` **已废** |
 | `login` | `{phone, password}` | 登录（账号不存在则报错） |
 | `list_characters` | `{accountId}` | 列出该账号角色（**单角色制：长度 0 或 1** —— 裁定 B） |
-| `create_character` | `{accountId, name, gender}` | 建角；`gender 0=男/1=女`；**随机灵根/资质/体质/纯度**；**重名须拒**（裁定 C） |
+| `create_character` | `{accountId, name, gender}` | 建角；`gender 0=男/1=女`；**随机灵根/资质/体质/纯度**；**重名须拒**（裁定 C）。★ 其中**体质**按**灵根准入**抽 —— **有对应灵根才有概率觉醒**（**ADR-0021**）；**无对应灵根时该档池空**，回落口径**待裁**（`data-contract.md` §10.2） |
 | `logout` | `{}` | 离开世界（广播 `player_left`）并返回登录态；**会话保留**，可重新登录 |
 
 > ★ **v0.2 改动（ADR-0019 ①④）**：`username` / `email` → **`phone`**；`playerId` → **`accountId`**
@@ -247,7 +247,7 @@
     { "rootType": 0, "purity": 72.0, "sortOrder": 1 }
   ],
   "spiritualRootQuality": 3,
-  "bodyTier": 1, "bodyName": "金罡灵体",
+  "bodyTier": 1, "bodyName": "风雷冰灵体",
   "xinmo": 12.5, "kuangzao": 8.0, "danDu": 0.0,
   "shenshi": 19.0,
   "hp": 100.0, "maxHp": 100.0
