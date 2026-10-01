@@ -436,7 +436,7 @@ function scanTables(text, file) {
 }
 
 (function r8() {
-  const dirs = [CONTRACTS, path.join(ROOT, 'docs'), path.join(ROOT, 'registry'), path.join(ROOT, 'records')];
+  const dirs = [CONTRACTS, path.join(ROOT, 'docs'), path.join(ROOT, 'registry'), path.join(ROOT, 'reviews')];
   const files = [];
   for (const d of dirs) {
     if (!fs.existsSync(d)) continue;

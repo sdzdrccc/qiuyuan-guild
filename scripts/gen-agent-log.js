@@ -4,26 +4,26 @@
 /**
  * gen-agent-log.js —— `registry/agent-log.md` 的**生成器**（来源 `X-0003` 遗留 · `X-0015` §五-⑧）
  *
- * 职责：把「**按 agent 的完成记录视图**」由 `records/X-*.md` **派生**出来，
+ * 职责：把「**按 agent 的完成记录视图**」由 `reviews/X-*.md` **派生**出来，
  *       从此**不再手工维护**。
  *
  * ── 为什么需要它（`X-0015` §五-⑧ 的实测证据）────────────────
  *   `agent-log.md` 自称「**派生视图**，禁止手改」，却**一直是手工维护**：
- *   实测它**至少三次滞后**于 `records/` 与 `cross-repo-ledger.md`
+ *   实测它**至少三次滞后**于 `reviews/` 与 `cross-repo-ledger.md`
  *   （v0.19 / v0.26 两次补登留痕 + `X-0009~X-0013` 五篇正文未进表）。
  *   根因同 `CONVENTIONS.md` §7.2：「同一个规则在文档里写了三遍还不被执行，
  *   它就该做成门禁，而不是再写第四遍」——**「禁止手改」这条规则，缺的正是生成器这个载体**。
  *
  * ── 与「单一真源」的关系 ────────────────────────────────────
- *   · **真源** = `records/X-*.md`；本脚本**只读**它，**不读也不写**任何别处。
+ *   · **真源** = `reviews/X-*.md`；本脚本**只读**它，**不读也不写**任何别处。
  *   · 「改了契约」这条判据与 `check-records.js` 的 `C4` **同源**
  *     （`scripts/lib/record-rules.js`）—— 不许各写一份（`CONVENTIONS.md` §1.1）。
- *   · **本脚本不改 `records/`**。要修视图，先修正文，再重生成。
+ *   · **本脚本不改 `reviews/`**。要修视图，先修正文，再重生成。
  *
  * ── 一条刻意的「不生成」（诚实设计）────────────────────────
  *   `CONVENTIONS.md` §5.5 的四个计数里，**「返工次数」「门禁失败次数」无法从记录派生**：
  *   它们依赖**开发过程事件**（一张卡被退回几次 / `check-*.js` 红了几轮），
- *   而 `records/` 里**没有这个字段**。
+ *   而 `reviews/` 里**没有这个字段**。
  *   ⇒ 本脚本**不填 `0` 冒充**（填 0 = 声称「从未发生过」，正是「虚假的安心」），
  *     而是输出 `—` 并把原因写在表下 —— **缺口必须可见**。
  *
@@ -39,7 +39,7 @@ const fs = require('fs');
 const path = require('path');
 
 const ROOT = path.resolve(__dirname, '..');
-const RECORDS_DIR = path.join(ROOT, 'records');
+const RECORDS_DIR = path.join(ROOT, 'reviews');
 const TARGET = path.join(ROOT, 'registry', 'agent-log.md');
 const WRITE = process.argv.includes('--write');
 
@@ -234,9 +234,9 @@ function renderAgentLog({ rows, counts }) {
   L.push('');
   L.push('> ## ⚠️ 本文件由脚本**生成**，不是真源');
   L.push('>');
-  L.push('> - **真源**：`records/X-*.md`（每任务一份）');
+  L.push('> - **真源**：`reviews/X-*.md`（每任务一份）');
   L.push('> - **生成器**：`node scripts/gen-agent-log.js --write`（默认**只校验**：不一致即报错）');
-  L.push('> - **判据**：**视图可丢，`records` 不可丢。** 重建视图 = 重跑生成器');
+  L.push('> - **判据**：**视图可丢，`reviews` 不可丢。** 重建视图 = 重跑生成器');
   L.push('> - **禁止**：在本文件里手改内容（改了下次生成即被覆盖，且制造**双真源**）');
   L.push('');
   L.push('**它能回答的问题**：某 agent 到目前为止做过什么、结论如何、有无未通过项。');
@@ -248,7 +248,7 @@ function renderAgentLog({ rows, counts }) {
   L.push('');
   L.push('**生成规则**（`scripts/gen-agent-log.js` 实现）：');
   L.push('');
-  L.push('1. 扫 `records/X-*.md`（**只扫本仓**；`T-*` 属 dalu，不在本表）');
+  L.push('1. 扫 `reviews/X-*.md`（**只扫本仓**；`T-*` 属 dalu，不在本表）');
   L.push('2. 取每份的：编号、标题、**执行者**、状态、**审核结论**、日期');
   L.push('3. 按**执行者**分组（`arch` / `review` / `qa` / `ledger` 入**横向职能**，其余入**纵向 owner**），组内按编号升序');
   L.push('4. **执行环境不参与本表**（ADR-0007：不进任何统计）');
@@ -281,7 +281,7 @@ function renderAgentLog({ rows, counts }) {
   L.push(renderCountsTable(countRoles, counts));
   L.push('');
   L.push('> **`—` 的含义（重要）**：「返工次数」（同一张卡被退回几次）与「门禁失败次数」（`check-*.js` 红了几轮）');
-  L.push('> 依赖**开发过程事件**，而 `records/` 里**没有这个字段** ⇒ **无法派生**。');
+  L.push('> 依赖**开发过程事件**，而 `reviews/` 里**没有这个字段** ⇒ **无法派生**。');
   L.push('> 本生成器**不填 `0` 冒充** —— 填 `0` 等于声称「从未发生过」，正是**虚假的安心**（`CONVENTIONS.md` §7.1 纪律 1）。');
   L.push('> 要让它可查，须给记录模板**加字段**（属真源变更）；在此之前由 `ledger` 按过程记录人工统计。');
   L.push('');
@@ -289,8 +289,8 @@ function renderAgentLog({ rows, counts }) {
   L.push('');
   L.push('## 附：本视图的维护');
   L.push('');
-  L.push('- **由 `scripts/gen-agent-log.js` 生成** —— 与 `records/` 同批维护（改记录模板要同步改生成规则）。');
-  L.push('- **不得手工编辑** —— 需修正请改 `records/` 的正文，然后重生成。');
+  L.push('- **由 `scripts/gen-agent-log.js` 生成** —— 与 `reviews/` 同批维护（改记录模板要同步改生成规则）。');
+  L.push('- **不得手工编辑** —— 需修正请改 `reviews/` 的正文，然后重生成。');
   L.push('');
   return L.join('\n');
 }
@@ -384,7 +384,7 @@ if (process.argv.includes('--self-test')) {
 // ─────────────────────────────────────────────────────────────
 
 if (!fs.existsSync(RECORDS_DIR)) {
-  console.error('✗ 读不到 `records/` 目录');
+  console.error('✗ 读不到 `reviews/` 目录');
   process.exit(1);
 }
 const files = fs.readdirSync(RECORDS_DIR)
@@ -392,7 +392,7 @@ const files = fs.readdirSync(RECORDS_DIR)
   .map(name => ({ name, text: fs.readFileSync(path.join(RECORDS_DIR, name), 'utf8') }));
 
 if (files.length === 0) {
-  console.error('✗ `records/` 下无任何 `X-*.md` —— 禁止空集真空通过');
+  console.error('✗ `reviews/` 下无任何 `X-*.md` —— 禁止空集真空通过');
   process.exit(1);
 }
 
@@ -426,7 +426,7 @@ if (current === rendered) {
   process.exit(0);
 }
 
-console.log('  ✗ 与仓库内文件**不一致** —— 视图已滞后于 `records/`（这正是生成器要治的病）');
+console.log('  ✗ 与仓库内文件**不一致** —— 视图已滞后于 `reviews/`（这正是生成器要治的病）');
 if (current === null) {
   console.log(`     仓库内无 \`registry/agent-log.md\``);
 } else {

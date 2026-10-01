@@ -429,7 +429,7 @@ function fileIsFresh(repo, rel, epoch) {
 // C1 · 记录必备节（方案 §6.1）
 // ─────────────────────────────────────────────────────────────
 
-const GUILD_RECORDS = path.join(ROOT, 'records');
+const GUILD_RECORDS = path.join(ROOT, 'reviews');
 
 function guildRecordFiles() {
   if (!fs.existsSync(GUILD_RECORDS)) return [];
@@ -439,7 +439,7 @@ function guildRecordFiles() {
 (function c1() {
   const files = guildRecordFiles();
   if (files.length === 0) {
-    err('C1', '`records/` 下无任何 `X-*.md` —— 禁止空集真空通过');
+    err('C1', '`reviews/` 下无任何 `X-*.md` —— 禁止空集真空通过');
     return;
   }
   const bad = { status: [], author: [], changes: [], evidence: [], review: [] };
@@ -486,7 +486,7 @@ function guildRecordFiles() {
   const ledger = ledgerEntries(lt);
   const records = recordEntries(guildRecordFiles());
   if (ledger.size === 0) { err('C2', 'ledger 未解析出任何 `X-*` 索引行 —— 禁止空集真空通过'); return; }
-  if (records.size === 0) { err('C2', '`records/` 未解析出任何 `X-*.md` —— 禁止空集真空通过'); return; }
+  if (records.size === 0) { err('C2', '`reviews/` 未解析出任何 `X-*.md` —— 禁止空集真空通过'); return; }
 
   const diff = ledgerDiff(ledger, records);
   if (diff.missingBody.length) {
@@ -522,7 +522,7 @@ function guildRecordFiles() {
 
     const touches = touchesContracts(t);
     const lvl = declaredLevel(t);
-    const fresh = fileIsFresh(ROOT, `records/${f}`, epoch) === true;
+    const fresh = fileIsFresh(ROOT, `reviews/${f}`, epoch) === true;
     if (lvl === null) {
       // 「有审核节却无级别」才进本判据；**无审核节**的由 C1 报，不重复
       if (reviewSection(t) !== null) push(noLevel, id, fresh);
@@ -574,7 +574,11 @@ const IMPL_RE = {
 };
 const RECORD_RE = {
   [DALU]: /^records\/T-\d+\.md$/,
-  [ROOT]: /^records\/X-\d+\.md$/,
+  // ★ 兼容两种目录名（2026-10-01 目录统一 `records/` → `reviews/`）：
+  //   **历史提交里的路径是 `records/X-*.md`** —— 改名后若只认 `reviews/`，
+  //   C5 会把 7 个历史提交**误报**成「改了契约却无同批记录」。
+  //   ★ 历史**不回填**（纪律）⇒ 判据**自己接受两种**（走「判据修正」首选路，不用留证豁免）。
+  [ROOT]: /^(?:records|reviews)\/X-\d+\.md$/,
 };
 const REPO_LABEL = { [DALU]: 'dalu', [ROOT]: 'guild' };
 
@@ -753,7 +757,7 @@ function daluRecordFiles() {
     if (!isReviewRecord(t)) continue;
     reviewed++;
     if (hasUncoveredSection(t)) continue;
-    (fileIsFresh(ROOT, `records/${f}`, epoch) === true ? fresh : backlog).push(f.replace(/\.md$/, ''));
+    (fileIsFresh(ROOT, `reviews/${f}`, epoch) === true ? fresh : backlog).push(f.replace(/\.md$/, ''));
   }
 
   if (reviewed === 0) { ok('C8', '暂无审阅类记录 → 本规则不适用'); return; }
@@ -814,7 +818,7 @@ if (process.argv.includes('--self-test')) {
     ['C5', '只改 docs/ → 不要求记录', commitNeedsRecord(['docs/x.md'], IMPL_RE[DALU], RECORD_RE[DALU]) === false, true],
     ['C5', '只改 records/ → 不要求', commitNeedsRecord(['records/T-0001.md'], IMPL_RE[DALU], RECORD_RE[DALU]) === false, true],
     ['C5', 'guild 改 contracts/ 无 X-* → 缺口', commitNeedsRecord(['contracts/data-contract.md'], IMPL_RE[ROOT], RECORD_RE[ROOT]) === true, true],
-    ['C5', 'guild 改 contracts/ 带 X-* → 不算缺口', commitNeedsRecord(['contracts/data-contract.md', 'records/X-0015.md'], IMPL_RE[ROOT], RECORD_RE[ROOT]) === false, true],
+    ['C5', 'guild 改 contracts/ 带 X-* → 不算缺口', commitNeedsRecord(['contracts/data-contract.md', 'reviews/X-0015.md'], IMPL_RE[ROOT], RECORD_RE[ROOT]) === false, true],
     ['C5', 'guild 只改 docs/ → 不要求记录（文档动作另有门禁）', commitNeedsRecord(['docs/GLOSSARY.md'], IMPL_RE[ROOT], RECORD_RE[ROOT]) === false, true],
     // C6 契约回执（机制⑦ · 来源 X-0016）
     ['C6', '有非空「契约回执」节 → 通过', contractReceiptPresence('# t\n\n## 契约回执（下游 → 上游）\n- 本次消费：`data-contract.md` §3.1 / §3.2\n- 读不通：无') === true, true],

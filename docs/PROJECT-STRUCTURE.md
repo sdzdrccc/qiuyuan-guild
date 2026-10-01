@@ -44,7 +44,7 @@ qiuyuan-dalu/                      ← monorepo 根（Git 仓库根，须 git in
 │  ├─ DEVLOG.md                    │ 与 `contracts/` —— 两者都住 guild
 │  └─ SKILL-ROUTING.md             ┘
 ├─ tasks/                          本工程内部任务卡（编号 `T-*`）
-├─ records/                        每任务完成记录（强制产出 · 同仓铁律）
+├─ reviews/                        ★ **审阅文档唯一目录**（`X-*.md` 审阅记录 · `ext/` 外部报告 · `INDEX.md` 索引 · 见 REVIEW-PROCESS §9）
 ├─ tests/                          qa 的领地（验收脚本）
 │
 ├─ ue-client/                      ★ UE5 工程（完整工程 · 单工程多平台 · 见 §2）
@@ -117,7 +117,7 @@ ue-client/                         ← 这就是 UE 工程根（不是子目录�
 - **判据要落在「引擎真正读取的那个字段」上** —— 最典型的例子是 MSVC：
   **目录名 `14.44.35207` 不是版本号**，UE 读的是 `cl.exe` 的 **`ProductVersion`**（本机 `14.44.35228` ✅ 合规）。
   **唯一正确查法**见 `ENVIRONMENT.md` §2.1.1。
-  > 曾据此误报「MSVC 被禁导致 M1 阻塞」**两次**，并写进两仓文档 —— 复盘见 `records/X-0006.md` 附加节。
+  > 曾据此误报「MSVC 被禁导致 M1 阻塞」**两次**，并写进两仓文档 —— 复盘见 `reviews/X-0006.md` 附加节。
 
 #### 创建前的顺序
 

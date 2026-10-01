@@ -42,7 +42,7 @@
 | 找该用哪个 skill | `docs/SKILL-ROUTING.md` |
 | 装 skill | `docs/SKILL-ROUTING.md` §准入 —— **先过安全审计** |
 | 写任务卡 / 完成记录 | `tasks/` + `records/`（**编号前缀 `X-`**） |
-| 登记跨库需求 | `registry/cross-repo-ledger.md`（索引）+ `records/X-*.md`（正文） |
+| 登记跨库需求 | `registry/cross-repo-ledger.md`（索引）+ `reviews/X-*.md`（正文） |
 | 查「某 agent 做过什么」 | `registry/agent-log.md`（**派生视图，非真源** —— 真源是 `records/`） |
 | 判某条变更该给什么结论 | `CONVENTIONS.md` **§5.5** —— **只有 `通过 / 不通过`，不得填分数** |
 | **审阅某个波次 / 里程碑 / 跨仓交付** | `docs/REVIEW-PROCESS.md` —— **审阅流程**（五步 + 输出模板 + 三条纪律）；skill `qiuyuan-review-pipeline` |
@@ -120,7 +120,7 @@ Codex 原型是**消耗品**（验证用），已验证的结论**单向回流�
    **历史条目一个字都不许改。**
 
 4. **交付即产记录；`records` 必须与它描述的改动同仓**
-   - 本仓发起的**跨库任务 / 契约变更** → `records/X-*.md`（**本仓**）
+   - 本仓发起的**跨库任务 / 契约变更** → `reviews/X-*.md`（**本仓**）
    - `qiuyuan-dalu` 的**实现任务** → `dalu/records/T-*.md`（**彼仓**）
    - **禁止**把 dalu 的实现记录搬进本仓（记录会与 git diff 脱钩，查账失效）
    - 记录须含**可复现的验证证据**（命令 + 实际输出），不是「已测试通过」
@@ -172,7 +172,7 @@ Codex 原型是**消耗品**（验证用），已验证的结论**单向回流�
 - [ ] §14 **表格与汇总行两处**都已同步
 - [ ] `README.md` 与方案版本一致
 - [ ] 改了契约 → **ADR 已开**（`docs/DECISIONS.md`）
-- [ ] 产出了 `records/X-*.md`（本仓任务）或已转办 `dalu`（实现任务）
+- [ ] 产出了 `reviews/X-*.md`（本仓任务）或已转办 `dalu`（实现任务）
 - [ ] 跨库需求已登记 `registry/cross-repo-ledger.md`，且**索引与正文对得上**
 - [ ] 编号前缀正确：**本仓 `X-`** / dalu `T-`
 - [ ] **没有**往上游三库写任何东西

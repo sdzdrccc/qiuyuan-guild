@@ -701,7 +701,7 @@ v0.18~v0.20 三轮实测暴露同一类问题：**环境事实散落，且会被
 | # | 铁律 | 反面对价 |
 |---|---|---|
 | 1 | **唯一真源** —— 版本号只在那里维护 | 抄多处必不一致 |
-| 2 | **现状只写实测** —— 不得由安装记录 / 版本号外观 / 目录名推断 | 本轮误报两次（复盘见 `records/X-0006.md` 附加节） |
+| 2 | **现状只写实测** —— 不得由安装记录 / 版本号外观 / 目录名推断 | 本轮误报两次（复盘见 `reviews/X-0006.md` 附加节） |
 | 3 | **版本变更须 ADR** —— 升级 / 降级 / 换选型先落 ADR | 与 `CONVENTIONS.md` 升版规则一致 |
 
 **三、锁定策略**（值本身在台账，此处只定结构）：
@@ -735,7 +735,7 @@ v0.18~v0.20 三轮实测暴露同一类问题：**环境事实散落，且会被
 ## ADR-0013 —— 资产命名**按场合分工**：引擎内 Epic 前缀 ／ 引擎外上游 kebab
 
 - **状态**：`accepted`
-- **来源**：**推导**（可复核）—— 关掉 `PROJECT-STRUCTURE.md` §9 与 `records/X-0005.md` 遗留的「`CONVENTIONS.md` §6.1 应补录 UE 资产前缀」
+- **来源**：**推导**（可复核）—— 关掉 `PROJECT-STRUCTURE.md` §9 与 `reviews/X-0005.md` 遗留的「`CONVENTIONS.md` §6.1 应补录 UE 资产前缀」
 - **supersedes**：无
 
 ### 背景
@@ -770,7 +770,7 @@ v0.18~v0.20 三轮实测暴露同一类问题：**环境事实散落，且会被
 
 - `docs/CONVENTIONS.md` **§6.1**：命名形态表**补两行**（引擎内 / 引擎外）并注明分工
 - `docs/PROJECT-STRUCTURE.md` §4 的前缀表**保持不变**（它是「引擎内」那一行的展开）
-- 关掉 `records/X-0005.md` 与 `PROJECT-STRUCTURE.md` §9 的遗留待办
+- 关掉 `reviews/X-0005.md` 与 `PROJECT-STRUCTURE.md` §9 的遗留待办
 
 ---
 
@@ -870,7 +870,7 @@ protoc 属**第三类** —— 「将来才需要，**且现在不做也不影�
 **三重风险**：
 
 1. **检索污染** —— `find -iname "*技术架构*"` **精确命中 2 份**，其中一份已作废；按文件名检索的 AI 约**一半概率**拿到错的那份（本次即由此发现）；
-2. **编号撞车** —— 该文档自用 `ADR-01 ~ 06`，**其 ADR-03 与现行 ADR-0003 含义相反**（「Java 单体继承 · 否决 Go」 vs 「落地路径改纵向薄切片」）；同 `records/X-` 撞号的旧例；
+2. **编号撞车** —— 该文档自用 `ADR-01 ~ 06`，**其 ADR-03 与现行 ADR-0003 含义相反**（「Java 单体继承 · 否决 Go」 vs 「落地路径改纵向薄切片」）；同 `reviews/X-` 撞号的旧例；
 3. **隐身性** —— 它**不在 Obsidian 库内** → **vault 侧检索看不见**，只有文件系统检索能命中。
 
 ### 裁决
@@ -894,7 +894,7 @@ protoc 属**第三类** —— 「将来才需要，**且现在不做也不影�
 - `docs/ROADMAP.md` **§9**：文档表加一行
 - `docs/PROJECT-STRUCTURE.md` **§1 / §9**：`server/` 加指针
 - `registry/cross-repo-ledger.md`：补 **`X-0009`**（本轮）+ 登记外部历史方案
-- `records/X-0009.md`：本轮记录
+- `reviews/X-0009.md`：本轮记录
 
 ---
 
@@ -952,7 +952,7 @@ server/
 - `docs/MULTI-AGENT-DEV-PLAN.md` **v0.23 → v0.24**：**§2.1 领地路径回写** + **§14.1e 裁决 26**
 - `docs/PROJECT-STRUCTURE.md` **v1.6 → v1.7**：§1 `server/` 行补结构；§9 待裁项关闭
 - `registry/cross-repo-ledger.md`：补 **`X-0010`**
-- `records/X-0010.md`：本轮记录
+- `reviews/X-0010.md`：本轮记录
 
 > **可复用判据（留痕）**：目录切分该按「**运行时归属**」还是「**写权归属**」？答案通常是**两个坐标分层** ——
 > **物理目录表达运行时**（可拆可挪），**写权用声明**（可变可换主）。把两者压成一层，必然牺牲其中一个。
@@ -1034,7 +1034,7 @@ server/
 - `docs/ENVIRONMENT.md` **v1.2 → v1.3**：补引擎注册与启动方式
 - `docs/MULTI-AGENT-DEV-PLAN.md` **v0.24 → v0.25**：**§14.1e 裁决 27**
 - `registry/cross-repo-ledger.md`：补 **`X-0012`**
-- `records/X-0012.md`：本轮记录
+- `reviews/X-0012.md`：本轮记录
 
 > **可复用判据（留痕）**：**真源也会过期。** 「按真源执行」不等于「按事实执行」——
 > 当真源描述的是**某个软件的具体界面 / 选项**时，**该软件一升级，真源即失真**。
@@ -1104,7 +1104,7 @@ M1 **不做四洲出生选择** —— 出身**固定为「北桢洲 · 槐阴�
 | `docs/MULTI-AGENT-DEV-PLAN.md` | **v0.25 → v0.26**；§9 M1 目标句 + 出身口径注；**§14.1f 裁决 28** |
 | `qiuyuan-dalu/docs/CREATION-DATA.md` | 新增 **§3.1**（M1 收敛决定）、**§5.1**（标签命名规范）；§6 缺口表 #1 / #6 / #7 |
 | `registry/cross-repo-ledger.md` | 补 **`X-0014`** |
-| `records/X-0014.md` | 本轮记录 |
+| `reviews/X-0014.md` | 本轮记录 |
 
 > **上游未改**（`虬渊大陆` **只读**）：槐阴村设定**本就存在**，本裁决**无需新增或修改任何世界观条目** ——
 > 这正是**铁律一**（对上游只读）能成立的原因：**设定的落点早就备好了，我们只是照着用**。
@@ -1206,7 +1206,7 @@ M1 施工详案（`qiuyuan-dalu/docs/M1-IMPLEMENTATION.md`）在**六轮裁定**
 | `contracts/protocol-contract.md` | v0.1 → **v0.2**：§1 示例 / §2.1 `register`·`login` 改 `{phone, password}` / §2.3 `breakthrough` 改 `mp` / §3.1 `login_ok` 加 `hasCharacter` / §3.3「会心」→「暴击」+ `mp` / §5.1 JSON + 枚举表 + 备注 / §8 待办勾销两条 + 新增两条 |
 | `docs/CONVENTIONS.md` | §3.2 举例 `灵根纯度(0~100)` → **`(1~100)`** |
 | `docs/DECISIONS.md` | 本条 |
-| `registry/cross-repo-ledger.md` · `records/X-0019.md` | 本轮记录 |
+| `registry/cross-repo-ledger.md` · `reviews/X-0019.md` | 本轮记录 |
 
 > **上游未改**（`虬渊大陆` **只读**）：世界观 `灵根资质品级.md` 两列**保留**（降为叙事口径），
 > 两条「纯度写进伤害侧」的表述**已在 `X-0015` §7.4 登记为待提订正**，走 `qiuyuan-vault-iterate`，**不在本仓改**。
@@ -1316,7 +1316,7 @@ M1 施工详案（`qiuyuan-dalu/docs/M1-IMPLEMENTATION.md`）在**六轮裁定**
 |---|---|
 | `contracts/data-contract.md` | v0.4 → **v0.5**：§6.2 边界 2（**待裁 → 已裁**）· §6.3 新增**施放前置约束** + 消无定义分支 · §10.1b **勾销**该项（并入 §10.1）· §10.2 新增两条 · 变更记录 |
 | `docs/DECISIONS.md` | 本条 + 「待裁决汇总」**删 M2 那行** + ADR-0019 缺口表第 2 行**只追加**指针 |
-| `records/X-0020.md` · `registry/cross-repo-ledger.md` · `registry/agent-log.md` | 本轮记录 / 派生视图 |
+| `reviews/X-0020.md` · `registry/cross-repo-ledger.md` · `registry/agent-log.md` | 本轮记录 / 派生视图 |
 | `qiuyuan-dalu/docs/M1-IMPLEMENTATION.md` · `docs/CREATION-DATA.md` | 状态由「待裁」改「**已裁（ADR-0020）**」 |
 
 > **上游未改**（`虬渊大陆` **只读**）：本条**不是取代上游，是回到上游**。
@@ -1423,7 +1423,7 @@ dalu `M1-IMPLEMENTATION.md` §7.2 表第 **2** 项：
 | `contracts/data-contract.md` | v0.5 → **v0.6**：§3.1 `body_name` 示例（**金罡灵体已删**）+ 补**体质准入口径** · **§10.1b 新增一条**（空池回落 —— ★ 本节唯一**阻塞 M1** 项）+ **§10.2 新增三条** · 变更记录 |
 | `contracts/protocol-contract.md` | §2.1 `create_character` 说明补「**体质按灵根准入抽取**」 |
 | `docs/DECISIONS.md` | 本条 + 「待裁决汇总」增 **M1** 一行（空池回落） |
-| `records/X-0021.md` · `registry/cross-repo-ledger.md` · `registry/agent-log.md` | 本轮记录 / 派生视图 |
+| `reviews/X-0021.md` · `registry/cross-repo-ledger.md` · `registry/agent-log.md` | 本轮记录 / 派生视图 |
 | `qiuyuan-dalu/data/` | `datas/qydl_physique_def_config.csv`（删 5 行 + 重编号 + `fit_root` 多值）· `defines/30_physique.xml`（类型 + 注释）· **重跑 Luban**（`gen/json` + `platform/config/gen/*.go`） |
 | `qiuyuan-dalu/docs/` | `M1-IMPLEMENTATION.md`（§3.1 / §3.2 ⑤ / §6 第 4 项 / §7.2-2 销号）· `CREATION-DATA.md`（§2.1 / §2.2 / §7.4 / §7.5） |
 
