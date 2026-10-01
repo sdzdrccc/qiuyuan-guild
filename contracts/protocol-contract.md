@@ -1,6 +1,6 @@
 # 协议契约（Protocol Contract）
 
-> **层**：L3 游戏侧（本仓 `contracts/`）　|　**状态**：**v0.3**（2026-09-30 **体质灵根准入** —— `DECISIONS.md` **ADR-0021**；上一版 v0.2 = M1 契约对齐 · ADR-0019）
+> **层**：L3 游戏侧（本仓 `contracts/`）　|　**状态**：**v0.4**（2026-10-01 **M1 契约补齐包** —— `DECISIONS.md` **ADR-0023**；上一版 v0.3 = 体质灵根准入 · ADR-0021）
 > **真源**：本文件。客户端与服务端**双向**只读消费。
 > **来源**：从 Codex 原型的 `MessageTypes` + `docs/03-protocol-and-api.md`（216 行）**提炼**，非新设计。
 > **战略地位**：服务端**重写 Go**（已定）时，**Java 侧最有价值的产出就是本契约**（协议 + 数据表）——那 22 个 Spring 服务会被丢弃，本契约不会。
@@ -28,6 +28,22 @@
 |---|---|
 | `type` | **snake_case**，请求与响应不共用词表（见 §2 / §3） |
 | `data` | 对象；无参数时传 `{}`（**不省略 `data`**） |
+| `data` 内的字段 | ★ **一律 camelCase**（如 `accountId` / `hasCharacter` / `rootType`）—— **v0.4 新增（`ADR-0023` ⑥）**。此前只规定了 `type` 的风格，按它类推会写成 snake_case，**而写错了看不出来** |
+
+**★★ 身份字段不得出现在请求体里**（**v0.4 新增 · `ADR-0023` ①**）：
+
+**凡服务端已能从会话确定的身份信息（`accountId` / `characterId` / `roleId` …），一律以会话为准，请求体不携带。**
+请求里若仍出现，服务端**直接忽略**（不读、不校验、不据此授权），并以日志记录 —— 便于发现旧客户端。
+
+> **理由**：同一事实有两个来源时，**弱的那一个会被攻破**；而契约是各端照抄的东西，
+> 它留下的冗余会被每一端各抄一遍。★ **删掉它，而不是在实现里「记得别用」。**
+
+> ⚠️ **适用范围（★ 范围闸门 · 同 `ADR-0019` 的处置：只登记不改）**：
+> 本次**只落 M1 域** —— **§2.1** 已按本条清掉 `accountId`。而 **§2.2 / §2.3** 的 `characterId`、以及
+> **§2.5 物品 / §2.6 储物 / §2.7 功法任务 / §2.8 社交** 的 `characterId`，**本次一律不动**
+> —— 它们属 **M2 / M5 / M7 域**，**已登记 §8 待办**。
+> ★ **别顺手改**：这些段落里的 `characterId` 还牵着「角色选择 / 多角色」等未裁问题，
+> 在此处一并改会**把一个协议整洁问题，扩成一次跨里程碑的语义变更**。
 
 **鉴权**：`login_ok` 返回 `token`；`enter_world` **必须携带**；`token` 不匹配则拒绝（旧客户端未带 `token` 兼容放行）。
 
@@ -42,8 +58,8 @@
 | `ping` | `{}` | 心跳 |
 | `register` | `{phone, password}` | 注册（**手机号即登录标识** —— ADR-0019 ①）；`username` / `email` **已废** |
 | `login` | `{phone, password}` | 登录（账号不存在则报错） |
-| `list_characters` | `{accountId}` | 列出该账号角色（**单角色制：长度 0 或 1** —— 裁定 B） |
-| `create_character` | `{accountId, name, gender}` | 建角；`gender 0=男/1=女`；**随机灵根/资质/体质/纯度**；**重名须拒**（裁定 C）。★ 其中**体质**按**灵根准入**抽 —— **有对应灵根才有概率觉醒**（**ADR-0021**）；**无对应灵根时该档池空**，回落口径**待裁**（`data-contract.md` §10.2） |
+| `list_characters` | `{}` | 列出**本会话账号**的角色（**单角色制：长度 0 或 1** —— 裁定 B）。★ **`accountId` 已删**（v0.4 · `ADR-0023` ①）—— **身份取自会话** |
+| `create_character` | `{name, gender}` | 建角（★ **`accountId` 已删** · 同上）；`gender 0=男/1=女`；**随机灵根/资质/体质/纯度**；**重名须拒**（裁定 C）。★ 其中**体质**按**灵根准入**抽 —— **有对应灵根才有概率觉醒**（**ADR-0021**）；**无对应灵根时该档池空 ⇒ 回落 = 落凡体**（**`ADR-0022`** · 见 `data-contract.md` §10.1b） |
 | `logout` | `{}` | 离开世界（广播 `player_left`）并返回登录态；**会话保留**，可重新登录 |
 
 > ★ **v0.2 改动（ADR-0019 ①④）**：`username` / `email` → **`phone`**；`playerId` → **`accountId`**
@@ -122,13 +138,29 @@
 
 ## 3. 响应类型（服务端 → 客户端）
 
+### 3.0 通用响应（**v0.4 新增 · `ADR-0023` ③**）
+
+| `type` | `data` | 说明 |
+|---|---|---|
+| `error` | `{message}` | **协议层**错误：未注册的 `type` / 畸形消息 / `data` 结构不符。★ **不改登录态、不断连接** |
+
+**★ 与 `*_fail` 的分工（比这张表本身更重要）**：
+
+| 情形 | 回什么 | 例子 |
+|---|---|---|
+| **请求本身有问题**（发错了） | `error` | 未注册的 `type`、JSON 畸形、字段类型不符 |
+| **请求合法但业务上不成立**（被拒了） | 各自的 **`*_fail`** | `login_fail` / `register_fail` / `create_fail` |
+
+> **两者混用会让客户端无法区分「我发错了」与「服务端拒绝了我」** ——
+> 前者该修客户端，后者该给玩家看提示。**混在一起，客户端只能猜。**
+
 ### 3.1 账号与角色
 
 | `type` | `data` | 说明 |
 |---|---|---|
 | `pong` | `{}` | 心跳回包 |
 | `login_ok` | `{accountId, phone, token, hasCharacter}` | `token` = 会话鉴权；★ **`hasCharacter`** = 是否已有角色（**单角色制**下客户端据此决定进**建角屏**还是直接进游戏 —— ADR-0019 ①） |
-| `login_fail` | `{message}` | 登录失败 |
+| `login_fail` | `{message}` | 登录失败。★★ **文案与耗时都有硬要求**（**v0.4 补 · `ADR-0023` ⑦**）：<br>**（a）账号不存在** 与 **（b）密码错** ⇒ **必须回同一句**（如「账号或密码错误」），且**响应耗时也须相当** —— 否则**用时间就能枚举出哪些手机号已注册**；<br>**（c）账号存在但封禁/注销** ⇒ **具名**（如「该账号已被封禁，请联系客服」）—— 玩家要知道该申诉，而不是反复试密码。<br>★ **含糊只服务于「不可枚举」这一个目标**；**不得对不存在的账号回任何具名原因**。 |
 | `register_ok` | `{accountId, phone}` | 注册成功 |
 | `register_fail` | `{message}` | 注册失败 |
 | `characters` | `{accountId, characters:[...]}` | 角色列表（**单角色制：长度 0 或 1**） |
@@ -229,7 +261,9 @@
 | DELETE | `/api/instances/{id}` | 删除无主物品（**有主拒绝**） |
 | DELETE | `/api/drops` | GM 清空全部无主物品 |
 | GET | `/api/characters/{id}/inventory` | 角色背包（GM 查看） |
-| GET | `/api/stats` | `{players, characters, mails, online}`（`online` = 世界中在线人数；另含 `scenes` 分线统计） |
+| GET | `/api/stats` | **v0.4 扩字段（`ADR-0023` ④）**：`{players, characters, mails, online, connections, loggedIn, scenes, sources}`。<br>★★ **`online` 与 `connections` 不是一回事，不许互相冒充**：<br>　**`online`** = **世界中在线人数** —— **已进入世界（`enter_world` 成功）的角色**（**游戏语义**）；<br>　**`connections`** = **当前 WebSocket 连接数**（含未登录）（**网络层事实**）；**`loggedIn`** = 其中已完成登录的。<br>　★ 登录了但没进图的玩家**只算后者** —— 用一个冒充另一个，会让「在线人数」在不同页面给出不同答案。<br>`scenes` = 分线在线统计。`sources` = **逐指标交代数据来路**的附加字段；<br>　★ **没有来源的指标回 `null`，不回 `0`** —— `0` 是「查过了，结果为零」，`null` 才是「我没有这个数」。 |
+| GET | `/api/gm/config` | **v0.4 新增（`ADR-0023` ⑤）**：配置表清单 —— `{sourceDir, count, tables:[{name, rows, columns}], note}` |
+| GET | `/api/gm/config/{table}` | **v0.4 新增（`ADR-0023` ⑤）**：单张配置表的行数据 —— `{name, columns, rows}`；表不存在回 **404**（★ 不是空数组 —— 「没这张表」与「这张表是空的」是两回事） |
 
 ---
 
@@ -248,11 +282,25 @@
   ],
   "spiritualRootQuality": 3,
   "bodyTier": 1, "bodyName": "风雷冰灵体",
+  "origin": "Origin.NorthZhen.Huaiyin",
   "xinmo": 12.5, "kuangzao": 8.0, "danDu": 0.0,
   "shenshi": 19.0,
   "hp": 100.0, "maxHp": 100.0
 }
 ```
+
+> ★ **`origin` 是 v0.4 新增（`ADR-0023` ⑧）** —— 出身。取值 `Origin.NorthZhen.Huaiyin`（M1 唯一）；
+> **真源 = 下游 `qydl_game_config.origin_tag`**，**由配置派生、不落库**。
+>
+> ★★ **它为什么不进 `data-contract.md` §3.1 `Role`** —— 因为**这两份契约回答的不是同一个问题**：
+>
+> | 契约 | 回答 |
+> |---|---|
+> | `data-contract.md` §3.1 `Role` | **落库存哪些字段** |
+> | **本节（`protocol-contract.md` §5.1）** | **客户端看到哪些字段** |
+>
+> ⇒ **派生而不落库的字段（`origin`、`maxHp` / `maxMp` …）只属于后者。**
+> ★ 把派生字段塞进 `Role` 会**造出双真源**（存一份、配置一份，迟早不一致）。
 
 **枚举**：全部**引用 `data-contract.md`**，本契约不重复定义。
 
@@ -265,6 +313,7 @@
 | `bodyTier` | `0~3` | `data-contract.md` §3.1 |
 | `roots[].purity` | **`1~100`**（均匀随机，**与品级无关** —— 裁定 G） | `data-contract.md` §3.2 |
 | `roots[].sortOrder` | **`0` = 主灵根 = 纯度最高者** | `data-contract.md` §3.2 |
+| `origin` | ★ **出身标签** | **v0.4 新增（`ADR-0023` ⑧）**。M1 唯一取值 `Origin.NorthZhen.Huaiyin`；**真源 = 下游 `qydl_game_config.origin_tag`**，**由配置派生、不落库**（故**不在** `data-contract.md` §3.1 `Role` 里 —— 见下方说明） |
 
 > ✅ **灵力命名已统一（v0.2 · ADR-0019 ④）**：字段由 **`spiritPower` → `mp`**（上限 `maxMp`）——
 > 与 `data-contract.md` §3.1 的同名字段一致。**原「两个名字指同一资源」的状态已消除**
@@ -353,11 +402,32 @@ ID 格式 **`gong_<root>`**（`gong_jin` / `gong_mu` / `gong_shui` / `gong_huo` 
 - [ ] ★ **`playerId` / `targetUsername` 等旧名统一**（**§2.8 社交段 / §4 REST 段**）——
       与 `data-contract.md` 的 `Account` / `Role` 命名对齐。属 **M7 / M17 域**，**M1 不碰**
       （ADR-0019 §「只登记不改」—— 判据：**发现缺口 ≠ 顺手改**）
+- [ ] ★ **身份字段出请求体**（**v0.4 登记 · `ADR-0023` ①**）—— §2.1 **已清**；
+      **§2.2 / §2.3 的 `characterId`、§2.5 物品 / §2.6 储物 / §2.7 功法任务 / §2.8 社交 的 `characterId` 仍在**。
+      属 **M2 / M5 / M7 域** ⇒ **只登记不改**（同 `ADR-0019` 的范围闸门）。
+      ★ **别顺手改**：那些段落的 `characterId` 还牵着「角色选择 / 多角色」等未裁问题，
+      一并改会把**协议整洁问题扩成跨里程碑的语义变更**。
+- [ ] 确认 REST 的错误码表（当前只有 `code != 0` 的约定）。★ **v0.4 已补 WS 侧的通用 `error`（§3.0）**；
+      **REST 侧仍缺**（下游现用 `0` / `4000` / `4004` / `4503` / `5000`，**未经契约确认**）
 - [ ] 为每条消息补**字段类型与必填性**（当前多数仅有字段名）
 - [ ] 补 `character_attributes` 的**完整字段清单**（当前只列了分组）
 - [ ] 确认 `sceneId` 命名规范（与 `asset-ref-contract.md` §5.2 联动）
-- [ ] 确认 REST 的错误码表（当前只有 `code != 0` 的约定）
 - [ ] 核对「占位」法术（`detect` / `control` / `stealth` / `fasting`）在正式工程是否保留
 - [ ] 评估 WebSocket 是否需**消息版本协商**（旧客户端兼容靠「未带 token 放行」，不是长久之计）
 - [ ] **客户端段协议的分层差**（**M2 前须裁**）—— 本契约 §1 定 **WS + JSON**；上游《技术架构》**§3.2** 定客户端走 **TCP + UDP/KCP + Protobuf**（商业化期双通道）。
       判为「**分阶段**」（原型期务实选择 vs 目标形态）**而非冲突**，但**上游未写明这句过渡** → 须补。**不阻塞 M1**（M1 照 §1 走即可）。见 **ADR-0014** §附带。
+
+---
+
+## 9. 变更记录
+
+> 本文件早期版本只有头部一行版本号，**没有变更台账**。**v0.4 起补上** ——
+> 理由与 `data-contract.md` 同：**改契约的人需要一处能按版本倒查「改了什么」的地方**，
+> 而头部那一行写不下两版以上的内容。
+
+| 版本 | 日期 | 变更 |
+|---|---|---|
+| **v0.4** | **2026-10-01** | ★ **M1 契约补齐包**（`DECISIONS.md` **ADR-0023**）—— 一次集中处理下游三张记录（`T-0022` / `T-0023` / `T-0024`）**§契约回执**累计上报的 **8 处**缺口：<br>**① §1/§2.1 身份字段出请求体**（`create_character` / `list_characters` 去掉 `accountId`；§1 加「身份一律取自会话」+ **范围闸门**：其余段落的 `characterId` 只登记不改）—— **安全缺口**；<br>**② §2.1 同步「回落 = 落凡体」**（原写「待裁」，与 `data-contract.md` v0.7 矛盾）；<br>**③ §3.0 新增通用 `error`**（原缺「协议层错误」回包的定义）+ 写明与 `*_fail` 的分工；<br>**④ §4 `/api/stats` 扩字段** —— `connections` / `loggedIn` / `sources`，并**明文区分 `online`（已进世界）与 `connections`（连着的人）**；<br>**⑤ §4 新增 `/api/gm/config` 与 `/api/gm/config/{table}`**（GM 读配置表）；<br>**⑥ §1 补「`data` 内字段一律 camelCase」**；<br>**⑦ §3.1 `login_fail` 补「防枚举」的完整要求** —— 文案与**耗时**双相当 + 封禁账号**具名**的三段式；<br>**⑧ §5.1 角色对象新增 `origin`**，并说明它**为何不进** `data-contract.md` 的 `Role`（**存什么** vs **看什么**，两份契约回答两个问题）。<br>★ **本节起补上变更记录**。 |
+| **v0.3** | **2026-09-30** | 体质灵根准入（`ADR-0021`） |
+| **v0.2** | **2026-09-30** | M1 契约对齐（`ADR-0019`）：`{phone, password}` · `accountId` · `mp` / `maxMp` · §5.1 `realmId` · `layer` |
+| **v0.1** | （原型期） | 从 Codex 原型 `MessageTypes` + `docs/03-protocol-and-api.md` 提炼 |
