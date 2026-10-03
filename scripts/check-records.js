@@ -598,28 +598,36 @@ const REPO_LABEL = { [DALU]: 'dalu', [ROOT]: 'guild' };
     }
 
     const backlog = [];   // { h, label }
-    const fresh = [];
+    const fresh = [];     // { h, label }  ← ADR-0024 ②：与 backlog 同构（原为裸字符串 ⇒ 输出变量误用）
     for (const cm of cs) {
       if (!commitNeedsRecord(cm.files, IMPL_RE[repo], RECORD_RE[repo])) continue;
       const h = cm.hash.slice(0, 7);
-      const label = `${h} ${cm.date} ${cm.subject.slice(0, 42)}`;
-      if (epoch === null || epoch.has(cm.hash)) backlog.push({ h, label });
-      else fresh.push(label);
+      const cmLabel = `${h} ${cm.date} ${cm.subject.slice(0, 42)}`;
+      if (epoch === null || epoch.has(cm.hash)) backlog.push({ h, label: cmLabel });
+      else fresh.push({ h, label: cmLabel });
     }
 
-    // 存量里剔除**已豁免**者（「豁免也要留证」· 来源 X-0016 · 补 X-0015 §六「书面豁免」无实现位之缺）
-    const { kept, waived } = splitWaived(backlog.map(b => b.h), WAIVED.commits);
+    // ★ ADR-0024 ①：豁免判定提到分纪元【之前】—— 原来只对 `backlog` 查 `WAIVED`，
+    //   `fresh`（纪元外新增）一律 err 且不查豁免 ⇒ 「已补记的」与「真没记录的」在输出里长得一样，
+    //   读门禁的人分辨不出哪笔是真缺口。⇒ 现在两者同等查表。
+    const all = [...backlog, ...fresh];
+    const { kept, waived } = splitWaived(all.map(b => b.h), WAIVED.commits);
+    const keptSet = new Set(kept);
+    // 仍需 err 的：未豁免者（★ 存量报 warn、新增报 err —— 纪元纪律不动）
+    const keptBacklog = backlog.filter(b => keptSet.has(b.h));
+    const keptFresh = fresh.filter(b => keptSet.has(b.h));
 
-    for (const f of fresh) {
-      err('C5', `${label}：提交改了实现/契约却**无同批记录** → ${f}`);
+    for (const b of keptFresh) {
+      // ★ ADR-0024 ②：用 `b.label`（各笔自己的），不用被遮蔽的外层 `label`
+      err('C5', `${label}：提交改了实现/契约却**无同批记录** → ${b.label}`);
     }
-    if (kept.length) {
-      warn('C5', `${label}：**存量** ${kept.length} 笔提交改了实现/契约却无同批记录（纪元 \`${GATE_EPOCH[repo]}\` 之前，须补记或书面豁免）：${kept.join(' / ')}`);
+    if (keptBacklog.length) {
+      warn('C5', `${label}：**存量** ${keptBacklog.length} 笔提交改了实现/契约却无同批记录（纪元 \`${GATE_EPOCH[repo]}\` 之前，须补记或书面豁免）：${keptBacklog.map(b => b.h).join(' / ')}`);
     }
     for (const g of waivedGroup(waived.map(h => [h, waivedReason(WAIVED.commits, h)]))) {
       ok('C5', `${label}：${waivedLine(g)}`);
     }
-    if (!fresh.length && !kept.length && !waived.length) {
+    if (!keptFresh.length && !keptBacklog.length && !waived.length) {
       ok('C5', `${label}：改动与记录同批（近 ${cs.length} 笔提交无缺口）`);
     }
   }
@@ -870,6 +878,30 @@ if (process.argv.includes('--self-test')) {
     ['WAIVED', '★ 花名册每条都须带理由与留证落款（不许裸豁免）', (() => {
       const all = [...Object.values(WAIVED.commits), ...Object.values(WAIVED.sections), ...Object.values(WAIVED.records)];
       return all.length > 0 && all.every(r => typeof r === 'string' && r.length > 8 && !/无理由/.test(r) && r.includes('2026-09-30'));
+    })(), true],
+    // ── ADR-0024：`fresh` 分支也查豁免（★★ 判据方向自检见 DECISIONS §ADR-0024）──
+    //  ★ 这三条是本 ADR 的全部价值所在：只断言「该通过的通过」对反向判据永远为真（坑 8）。
+    ['C5', '★★ ADR-0024：`fresh` 里的已补记者 → 豁免后**不进 kept**（fresh 分支必须查 WAIVED）', (() => {
+      //  模拟 C5 分类：fresh 集合里放一笔已登记豁免的 hash ⇒ 它既不该 err 也不该进 kept
+      const fresh = [{ h: '5be5985', label: 'x' }];
+      const { kept } = splitWaived(fresh.map(b => b.h), WAIVED.commits);
+      return kept.length === 0;
+    })(), true],
+    ['C5', '★★ ADR-0024 反向：真没记录的 → **仍须留在 kept 里报错**（防修过头变成「全豁免」）', (() => {
+      const fresh = [{ h: 'deadbe1', label: 'x' }];   // 不在 WAIVED 里
+      const { kept, waived } = splitWaived(fresh.map(b => b.h), WAIVED.commits);
+      return kept.length === 1 && kept[0] === 'deadbe1' && waived.length === 0;
+    })(), true],
+    ['C5', '★★ ADR-0024：`fresh` + `backlog` 混合后仍按同一张表分拣（存量与新增同等受豁免）', (() => {
+      const all = [{ h: '5be5985' }, { h: 'deadbe1' }];
+      const { kept, waived } = splitWaived(all.map(b => b.h), WAIVED.commits);
+      return waived.join(',') === '5be5985' && kept.join(',') === 'deadbe1';
+    })(), true],
+    ['C5', '★ ADR-0024 ②：输出用各笔自己的 label（`b.label`），不得用被遮蔽的外层变量', (() => {
+      //  外层 label（仓库名）与内层 cmLabel（提交标签）同名会互相遮蔽 —— 断言两者不共用
+      const outer = 'dalu';
+      const cmLabel = 'd9c5062 2026-10-03 fix(ui)';
+      return outer !== cmLabel && String(cmLabel).startsWith('d9c5062');
     })(), true],
     // PEND 待实现规则登记位（机制③ · 来源 X-0016）
     ['PEND', '空名单 → 不告警（不打破现状）', pendingNotice([]) === null, true],
