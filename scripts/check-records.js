@@ -124,6 +124,17 @@ const WAIVED = {
     'X-0008': W_C1, 'X-0009': W_C1, 'X-0010': W_C1, 'X-0011': W_C1,
     'X-0012': W_C1, 'X-0013': W_C1, 'X-0014': W_C1,
   },
+  /**
+   * C4「改契约必须 L3 = `arch` + **大人**」的**追认**位 —— 键 = `X-00NN`。
+   *
+   * ★ 只登记**已被大人追认的历史卡**（`ADR-0025` 追认 `X-0024`：2026-10-01 改 `protocol-contract` v0.3→v0.4
+   *   时确有大人口令，缺的是"终审人写进审核节"这个形式）。**新卡不走这里** —— 该在审核节里写清终审人。
+   * ★ 依 `ADR-0024` 的对称原则：**`fresh` 分支同样查本表**。豁免表若只作用于存量，等于没有豁免表。
+   */
+  l3: {
+    'X-0024':
+      '改 `protocol-contract` v0.3→v0.4 的 L3 终审由**大人追认**（`ADR-0025`）· 裁定人：大人 · 日期：2026-10-12 · ★ 本卡正文一字未改',
+  },
   /** C6 契约回执 —— 键 = `T-000N`（dalu）。机制 `X-0016` 上线前的存量（`T-0018` 起已按新模板写）。 */
   records: {
     'T-0001': W_C6, 'T-0002': W_C6, 'T-0003': W_C6, 'T-0004': W_C6, 'T-0005': W_C6, 'T-0006': W_C6,
@@ -196,21 +207,46 @@ function read(p) { try { return fs.readFileSync(p, 'utf8'); } catch { return nul
 // ─────────────────────────────────────────────────────────────
 
 /**
- * 纯函数：记录是否有**「验证证据」节**（按节标题认，不是全文关键词命中）。
+ * 纯函数：证据类节名的**在场性由模板真源判定**（候选词表在本函数内 · 模板是否声明该节不由脚本猜）。
  *
- * ★ G-4（`X-0032`）：原判据是 `/验证证据/.test(t) || /门禁/.test(t)` —— 全文任意位置提一句
- *   「门禁」（例如「本次未跑门禁」）就算有证据节，实测 `X-0012` 只有 `## 证据摘要` 也判通过。
- *   证据节的意义是**命令 + 实际输出**，用关键词命中它等于把判据交给被检者自己措辞。
- *   现按**节标题**认：主体名以 `验证证据` / `证据摘要` / `实测证据` / `证据` / `门禁与自检` 开头的标题才算
- *   （`门禁与自检` 是存量卡的既有合法形态，收紧判据不许顺手把合法形态判死）。
+ * 两个模板各有自己的证据节形态，收紧判据时**只认施工卡那一种就会误杀审阅卡**（实测被误杀 **5 篇**：
+ * `X-0015` / `X-0025` / `X-0026` / `X-0027` / `X-0032` —— 证据都写在 `## …、缺陷清单`（模板明写"每条给可复现证据 · 命令 + 实际输出"），
+ * 却被判"缺证据节"。名单由新旧判据对 `reviews/*.md` 实跑差集得出，非估数。
+ * 与 `X-0033` §四-2 记的是同一类错，只是这次是我自己犯第二次）。
+ *
+ *   · 施工卡 `CONVENTIONS.md §5.2` → `## 验证证据（必须可复现）`
+ *   · 审阅卡 `REVIEW-PROCESS.md §4` → `## 二、缺陷清单` / `## 七、可复现验证证据`
+ *   · 存量合法形态（收紧判据不许顺手判死）→ `## 门禁与自检`
+ *
+ * ★ 派生的是**在场性**，下方那个候选词表本身仍在脚本里 ⇒ 模板若引入全新节名（如 `实测记录`）判据看不见。
+ *   已知边界，登记为 `X-0034` §九 遗留 10，不假装全量派生。
+ *
+ * @param {string} templateText 模板所在文档全文
+ * @returns {string[]} 证据类节名（去掉序号与括注后的主体名）
  */
-function hasEvidenceSection(text) {
-  const re = /^#{1,6}\s*(?:(?:[一二三四五六七八九十]+|\d+)\s*[、.．)）]?\s*)?(?:验证证据|证据摘要|实测证据|门禁与自检|门禁自检|证据)(?![\u4e00-\u9fff])/;
+function evidenceSectionNames(templateText) {
+  const t = String(templateText || '');
+  const names = new Set();
+  for (const line of t.split(/\r?\n/)) {
+    const m = /^#{2,4}\s*(?:[一二三四五六七八九十]+|\d+)?\s*[、.．]?\s*([^（(←\s][^（(←]*)/.exec(line);
+    if (!m) continue;
+    const name = m[1].trim();
+    if (/^(验证证据|可复现验证证据|证据摘要|实测证据|缺陷清单|门禁与自检|门禁自检)$/.test(name)) names.add(name);
+  }
+  return [...names].sort();
+}
+
+/** 纯函数：记录是否有**证据类节**（认节标题，不认正文顺带一提） */
+function hasEvidenceSection(text, names) {
+  const list = (names && names.length ? names : ['验证证据', '可复现验证证据', '证据摘要', '实测证据', '缺陷清单', '门禁与自检'])
+    .map((n) => n.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'))
+    .join('|');
+  const re = new RegExp(`^#{1,6}\\s*(?:(?:[一二三四五六七八九十]+|\\d+)\\s*[、.．)）]?\\s*)?(?:${list})(?![\\u4e00-\\u9fff])`);
   return String(text).split(/\r?\n/).some((l) => re.test(l));
 }
 
 /** 纯函数：记录必备节的在场判定（按**关键词**认，不按标题精确匹配 —— 存量记录用中文序号标题） */
-function sectionPresence(text) {
+function sectionPresence(text, evidenceNames) {
   const t = String(text);
   return {
     status: /状态[：:]/.test(t),
@@ -218,7 +254,7 @@ function sectionPresence(text) {
     changes: /改动清单/.test(t),
     // ★ 证据节改判**标题**（G-4）；`changes` / `review` 两条仍是全文关键词命中，**同一形状的漏洞还在那里**，
     //   本次只按大人点的 G-4 修 evidence，另两条登记为遗留 —— 一并收紧会把与本次无关的存量卡一次性打红。
-    evidence: hasEvidenceSection(t),
+    evidence: hasEvidenceSection(t, evidenceNames),
     review: /审核/.test(t),
   };
 }
@@ -279,7 +315,24 @@ function declaresL3(text) {
 }
 
 /**
- * 纯函数：是否为**审阅类记录**。
+ * 纯函数：把「改契约却缺大人终审」的卡按**追认表**分拣。
+ * ★ 两分支同等对待（`ADR-0024` 对称原则）：豁免表若只作用于存量，等于没有豁免表。
+ * @returns {{waived: Array<[string,string]>, kept: {fresh:string[],backlog:string[]}}}
+ */
+function splitAdultWaived(noAdult, table) {
+  const waived = [];
+  const kept = { fresh: [], backlog: [] };
+  for (const bucket of ['fresh', 'backlog']) {
+    for (const id of noAdult[bucket]) {
+      const why = waivedReason(table, id);
+      if (why) waived.push([id, why]);
+      else kept[bucket].push(id);
+    }
+  }
+  return { waived, kept };
+}
+
+/** 纯函数：是否为**审阅类记录**。
  * 认法取 `REVIEW-PROCESS.md` §4 模板的**标题形态**：`# X-00NN <被审对象> 审阅 —— …`
  *   · `审阅` 后**紧接分隔符**（可带一个括号补充）→ 是审阅记录；
  *   · `审阅流程化` / `审阅模板补…` → 是**流程建设**记录，**不是**审阅记录。
@@ -466,15 +519,30 @@ function guildRecordFiles() {
   return fs.readdirSync(GUILD_RECORDS).filter(f => /^X-\d{4}\.md$/.test(f)).sort();
 }
 
+/**
+ * 纯函数：证据类节名 —— **从两份模板真源现抽**，脚本里不留第二份清单。
+ * 抽不到时不静默：回落硬编码集合并打一条 warn（宁可退化可见，不可退化成误杀）。
+ */
+function loadEvidenceNames() {
+  const fromDocs = [path.join(ROOT, 'docs', 'CONVENTIONS.md'), path.join(ROOT, 'docs', 'REVIEW-PROCESS.md')]
+    .map((p) => evidenceSectionNames(read(p) || ''))
+    .flat();
+  const names = [...new Set(fromDocs)].sort();
+  if (names.length >= 2) return names;
+  warn('C1', `未能从模板文档抽出证据节名（只抽到 ${names.length} 个）→ 回落内置集合，判据可能偏严`);
+  return ['可复现验证证据', '实测证据', '缺陷清单', '证据摘要', '门禁与自检', '验证证据'];
+}
+
 (function c1() {
   const files = guildRecordFiles();
   if (files.length === 0) {
     err('C1', '`reviews/` 下无任何 `X-*.md` —— 禁止空集真空通过');
     return;
   }
+  const evidenceNames = loadEvidenceNames();
   const bad = { status: [], author: [], changes: [], evidence: [], review: [] };
   for (const f of files) {
-    const p = sectionPresence(read(path.join(GUILD_RECORDS, f)) || '');
+    const p = sectionPresence(read(path.join(GUILD_RECORDS, f)) || '', evidenceNames);
     for (const k of Object.keys(bad)) if (!p[k]) bad[k].push(f.replace(/\.md$/, ''));
   }
 
@@ -581,15 +649,21 @@ function guildRecordFiles() {
   if (lvlBad.backlog.length) {
     warn('C4', `${lvlBad.backlog.length} 篇**存量**记录改了 \`contracts/\` 但级别不是 L3：${lvlBad.backlog.join(' / ')}`);
   }
-  for (const id of noAdult.fresh) {
+  // ── C4（v2 升级：从「须含大人」升级为「**触发级别须声明且与改动面匹配**」）──
+  // ★ `noAdult` 先过 `WAIVED.l3`（追认位）—— **fresh 与 backlog 两分支同等对待**（`ADR-0024` / `ADR-0025`）。
+  //   豁免命中不等于"消失"：仍以下面 `waivedGroup` 的 `ok` 行**打印出来并带上依据**，可查。
+  const adultSplit = splitAdultWaived(noAdult, WAIVED.l3);
+  const adult = adultSplit.kept;
+  for (const g of waivedGroup(adultSplit.waived)) ok('C4', waivedLine(g));
+  for (const id of adult.fresh) {
     err('C4', `${id}：改了 \`contracts/\` 但**未出现「大人」**（L3 = \`arch\` + **大人**，不可省）`);
   }
-  if (noAdult.backlog.length) {
-    warn('C4', `${noAdult.backlog.length} 篇**存量**记录改了 \`contracts/\` 但未出现「大人」：${noAdult.backlog.join(' / ')}`);
+  if (adult.backlog.length) {
+    warn('C4', `${adult.backlog.length} 篇**存量**记录改了 \`contracts/\` 但未出现「大人」：${adult.backlog.join(' / ')}`);
   }
   if (!noLevel.fresh.length && !noLevel.backlog.length &&
       !lvlBad.fresh.length && !lvlBad.backlog.length &&
-      !noAdult.fresh.length && !noAdult.backlog.length) {
+      !adult.fresh.length && !adult.backlog.length) {
     ok('C4', `审核分级合规（${files.length} 篇：触发级别已声明，且与改动面匹配）`);
   }
 })();
@@ -823,6 +897,14 @@ if (process.argv.includes('--self-test')) {
     ['C1', '缺「状态」→ 必判缺', sectionPresence('# 标题\n- 执行者：a\n## 改动清单\n## 验证证据\n## 审核').status === false, true],
     ['C1', '缺「执行者」→ 必判缺', sectionPresence('# 标题\n- 状态：已完成\n## 改动清单\n## 验证证据\n## 审核').author === false, true],
     ['C1', '「门禁与自检」也算验证证据节', sectionPresence('# t\n状态：x\n执行者：y\n改动清单\n## 门禁与自检\n审核').evidence === true, true],
+    // ★ G-4 的原始漏洞 + 「收紧判据不许误杀另一类模板」（我自己第一版就误杀了 4 篇审阅卡，见 X-0033 §四-2）
+    ['C1', '正文顺带提一句「门禁」而无节 → **不算**证据节（G-4 的洞）', sectionPresence('# t\n状态：x\n执行者：y\n## 改动清单\n本次未跑门禁。\n## 审核').evidence, false],
+    ['C1', '审阅卡模板的「## 二、缺陷清单」→ **算**证据节（别误杀）', sectionPresence('# t\n状态：x\n执行者：y\n## 改动清单\n## 二、缺陷清单\n## 审核').evidence, true],
+    ['C1', '「## 七、可复现验证证据」→ 算', sectionPresence('# t\n状态：x\n执行者：y\n## 改动清单\n## 七、可复现验证证据\n## 审核').evidence, true],
+    ['C1', '「## 证据摘要」→ 算（存量合法形态）', sectionPresence('# t\n状态：x\n执行者：y\n## 改动清单\n## 证据摘要\n## 审核').evidence, true],
+    ['C1', '「## 验证证据表」→ **不算**（主体名后紧跟汉字 = 另一回事）', sectionPresence('# t\n状态：x\n执行者：y\n## 改动清单\n## 验证证据表\n## 审核').evidence, false],
+    ['C1', '节名抽取：模板文本 → 认出两类证据节', evidenceSectionNames('## 二、缺陷清单  ← 每条给可复现证据\n## 七、可复现验证证据\n## 九、审核').join(','), '可复现验证证据,缺陷清单'],
+    ['C1', '节名抽取：无关标题不得混入', evidenceSectionNames('## 一、审阅对象与判定\n## 三、契约变更包').length, 0],
     ['C1', '缺「审核」→ 必判缺（存量记录的真实形态）', sectionPresence('# t\n状态：x\n执行者：y\n## 改动清单\n## 门禁与自检').review === false, true],
     // C3 二值判据（★ 只看「审核」节 —— 首版扫全文曾误报「引用规则本身」的记录）
     ['C3', '审核节出现「8 分」→ 必判违规', hasScoreLanguage('## 审核\n- 结论：8 分') === true, true],
@@ -836,6 +918,13 @@ if (process.argv.includes('--self-test')) {
     ['C3', '「2 处待裁项」→ 不得误判为评分', hasScoreLanguage('## 审核\n- 检出 2 处待裁项') === false, true],
     // C4 L3 终审（★ v2 收窄 —— 原「正文出现 contracts/」误报 4 篇存量）
     ['C4', '改动清单列契约文件 → 判为涉契约', touchesContracts('# t\n\n## 改动清单\n- 修改 `contracts/data-contract.md` §3.2\n') === true, true],
+    // ★ ADR-0025 的追认位：豁免表**必须两分支同等生效**，且**未追记者照报** —— 否则"加个命名空间"就把判据掏空了
+    ['C4', '已追记（backlog）→ 进豁免组、不再报', JSON.stringify(splitAdultWaived({ fresh: [], backlog: ['X-0024'] }, { 'X-0024': 'ADR-0025' })), JSON.stringify({ waived: [['X-0024', 'ADR-0025']], kept: { fresh: [], backlog: [] } })],
+    ['C4', '★ 已追记（fresh）→ **同样**进豁免组（对称原则）', splitAdultWaived({ fresh: ['X-0024'], backlog: [] }, { 'X-0024': 'ADR-0025' }).kept.fresh.length, 0],
+    ['C4', '★ 未追记的涉契约卡 → **必须仍报**（防豁免位变后门）', splitAdultWaived({ fresh: ['X-9999'], backlog: [] }, { 'X-0024': 'ADR-0025' }).kept.fresh.join(','), 'X-9999'],
+    // ★ 空理由的设计（三个命名空间共用）：**归入豁免组，但理由被替换成「⚠ 无理由 · 违规」**，
+    //   让它在输出里**可见且刺眼**，而不是静默消失 —— 断言必须按真实契约写，不许按我的假设写。
+    ['C4', '豁免理由为空 → 仍进豁免组，但理由标 ⚠ 违规', /⚠ 无理由/.test(splitAdultWaived({ fresh: ['X-0024'], backlog: [] }, { 'X-0024': '' }).waived[0][1]), true],
     ['C4', '未涉契约 → 不判', touchesContracts('# t\n\n## 改动清单\n- 修改 `docs/GLOSSARY.md`\n') === false, true],
     ['C4', '★ 头部「无变更（本次未动 contracts/）」→ 不得误判', touchesContracts('# t\n- 契约引用：**无变更**（本次未动 `contracts/`）\n\n## 改动清单\n- 新增 `docs/X.md`\n') === false, true],
     ['C4', '★ 改动清单里「扫描 `contracts/` `docs/`」→ 不得误判（枚举范围，非改动）', touchesContracts('# t\n\n## 改动清单\n- 脚本扫描 `contracts/` `docs/` `registry/` 的全部 .md\n') === false, true],

@@ -248,19 +248,17 @@ function extractProtocolAffixKeys(t) {
 // R4 · 铁律 3：枚举必须留 unknown
 // ─────────────────────────────────────────────────────────────
 /**
- * ★ 原判据是 `if (!/unknown/.test(契约全文)) err else ok` —— **被它自己该检查的那句话喂饱了**：
- *   `data-contract.md:122` 写着「枚举必须留 `unknown`」，于是无论有没有枚举真的带 `unknown`，
- *   R4 永远输出「约定已声明」。这是 `REVIEW-PROCESS` §坑 8「反向 → 假绿」的教科书样本
- *   （`X-0032` 的 G-2）。
+ * R4 判据的作用域 —— 铁律 3 的原文是「凡**向后回填**的枚举，必须允许未核实取值」。
  *
- * 现改为扫**真正的枚举取值表**：markdown 表行里取值列形如 `` `0=正常, 1=封禁, 2=注销` ``
- * （≥2 个 `数字=值` 项）即认定为一个枚举。然后：
- *   · 一个枚举都没识别到 → **err**（禁止空集真空通过）
- *   · 识别到但**没有任何一个**留了未核实哨兵 → **err**（铁律 3 是装饰性的）
- *   · 部分留了 → **warn**，逐条点名缺的字段
- * 未核实哨兵认三种写法：`unknown` / `未核实` / `-1=`（数值枚举里的等价哨兵）。
+ * ★ 「向后回填」在本契约里有**可机械识别的形态**：取值不由本仓掌握，而是指向别处或待并入 ——
+ *   `归 dalu <表>` / `需求层未列` / `待上游并入` / `属原型扩展`。这类枚举若已落成取值表却不留哨兵，才是违规。
+ * ★ 反过来，**本仓自定义的封闭枚举**（`status = 0/1/2`、`gender = 0/1`）**不在铁律 3 的适用范围内**：
+ *   它们没有"未核实"这种状态，硬塞一个 `unknown=未核实` 只会造出一个没人能写入的死值，
+ *   看着像合规、实际是**假落地**（比漏标更坏 —— 它会骗过下一个人）。
+ *   我上一版判据就是把枚举行一律要求哨兵，误杀了这两个封闭枚举（`X-0033` §四 同型错误的第三次）。
  */
 const ENUM_ROW_RE = /^\|\s*`([a-z0-9_]+)`\s*\|[^|]*\|[^|]*\|\s*`([^`]*\d+\s*[=＝][^`]*)`\s*\|/;
+const BACKFILL_MARK_RE = /(归\s*dalu|需求层未列|待上游并入|属原型扩展)/;
 const UNKNOWN_TOKEN_RE = /unknown|未核实|-1\s*[=＝]/;
 
 /** 纯函数：从契约正文抽出枚举（字段名 → 取值串），与是否含未核实哨兵 */
@@ -276,27 +274,57 @@ function scanEnums(text) {
   return out;
 }
 
+/** 纯函数：抽出「向后回填」的引用点（字段/实体名 + 那句话本身） */
+function scanBackfillRefs(text) {
+  const out = [];
+  for (const line of String(text || '').split(/\r?\n/)) {
+    if (!BACKFILL_MARK_RE.test(line)) continue;
+    const named = /`([a-z0-9_]+)`/.exec(line);
+    out.push({ where: named ? named[1] : line.slice(0, 40), line });
+  }
+  return out;
+}
+
 (function r4() {
   const t = read(path.join(CONTRACTS, 'data-contract.md'));
   if (!t) return;
-  const enums = scanEnums(t);
-  if (enums.length === 0) {
-    err('R4', '未能从 data-contract 识别出任何枚举取值表 → 判据无从生效（禁止空集真空通过）');
+
+  // ① 铁律 3 本身必须在场（原判据的合理内核，保留）
+  if (!/枚举必须留/.test(t)) {
+    err('R4', 'data-contract 未声明铁律 3「枚举必须留 unknown」（CONVENTIONS §1.1）');
     return;
   }
-  const withUnknown = enums.filter((e) => e.hasUnknown);
-  const missing = enums.filter((e) => !e.hasUnknown).map((e) => e.field);
-  if (withUnknown.length === 0) {
+
+  const enums = scanEnums(t);
+  const backfillRefs = scanBackfillRefs(t);
+
+  // ② 已落成取值表的枚举：只查**带回填标注**的那些（行内或同段有回填标记）
+  const backfilled = enums.filter((e) => BACKFILL_MARK_RE.test(e.values));
+  const badBackfilled = backfilled.filter((e) => !e.hasUnknown);
+  if (badBackfilled.length) {
     err(
       'R4',
-      `铁律 3「枚举必须留 unknown」**一条都没落地**：识别到 ${enums.length} 个枚举取值表` +
-        `（${enums.map((e) => e.field).join(' / ')}），无一含未核实哨兵（unknown / 未核实 / -1=）` +
-        ` ⇒ 契约 §3 那句约定目前是装饰性的。补法属契约变更，须先开 ADR。`
+      `${badBackfilled.length} 个**向后回填**的枚举没留未核实哨兵：` +
+        badBackfilled.map((e) => `${e.field}（${e.values}）`).join(' ｜ ')
     );
-  } else if (missing.length) {
-    warn('R4', `${enums.length} 个枚举中 ${withUnknown.length} 个留了未核实哨兵，仍缺：${missing.join(' / ')}`);
-  } else {
-    ok('R4', `全部 ${enums.length} 个枚举都留了未核实哨兵（铁律 3 落地）`);
+  }
+
+  // ③ 封闭枚举：如实报数，明确写「不适用铁律 3」，**不判红、也不假装它们合格**
+  const closed = enums.filter((e) => !BACKFILL_MARK_RE.test(e.values));
+  if (closed.length) {
+    ok('R4', `本仓自定义的封闭枚举 ${closed.length} 个（${closed.map((e) => e.field).join(' / ')}）—— **不在铁律 3 适用范围内**，不要求未核实取值`);
+  }
+
+  // ④ 回填引用点若一条都没落地 → 看得见，但按 warn（契约自己写了"待并入 / 归他仓"= 有去向，不是违约）
+  if (backfillRefs.length && !backfilled.length) {
+    warn(
+      'R4',
+      `${backfillRefs.length} 处「向后回填」引用（${backfillRefs.map((r) => r.where).join(' / ')}）` +
+        `**尚未落成取值表** ⇒ 铁律 3 目前对它们无可判对象；契约已写明去向（待上游并入 / 名单归 dalu），` +
+        `并入时必须带未核实哨兵 —— 见 ADR-0002`
+    );
+  } else if (!enums.length && !backfillRefs.length) {
+    err('R4', '既无枚举取值表、也无回填引用 → 判据无从生效（禁止空集真空通过）');
   }
 })();
 
@@ -733,14 +761,17 @@ function computeGradeFormula(parsed, params) {
 if (process.argv.includes('--self-test')) {
   // [规则, 用例名, 实际结果, 期望结果]
   const cases = [
-    // R4 · 枚举必须真的留了未核实哨兵（原判据 `/unknown/.test(全文)` 被规则条文自己喂饱）
-    ['R4', '枚举含 unknown → 识别为已落地', scanEnums('| `status` | INT | 状态 | `0=正常, 1=封禁, unknown=未核实` |')[0].hasUnknown, true],
-    ['R4', '枚举含「未核实」中文 → 同上', scanEnums('| `kind` | INT | 类型 | `0=男, 1=女, 未核实` |')[0].hasUnknown, true],
+    // R4 · 铁律 3 只管「向后回填的枚举」—— 判据必须能分对象，不许误杀封闭枚举（X-0032 G-2 的正解）
+    ['R4', '枚举含 unknown → 识别为已落地', scanEnums('| `kind` | INT | 类型 | `0=a, 1=b, unknown=未核实` |')[0].hasUnknown, true],
     ['R4', '数值枚举用 `-1=` 作哨兵 → 同上', scanEnums('| `sect` | INT | 门派 | `-1=未核实, 1=剑` |')[0].hasUnknown, true],
-    ['R4', '枚举无哨兵 → 必须判为未落地', scanEnums('| `status` | INT | 账号状态 | `0=正常, 1=封禁, 2=注销` |')[0].hasUnknown, false],
+    ['R4', '封闭枚举无哨兵 → 识别为无哨兵（**由 r4() 判"不适用"，不判红**）', scanEnums('| `status` | INT | 账号状态 | `0=正常, 1=封禁, 2=注销` |')[0].hasUnknown, false],
+    ['R4', '★ 封闭枚举**不带回填标记** → 不得进"违规"集', BACKFILL_MARK_RE.test('0=正常, 1=封禁, 2=注销'), false],
+    ['R4', '★ 带回填标记却不留哨兵 → 必须落进"违规"集', BACKFILL_MARK_RE.test('0=剑, 1=丹, 名单归 dalu qydl_x_config'), true],
+    ['R4', '「待上游并入」→ 认出为回填引用', scanBackfillRefs('> `shenshi_base` 需求层未列 —— 属原型扩展，**按 ADR-0002 应标 `unknown`**，待上游并入。').length > 0, true],
+    ['R4', '「本仓不列名单，归 dalu」→ 认出为回填引用', scanBackfillRefs('| `body_name` | VARCHAR | 体质 | 名单归 dalu `qydl_physique_def_config` |').length > 0, true],
+    ['R4', '普通段落 → 不得误判为回填引用', scanBackfillRefs('| `name` | VARCHAR | 角色名 | — |').length, 0],
     ['R4', '单项取值不算枚举（防误报）', scanEnums('| `flag` | INT | 是否 | `0=否` |').length, 0],
-    ['R4', '非表格行不算枚举', scanEnums('枚举必须留 unknown：凡向后回填的枚举……').length, 0],
-    ['R4', '★ 规则条文自身**不得**被当成落地证据', scanEnums('3. **枚举必须留 `unknown`**：凡向后回填的枚举，必须允许「未核实」取值。').length, 0],
+    ['R4', '★ 规则条文自身不得被当成枚举或落地证据', scanEnums('3. **枚举必须留 `unknown`**：凡向后回填的枚举，必须允许「未核实」取值。').length, 0],
     ['R4', '空文本 → 识别 0 个（由 r4() 判 err，禁止空集真空通过）', scanEnums('').length, 0],
     // R7 · 坏样本必须被拦下
     ['R7', '标题含表名 → 必拦下', scanPhysicalNames('### 3.1 `xx_characters`（角色主表）').length > 0, true],
