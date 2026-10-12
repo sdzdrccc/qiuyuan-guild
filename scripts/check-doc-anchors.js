@@ -147,15 +147,29 @@ function setDiff(a, b) {
   };
 }
 
-/** 纯函数：脚本是否具备两条硬要求（CONVENTIONS §7.1 纪律 2 / 7） */
+/**
+ * 纯函数：脚本是否具备两条硬要求（CONVENTIONS §7.1 纪律 2 / 7）
+ *
+ * ★ `selfTest` 与 `pending` **必须同口径**（X-0032 的 G-1）：
+ *   原写法里 `pending` 明确剥注释（防「把登记位注释掉」绕过），而 `selfTest` 只看**原始文本** ——
+ *   脚本里随便一句注释（`check-asset-ref.js:44` 的「便于 \`--self-test\`」）就能被判成
+ *   「具备反向测试」。实测：6 个脚本里只有 `check-asset-ref.js` 是注释命中，
+ *   它一次反向用例都没跑过，而 D4 却输出「6 个脚本均具备 \`--self-test\`」= **假绿**。
+ *   ⇒ 现在：① 先剥注释 ② 还要求脚本里**真有自测分支**（`argv.includes('--self-test')`），
+ *   光有字符串不算。
+ */
 function hasSelfTestAndPending(scriptText) {
-  const t = String(scriptText);
+  const raw = String(scriptText);
+  const code = raw
+    .replace(/\/\*[\s\S]*?\*\//g, '')                        // 块注释
+    .split(/\r?\n/)
+    .filter((l) => !/^\s*(\/\/|\*|\/\*)/.test(l))            // 行注释 / JSDoc 续行
+    .join('\n');
   return {
-    selfTest: /--self-test/.test(t),
+    selfTest: /--self-test/.test(code) && /argv\.includes\(\s*['"]--self-test['"]\s*\)/.test(code),
     // ★ 必须**真声明**：注释掉的 `// const PENDING_RULES = []` 不算
     //   （否则「把登记位注释掉」就能静默绕过纪律 7 —— 正是本脚本要防的那类漏洞）
-    pending: t.split(/\r?\n/).some(l =>
-      /const\s+PENDING_RULES\s*=/.test(l) && !/^\s*(\/\/|\*|\/\*)/.test(l)),
+    pending: code.split(/\r?\n/).some((l) => /const\s+PENDING_RULES\s*=/.test(l)),
   };
 }
 
@@ -343,6 +357,12 @@ if (process.argv.includes('--self-test')) {
     ['D4', '缺 PENDING_RULES → 必判缺', hasSelfTestAndPending("if (process.argv.includes('--self-test')) {}").pending === false, true],
     ['D4', '注释掉的 PENDING_RULES → 不算（须真声明）', hasSelfTestAndPending('// const PENDING_RULES = [];').pending === false, true],
     ['D4', '块注释里的 PENDING_RULES → 不算', hasSelfTestAndPending(' * const PENDING_RULES = [];').pending === false, true],
+    // ★ G-1 的补漏：原判据**不剥注释**，一句注释就能骗过它 —— 而反向用例独缺 selfTest 的注释用例，
+    //   所以这个假绿**永远不会被它自己发现**（不对称 = 比误报更危险）。
+    ['D4', '行注释里的 --self-test → 不算（G-1 的原始漏洞）', hasSelfTestAndPending("// 便于 --self-test\nconst x = 1;").selfTest === false, true],
+    ['D4', 'JSDoc 块注释里的 --self-test → 不算', hasSelfTestAndPending('/**\n * 用法：node x.js --self-test\n */\nconst y = 2;').selfTest === false, true],
+    ['D4', '只有字符串提及、无 argv 分支 → 不算真自测', hasSelfTestAndPending("console.log('--self-test');").selfTest === false, true],
+    ['D4', '真有 argv 分支 → 算（不许把合格脚本判死）', hasSelfTestAndPending("if (process.argv.includes('--self-test')) run();").selfTest === true, true],
     // D1 · 「待建」条目
     ['D1', '标了（待建）的缺失条目 → 不算漂移', declaredAsPending('跨模块接口 ↔ contracts（待建）') === true, true],
     ['D1', '未标注即缺失 → 必报（删了脚本忘了删文档）', declaredAsPending('记录与台账齐备（C1~C6）') === false, true],

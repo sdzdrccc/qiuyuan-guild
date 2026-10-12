@@ -247,14 +247,56 @@ function extractProtocolAffixKeys(t) {
 // ─────────────────────────────────────────────────────────────
 // R4 · 铁律 3：枚举必须留 unknown
 // ─────────────────────────────────────────────────────────────
+/**
+ * ★ 原判据是 `if (!/unknown/.test(契约全文)) err else ok` —— **被它自己该检查的那句话喂饱了**：
+ *   `data-contract.md:122` 写着「枚举必须留 `unknown`」，于是无论有没有枚举真的带 `unknown`，
+ *   R4 永远输出「约定已声明」。这是 `REVIEW-PROCESS` §坑 8「反向 → 假绿」的教科书样本
+ *   （`X-0032` 的 G-2）。
+ *
+ * 现改为扫**真正的枚举取值表**：markdown 表行里取值列形如 `` `0=正常, 1=封禁, 2=注销` ``
+ * （≥2 个 `数字=值` 项）即认定为一个枚举。然后：
+ *   · 一个枚举都没识别到 → **err**（禁止空集真空通过）
+ *   · 识别到但**没有任何一个**留了未核实哨兵 → **err**（铁律 3 是装饰性的）
+ *   · 部分留了 → **warn**，逐条点名缺的字段
+ * 未核实哨兵认三种写法：`unknown` / `未核实` / `-1=`（数值枚举里的等价哨兵）。
+ */
+const ENUM_ROW_RE = /^\|\s*`([a-z0-9_]+)`\s*\|[^|]*\|[^|]*\|\s*`([^`]*\d+\s*[=＝][^`]*)`\s*\|/;
+const UNKNOWN_TOKEN_RE = /unknown|未核实|-1\s*[=＝]/;
+
+/** 纯函数：从契约正文抽出枚举（字段名 → 取值串），与是否含未核实哨兵 */
+function scanEnums(text) {
+  const out = [];
+  for (const line of String(text || '').split(/\r?\n/)) {
+    const m = ENUM_ROW_RE.exec(line);
+    if (!m) continue;
+    const [, field, values] = m;
+    if ((values.match(/\d+\s*[=＝]/g) || []).length < 2) continue; // 单项不算枚举
+    out.push({ field, values, hasUnknown: UNKNOWN_TOKEN_RE.test(values) });
+  }
+  return out;
+}
 
 (function r4() {
   const t = read(path.join(CONTRACTS, 'data-contract.md'));
   if (!t) return;
-  if (!/unknown/.test(t)) {
-    err('R4', 'data-contract 未声明 `unknown` 枚举约定（CONVENTIONS §1.1 铁律 3）');
+  const enums = scanEnums(t);
+  if (enums.length === 0) {
+    err('R4', '未能从 data-contract 识别出任何枚举取值表 → 判据无从生效（禁止空集真空通过）');
+    return;
+  }
+  const withUnknown = enums.filter((e) => e.hasUnknown);
+  const missing = enums.filter((e) => !e.hasUnknown).map((e) => e.field);
+  if (withUnknown.length === 0) {
+    err(
+      'R4',
+      `铁律 3「枚举必须留 unknown」**一条都没落地**：识别到 ${enums.length} 个枚举取值表` +
+        `（${enums.map((e) => e.field).join(' / ')}），无一含未核实哨兵（unknown / 未核实 / -1=）` +
+        ` ⇒ 契约 §3 那句约定目前是装饰性的。补法属契约变更，须先开 ADR。`
+    );
+  } else if (missing.length) {
+    warn('R4', `${enums.length} 个枚举中 ${withUnknown.length} 个留了未核实哨兵，仍缺：${missing.join(' / ')}`);
   } else {
-    ok('R4', '枚举 `unknown` 约定已声明');
+    ok('R4', `全部 ${enums.length} 个枚举都留了未核实哨兵（铁律 3 落地）`);
   }
 })();
 
@@ -691,6 +733,15 @@ function computeGradeFormula(parsed, params) {
 if (process.argv.includes('--self-test')) {
   // [规则, 用例名, 实际结果, 期望结果]
   const cases = [
+    // R4 · 枚举必须真的留了未核实哨兵（原判据 `/unknown/.test(全文)` 被规则条文自己喂饱）
+    ['R4', '枚举含 unknown → 识别为已落地', scanEnums('| `status` | INT | 状态 | `0=正常, 1=封禁, unknown=未核实` |')[0].hasUnknown, true],
+    ['R4', '枚举含「未核实」中文 → 同上', scanEnums('| `kind` | INT | 类型 | `0=男, 1=女, 未核实` |')[0].hasUnknown, true],
+    ['R4', '数值枚举用 `-1=` 作哨兵 → 同上', scanEnums('| `sect` | INT | 门派 | `-1=未核实, 1=剑` |')[0].hasUnknown, true],
+    ['R4', '枚举无哨兵 → 必须判为未落地', scanEnums('| `status` | INT | 账号状态 | `0=正常, 1=封禁, 2=注销` |')[0].hasUnknown, false],
+    ['R4', '单项取值不算枚举（防误报）', scanEnums('| `flag` | INT | 是否 | `0=否` |').length, 0],
+    ['R4', '非表格行不算枚举', scanEnums('枚举必须留 unknown：凡向后回填的枚举……').length, 0],
+    ['R4', '★ 规则条文自身**不得**被当成落地证据', scanEnums('3. **枚举必须留 `unknown`**：凡向后回填的枚举，必须允许「未核实」取值。').length, 0],
+    ['R4', '空文本 → 识别 0 个（由 r4() 判 err，禁止空集真空通过）', scanEnums('').length, 0],
     // R7 · 坏样本必须被拦下
     ['R7', '标题含表名 → 必拦下', scanPhysicalNames('### 3.1 `xx_characters`（角色主表）').length > 0, true],
     ['R7', '代码块含表名 → 必拦下', scanPhysicalNames('```\nSELECT * FROM xx_roles;\n```').length > 0, true],

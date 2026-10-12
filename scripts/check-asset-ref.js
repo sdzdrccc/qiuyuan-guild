@@ -83,6 +83,22 @@ const read = (p) => { try { return fs.readFileSync(p, 'utf8'); } catch { return 
   }
 })();
 
+/**
+ * 纯函数：交付基准里缺哪几项声明（A2 的判据本体，抽出来是为了能被反向测试驱动）
+ * ★ 本脚本此前**没有** `--self-test`（`X-0032` 的 G-1：`D4` 因"注释里出现 --self-test"就判它具备）。
+ */
+const BASELINE_CHECKS = [
+  [/\+Y up|`\+Y up`/, '+Y up'],
+  [/-Z forward|`-Z forward`/, '-Z forward'],
+  [/米（m）|单位.*米/, '米'],
+  [/引擎导入器/, 'up 轴由引擎导入器负责'],
+];
+
+function missingBaselineDeclarations(text) {
+  const t = String(text == null ? '' : text);
+  return BASELINE_CHECKS.filter(([re]) => !re.test(t)).map(([, name]) => name);
+}
+
 // ─────────────────────────────────────────────────────────────
 // A2 · 交付基准必须与 GBE 一致
 // ─────────────────────────────────────────────────────────────
@@ -90,13 +106,7 @@ const read = (p) => { try { return fs.readFileSync(p, 'utf8'); } catch { return 
 (function a2() {
   const t = read(CONTRACT);
   if (!t) return;
-  const checks = [
-    [/\+Y up|`\+Y up`/, '+Y up'],
-    [/-Z forward|`-Z forward`/, '-Z forward'],
-    [/米（m）|单位.*米/, '米'],
-    [/引擎导入器/, 'up 轴由引擎导入器负责'],
-  ];
-  const miss = checks.filter(([re]) => !re.test(t)).map(([, n]) => n);
+  const miss = missingBaselineDeclarations(t);
   if (miss.length) {
     err('A2', `交付基准声明缺失：${miss.join(' / ')}`);
   } else {
@@ -249,6 +259,53 @@ function findManifests() {
     ok('A5', `场景清单校验通过（${manifests.length} 份）`);
   }
 })();
+
+// ─────────────────────────────────────────────────────────────
+// 反向测试（--self-test）
+// ─────────────────────────────────────────────────────────────
+/**
+ * ★ 这条自测是 `X-0032` 的 G-1 的直接后果：本脚本此前**只在注释里**提过 `--self-test`，
+ *   于是 `check-doc-anchors` 的 `D4`（判据只看原始文本命中）判它「具备反向测试」= 假绿。
+ *   D4 现已改为**剥注释后还要求真有自测分支** ⇒ 本脚本必须真有一条，否则红。
+ *   纪律：没失败过的校验脚本 = 未被验证过的校验脚本（`CONVENTIONS.md §7.1` 纪律 2）。
+ */
+if (process.argv.includes('--self-test')) {
+  const cases = [
+    ['PEND', '空名单 → null（不许把"没有待办"打印成噪声）', pendingNotice([]), null],
+    ['PEND', '非空名单 → 含 id 与来源', pendingNotice([{ id: 'A6', from: 'X-0032', due: 'M4' }]), 'A6(from X-0032, due M4)'],
+    ['PEND', '缺来源必须显式露出，不许静默', pendingNotice([{ id: 'A7' }]).includes('⚠缺来源'), true],
+    ['A2', '四项齐备 → 无缺失', missingBaselineDeclarations('`+Y up` `-Z forward` 单位米 up 轴由引擎导入器负责'), []],
+    ['A2', '缺"引擎导入器" → 精确报出那一项', missingBaselineDeclarations('`+Y up` `-Z forward` 米（m）'), ['up 轴由引擎导入器负责']],
+    ['A2', '空文本 → 四项全缺（禁止空集真空通过）', missingBaselineDeclarations(''), ['+Y up', '-Z forward', '米', 'up 轴由引擎导入器负责']],
+    ['A2', 'null / undefined 不得抛，按全缺处理', missingBaselineDeclarations(undefined).length, 4],
+    ['A5', '合法 ref（kit.leaf.name@semver）', REF_RE.test('cn-ancient.roof.xieshan-single-a@1.0.0'), true],
+    ['A5', '缺 @version → 非法', REF_RE.test('cn-ancient.roof.xieshan-single-a'), false],
+    ['A5', '大写 / 下划线 → 非法（id 不变式）', REF_RE.test('CN_Ancient.Roof.X@1.0.0'), false],
+    ['A5', '版本非 semver → 非法', REF_RE.test('cn-ancient.roof.x@1.0'), false],
+    ['A5', '两段式 id → 非法（必须三段）', REF_RE.test('cn-ancient.roof@1.0.0'), false],
+    ['A2', '本仓契约自己必须过 A2（真数据也在场）', missingBaselineDeclarations(read(CONTRACT)), []],
+  ];
+
+  const useColor = process.stdout.isTTY;
+  const cc = (n, s) => (useColor ? `\x1b[${n}m${s}\x1b[0m` : s);
+  console.log(cc(1, '\n[check-asset-ref] 反向测试（--self-test）'));
+  console.log(cc(2, '  纪律：没失败过的校验脚本 = 未被验证过的校验脚本\n'));
+  let fails = 0;
+  for (const [rule, name, got, want] of cases) {
+    const pass = JSON.stringify(got) === JSON.stringify(want);
+    if (!pass) fails++;
+    console.log(`  ${pass ? cc(32, '✓') : cc(31, '✗')} ${cc(2, rule)}  ${name}`);
+    if (!pass) console.log(`      got=${JSON.stringify(got)}  want=${JSON.stringify(want)}`);
+  }
+  console.log(
+    '\n' +
+      (fails
+        ? cc(31, `结果：不通过（${fails} / ${cases.length} 用例失败）`)
+        : cc(32, `结果：通过（${cases.length} / ${cases.length} 用例，反向测试全绿）`)) +
+      '\n'
+  );
+  process.exit(fails ? 1 : 0);
+}
 
 // ─────────────────────────────────────────────────────────────
 // 报告

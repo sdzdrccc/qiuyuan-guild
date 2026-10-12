@@ -195,6 +195,20 @@ function read(p) { try { return fs.readFileSync(p, 'utf8'); } catch { return nul
 // 纯函数区（便于 --self-test）
 // ─────────────────────────────────────────────────────────────
 
+/**
+ * 纯函数：记录是否有**「验证证据」节**（按节标题认，不是全文关键词命中）。
+ *
+ * ★ G-4（`X-0032`）：原判据是 `/验证证据/.test(t) || /门禁/.test(t)` —— 全文任意位置提一句
+ *   「门禁」（例如「本次未跑门禁」）就算有证据节，实测 `X-0012` 只有 `## 证据摘要` 也判通过。
+ *   证据节的意义是**命令 + 实际输出**，用关键词命中它等于把判据交给被检者自己措辞。
+ *   现按**节标题**认：主体名以 `验证证据` / `证据摘要` / `实测证据` / `证据` / `门禁与自检` 开头的标题才算
+ *   （`门禁与自检` 是存量卡的既有合法形态，收紧判据不许顺手把合法形态判死）。
+ */
+function hasEvidenceSection(text) {
+  const re = /^#{1,6}\s*(?:(?:[一二三四五六七八九十]+|\d+)\s*[、.．)）]?\s*)?(?:验证证据|证据摘要|实测证据|门禁与自检|门禁自检|证据)(?![\u4e00-\u9fff])/;
+  return String(text).split(/\r?\n/).some((l) => re.test(l));
+}
+
 /** 纯函数：记录必备节的在场判定（按**关键词**认，不按标题精确匹配 —— 存量记录用中文序号标题） */
 function sectionPresence(text) {
   const t = String(text);
@@ -202,7 +216,9 @@ function sectionPresence(text) {
     status: /状态[：:]/.test(t),
     author: /执行者[：:]/.test(t),
     changes: /改动清单/.test(t),
-    evidence: /验证证据/.test(t) || /门禁/.test(t),
+    // ★ 证据节改判**标题**（G-4）；`changes` / `review` 两条仍是全文关键词命中，**同一形状的漏洞还在那里**，
+    //   本次只按大人点的 G-4 修 evidence，另两条登记为遗留 —— 一并收紧会把与本次无关的存量卡一次性打红。
+    evidence: hasEvidenceSection(t),
     review: /审核/.test(t),
   };
 }
@@ -247,9 +263,19 @@ function hasScoreLanguage(text) {
 
 // `touchesContracts` 已移至共享模块 `scripts/lib/record-rules.js`（判据全文与踩坑史见该文件）
 
-/** 纯函数：记录是否声明了 L3 终审（须出现「大人」—— 方案 §5.3 L3 = arch + 大人） */
+/**
+ * 纯函数：记录是否声明了 L3 终审（须出现「大人」—— 方案 §5.3 L3 = arch + 大人）
+ *
+ * ★ G-3（`X-0032`）：原写法是**全文**匹配，于是头部「发起方：大人」也算声明了终审，
+ *   审核节本身可以不写 —— 实测 `X-0024` 正是「全文有、审核节没有」却判合规。
+ *   现改为：**有审核节就只认节内**（级别与终审人必须在同一节里自洽）；
+ *   **无审核节**时退回全文判据 —— 那是 `C1` 的管辖范围（存量卡自 `X-0015` 才要求审核节），
+ *   不在这里重复报，也不借此把存量卡一次性打红。
+ */
 function declaresL3(text) {
-  return /大人/.test(String(text));
+  const t = String(text);
+  const sec = reviewSection(t);
+  return /大人/.test(sec === null ? t : sec);
 }
 
 /**
