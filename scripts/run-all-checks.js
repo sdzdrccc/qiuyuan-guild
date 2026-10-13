@@ -47,6 +47,8 @@ const STEPS = [
     { file: 'check-identifiers.js', label: '跨文档标识符（配置表 / DB 表 / 退役名）' },
     { file: 'check-doc-anchors.js', label: '脚本清单 / 规则 ID / skill 版本 三处同步' },
     { file: 'check-asset-ref.js', label: '资产引用契约 ↔ gbe-assets（只读交叉校验）' },
+    { file: 'check-version-pins.js', label: '版本配套表 ↔ 契约版本' },
+    { file: 'check-docs-index.js', label: 'docs/ 顶层索引覆盖率（黑户 / 幽灵）' },
     { file: 'check-records.js', label: '记录与台账齐备（C1~C8）' },
     { file: 'gen-agent-log.js', label: 'agent-log 视图一致性（默认只校验）' },
     { file: 'gen-review-index.js', label: 'reviews/INDEX 视图一致性（默认只校验）' },

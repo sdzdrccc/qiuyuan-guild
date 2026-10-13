@@ -104,6 +104,8 @@ node scripts/check-identifiers.js     # I1
 node scripts/check-records.js         # C1~C8
 node scripts/check-doc-anchors.js     # D1~D4
 node scripts/check-asset-ref.js       # A1~A5
+node scripts/check-version-pins.js    # P1~P5（版本配套表 ↔ 契约版本）
+node scripts/check-docs-index.js      # E1~E3（docs/ 顶层索引覆盖率）
 
 # 被审仓（如 dalu）
 go build ./... && go vet ./...

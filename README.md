@@ -109,6 +109,7 @@ scripts/                    ★ 校验脚本（没有校验脚本的契约 = 装
 - [`docs/SERVER-ARCH.md`](docs/SERVER-ARCH.md) — **服务端架构与拆分时机**（**问「服务端现在几个进程 / 什么时候拆」就读它**）
 - [`docs/CONVENTIONS.md`](docs/CONVENTIONS.md) — 工程约定（**v0.6**）
 - [`docs/REVIEW-PROCESS.md`](docs/REVIEW-PROCESS.md) — **审阅流程**（**要审阅某个波次 / 里程碑 / 跨仓交付就读它**）
+- [`docs/SKILL-ROUTING.md`](docs/SKILL-ROUTING.md) — **角色 → skill 路由表**（**找该用哪个 skill / 装新 skill 前先过安全审计**）
 - [`registry/cross-repo-ledger.md`](registry/cross-repo-ledger.md) — 跨库登记台账
 
 ## 三条铁律
@@ -166,6 +167,8 @@ node scripts/check-identifiers.js      # 跨文档标识符一致性（I1）
 node scripts/check-records.js          # 记录与台账齐备闸门（C1~C8）
 node scripts/check-doc-anchors.js      # 文档↔门禁锚定（D1~D4）
 node scripts/check-asset-ref.js        # 资产引用 + 跨层一致性（A1~A5）
+node scripts/check-version-pins.js     # 版本配套表 ↔ 契约版本（P1~P5）
+node scripts/check-docs-index.js       # docs/ 顶层索引覆盖率（E1~E3）
 node scripts/gen-agent-log.js          # `agent-log` 视图一致性（逐字节比对；`--write` 重生成）
 # 任一脚本加 --self-test = ★ 反向测试（注入坏样本，断言必失败）
 # 清单唯一真源 = docs/CONVENTIONS.md §7.1（本处为副本，由 D1 双向核对）

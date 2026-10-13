@@ -419,6 +419,8 @@ node scripts/check-identifiers.js     # 跨文档标识符：文档引用的配�
 node scripts/check-records.js         # 记录与台账齐备：必备节 / 双向核对 / 二值 / **分级** / 同批记录 / **契约回执** / **纪元自洽** / **未覆盖声明**（C1~C8）
 node scripts/check-doc-anchors.js     # 文档 ↔ 门禁锚定：脚本清单 / 规则 ID / skill 版本 三处同步（D1~D4）
 node scripts/check-asset-ref.js       # 场景引用 ↔ 资源清单 ↔ 实际资产（A1~A5）
+node scripts/check-version-pins.js    # ★ 版本配套表 ↔ 契约版本（`registry/version-pins.md` ↔ `contracts/*.md`）（P1~P5）
+node scripts/check-docs-index.js      # ★ docs/ 顶层索引覆盖率（黑户 / 幽灵 / 覆盖自证）（E1~E3）
 node scripts/check-interfaces.js      # 跨模块接口 ↔ 契约（**待建**）
 node scripts/gen-agent-log.js         # `agent-log` 视图**生成器**（默认**只校验**：与仓库内文件逐字节比对；`--write` 重生成）
 node scripts/gen-review-index.js      # `reviews/INDEX.md` 审阅总索引视图**生成器**（同构：默认只校验 · `--write` 重生成 · 带 `--self-test`）
