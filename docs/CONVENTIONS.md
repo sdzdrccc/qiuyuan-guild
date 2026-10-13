@@ -82,7 +82,7 @@
 2. **同层内唯一真源。** 任一层内 schema 只有一份，其余全是消费。
 3. **跨层变更必须显式。** 某层改动若影响下层（例：L2 字段改名 → 影响 L3 资产引用契约），**须开跨库台账条目 + 在 `registry/schema-layers.md` 登记**。
 
-> `registry/schema-layers.md` 是这三层的**索引**（每层一行：位置 / 版本 / 负责方 / 最近变更），**不是 schema 副本**。
+> `registry/schema-layers.md` 是这三层的**索引**（每层一行：位置 / **版本真源** / 负责方；跨层变更另登记），**不是 schema 副本**，也**不抄版本号**（抄即腐）。
 > 它存在的唯一目的：让「层」这件事**在物理上可见**。
 
 ---
@@ -417,7 +417,7 @@ node scripts/check-data.js            # 契约 ↔ 配置表**内容** + 文档�
 node scripts/check-contract-gate.js   # 契约完备性：ROADMAP 声明「新增展开」的实体，contracts/ 须真有展开节（G1）
 node scripts/check-identifiers.js     # 跨文档标识符：文档引用的配置表 / DB 表须存在；退役名须同行标明（I1）
 node scripts/check-records.js         # 记录与台账齐备：必备节 / 双向核对 / 二值 / **分级** / 同批记录 / **契约回执** / **纪元自洽** / **未覆盖声明**（C1~C8）
-node scripts/check-doc-anchors.js     # 文档 ↔ 门禁锚定：脚本清单 / 规则 ID / skill 版本 三处同步（D1~D4）
+node scripts/check-doc-anchors.js     # 文档 ↔ 门禁锚定：脚本清单 / 规则 ID / skill 版本 / README 禁抄版本号 四处同步（D1~D5）
 node scripts/check-asset-ref.js       # 场景引用 ↔ 资源清单 ↔ 实际资产（A1~A5）
 node scripts/check-version-pins.js    # ★ 版本配套表 ↔ 契约版本（`registry/version-pins.md` ↔ `contracts/*.md`）（P1~P5）
 node scripts/check-docs-index.js      # ★ docs/ 顶层索引覆盖率（黑户 / 幽灵 / 覆盖自证）（E1~E3）

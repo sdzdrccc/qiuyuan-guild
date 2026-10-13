@@ -275,10 +275,24 @@ function docVersion(text) {
 //      （CONVENTIONS §7.1 纪律 2「每条规则必须有反向测试」+ 纪律 7「登记已承诺未实现」）
 // ─────────────────────────────────────────────────────────────
 
+/**
+ * 纯函数：D4 要扫描的脚本清单 —— **`scripts/` 顶层全部 `.js`**（X-0032 G-5）。
+ *
+ * ★ 为什么从 `^check-` 扩到全部：原判据只扫 `check-*.js`，于是
+ *   `gen-review-index.js`（缺 `PENDING_RULES`）、`install-hooks.js`（两样都缺）
+ *   **没有任何门禁看得见** —— 与坑 9「未覆盖 → 静默」同族。
+ * ★ `lib/` 子目录不进（共享模块，不是可执行脚本）；非 `.js` 不进。
+ */
+function scriptsToScan(dir) {
+  return fs.readdirSync(dir)
+    .filter(f => /\.js$/.test(f) && fs.statSync(path.join(dir, f)).isFile())
+    .sort();
+}
+
 (function d4() {
   const dir = path.join(ROOT, 'scripts');
   if (!fs.existsSync(dir)) return;
-  const files = fs.readdirSync(dir).filter(f => /^check-[A-Za-z0-9_-]+\.js$/.test(f));
+  const files = scriptsToScan(dir);
   if (files.length === 0) return;
 
   let bad = 0;
@@ -287,7 +301,60 @@ function docVersion(text) {
     if (!r.selfTest) { err('D4', `\`scripts/${f}\` **无 \`--self-test\`** —— 没有反向测试的脚本 = 未被验证过的脚本（纪律 2）`); bad++; }
     if (!r.pending) { err('D4', `\`scripts/${f}\` **无 \`PENDING_RULES\`** —— 「已承诺未实现」无处登记（纪律 7）`); bad++; }
   }
-  if (bad === 0) ok('D4', `${files.length} 个脚本均具备 \`--self-test\` 与 \`PENDING_RULES\``);
+  if (bad === 0) ok('D4', `${files.length} 个脚本均具备 \`--self-test\` 与 \`PENDING_RULES\`（含 gen-* / 装机脚本 · G-5 扩面）`);
+})();
+
+// ─────────────────────────────────────────────────────────────
+// D5 · README **不得复制**文档版本号（X-0032 G-7 · 反 duplication 锚定）
+//
+// ★ 病灶（2026-10-12 实测）：README 手抄了 7 份文档的版本号（还抄了两份 ——
+//   「仓库内容」块 + 底部链接区各一份），其中 4 份已腐（REVIEW-PROCESS v1.2→v1.6 ·
+//   data-contract v0.6→v0.7 · protocol-contract v0.3→v0.4 · PROJECT-STRUCTURE v1.6→v2.0）。
+// ★ 修法不是「配个校对判据把两份对齐」—— 那要求永远同时维护两处：
+//   **版本号只住文档头部（单一真源）；README 一个版本号都不许抄。**
+//   ⇒ 本判据钉的是这条不变式，比「两边相等」更强、也更简单（没有第二份，就无从漂移）。
+// ─────────────────────────────────────────────────────────────
+
+/** 头部带版本号的文档（README 曾手抄版本的那几份） */
+const VERSIONED_DOCS = [
+  { file: 'docs/MULTI-AGENT-DEV-PLAN.md', label: '协作方案' },
+  { file: 'docs/CONVENTIONS.md', label: '工程约定' },
+  { file: 'docs/REVIEW-PROCESS.md', label: '审阅流程' },
+  { file: 'docs/PROJECT-STRUCTURE.md', label: '工程结构详案' },
+  { file: 'contracts/data-contract.md', label: '数据契约' },
+  { file: 'contracts/protocol-contract.md', label: '协议契约' },
+  { file: 'contracts/asset-ref-contract.md', label: '资产引用契约' },
+];
+
+/**
+ * 纯函数：README 里提及某文档的行**抄下来的版本号**（一行一个；一行多个也算抄）。
+ * 返回数组 —— 空 = 没抄（合规）；非空 = 每项都是一处待腐的副本（D5 报错用）。
+ */
+function readmeVersionClaims(readmeText, baseName) {
+  const out = [];
+  for (const line of String(readmeText).split(/\r?\n/)) {
+    if (!line.includes(baseName)) continue;
+    for (const v of line.match(/v[\d.]+/g) || []) out.push(v);
+  }
+  return out;
+}
+
+(function d5() {
+  const readme = read(path.join(ROOT, 'README.md'));
+  if (readme === null) { warn('D5', '读不到 `README.md` → 跳过'); return; }
+  let checked = 0;
+  for (const { file, label } of VERSIONED_DOCS) {
+    const base = path.basename(file);
+    if (!readme.includes(base)) { err('D5', `README **未提及** \`${base}\` —— 门面文档漏了它（${label}）`); continue; }
+    const dup = readmeVersionClaims(readme, base);
+    if (dup.length > 0) {
+      err('D5', `README 的 \`${base}\` 行**抄了版本号**（${dup.join(' / ')}）—— 版本只住文档头部，门面不复制（G-7：手抄必腐，实测 4/7 已腐）`);
+      continue;
+    }
+    checked++;
+    ok('D5', `${label}：README 提及且未抄版本号（单一真源在文档头部）`);
+  }
+  if (checked === 0) warn('D5', '无任何文档完成核对');
 })();
 
 // ─────────────────────────────────────────────────────────────
@@ -369,6 +436,12 @@ if (process.argv.includes('--self-test')) {
     // D2 · 版本同步
     ['D2', '取出版本号 v1.2', docVersion('> **版本**：**v1.2**（2026-09-30…') === 'v1.2', true],
     ['D2', '无版本声明 → 返回 null', docVersion('普通段落') === null, true],
+    // D5 · README 禁抄版本号（G-7 · 反 duplication）
+    ['D5', '★ 行尾抄了版本号 → 必抓出（G-7 的手抄副本）', readmeVersionClaims('REVIEW-PROCESS.md  审阅流程（六步 · v1.6）', 'REVIEW-PROCESS.md').join(','), 'v1.6'],
+    ['D5', '★ 粗体形态的抄写也抓（**v0.28**）', readmeVersionClaims('- [x](x.md) — 方案（**v0.28**）', 'x.md').join(','), 'v0.28'],
+    ['D5', '没抄版本号 → 空（合规 · 不许误报）', readmeVersionClaims('data-contract.md  数据模型', 'data-contract.md').length, 0],
+    ['D5', '一行抄两个 → 两个都报（不猜哪个对）', readmeVersionClaims('x.md a v1.0 / b v2.0', 'x.md').join(','), 'v1.0,v2.0'],
+    ['D5', '别的行提到同名无关文本不受影响', readmeVersionClaims('aaa.md v1.0\nbbb.md 无版本', 'bbb.md').length, 0],
   ];
 
   const fails = cases.filter(([, , got, want]) => got !== want);

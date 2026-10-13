@@ -50,7 +50,7 @@
 | 登记跨库需求 | `registry/cross-repo-ledger.md`（索引）+ `reviews/X-*.md`（正文） |
 | 查「某 agent 做过什么」 | `registry/agent-log.md`（**派生视图，非真源** —— ★ 真源是 **`reviews/`**，由 `scripts/gen-agent-log.js` 派生；★ 原写 `records/` 是错的，2026-10-13 订正） |
 | 判某条变更该给什么结论 | `CONVENTIONS.md` **§5.5** —— **只有 `通过 / 不通过`，不得填分数** |
-| **审阅某个波次 / 里程碑 / 跨仓交付** | `docs/REVIEW-PROCESS.md` —— **审阅流程**（五步 + 输出模板 + 三条纪律）；skill `qiuyuan-review-pipeline` |
+| **审阅某个波次 / 里程碑 / 跨仓交付** | `docs/REVIEW-PROCESS.md` —— **审阅流程**（六步 + 输出模板 + 五条纪律）；skill `qiuyuan-review-pipeline` |
 | 查 schema 层次 | `registry/schema-layers.md` + 方案 §4.4 |
 | 不确定「为什么这么定」 | 本仓 `docs/DECISIONS.md` → 上游 `gbe-assets/docs/DECISIONS.md` |
 | 不确定「这是啥设定」 | 虬渊大陆对应页（**只读**） |

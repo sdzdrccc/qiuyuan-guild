@@ -44,7 +44,7 @@ const TARGET = path.join(ROOT, 'registry', 'agent-log.md');
 const WRITE = process.argv.includes('--write');
 
 // 共享判据（单一真源 · 与 `check-records.js` 的 C4 同源）
-const { sectionByKeyword, touchesContracts } = require('./lib/record-rules.js');
+const { sectionByKeyword, touchesContracts, rolesOf } = require('./lib/record-rules.js');
 
 /**
  * 待实现规则登记位（`CONVENTIONS.md` §7.1 纪律 7 · 机制③）
@@ -88,19 +88,6 @@ function headerField(text, name) {
   const re = new RegExp(`^\\s*[-*]?\\s*${name}\\s*[：:]\\s*(.*)$`, 'm');
   const m = String(text).match(re);
   return m ? m[1].trim() : null;
-}
-
-/**
- * 纯函数：从「执行者」字段取角色名（反引号包裹的标识符）。
- * `\`arch\`（契约与纪律的守方）+ \`ledger\`（记录）` → `['arch', 'ledger']`
- * ★ 只认「纯标识符」形态（无 `.` / `/`），避免把路径或节号误当角色。
- */
-function rolesOf(executorField) {
-  const out = [];
-  for (const m of String(executorField || '').matchAll(/`([A-Za-z][A-Za-z0-9_-]*)`/g)) {
-    if (!out.includes(m[1])) out.push(m[1]);
-  }
-  return out;
 }
 
 /** 纯函数：是否横向职能（其余一律纵向 owner） */
@@ -337,6 +324,8 @@ if (process.argv.includes('--self-test')) {
     ['AGL', '★ 同一角色重复 → 去重', rolesOf('`arch` + `arch`').join(',') === 'arch', true],
     ['AGL', '非标识符（含点 / 斜杠）**不**当角色', rolesOf('`docs/GLOSSARY.md`').join(',') === '', true],
     ['AGL', '空执行者 → 空数组（交由 C1 报，本视图不臆造）', rolesOf('').length === 0, true],
+    ['AGL', '★ 反引号仓名（`gbe-studio`）**不**当角色（X-0032 G-9：X-0031 曾被归错 agent）', rolesOf('经授权直接改上游 `gbe-studio` / `gbe-assets`').join(',') === '', true],
+    ['AGL', '★ 词表外标识符（`WorkBuddy`）不当角色 —— 新角色须先登记进 AGENT_ROLES', rolesOf('`WorkBuddy`（AI 助手）').join(',') === '', true],
     ['AGL', '横向职能判定', isHorizontal('arch') === true && isHorizontal('world') === false, true],
     ['AGL', '取审核结论（去粗体记号）', reviewConclusion(SAMPLE) === '通过', true],
     ['AGL', '★ 无审核节 → null（不得拿正文里的「结论」冒充）', reviewConclusion('# t\n- 结论：通过') === null, true],

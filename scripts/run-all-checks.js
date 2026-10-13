@@ -40,6 +40,12 @@ const { execFileSync } = require('child_process');
 const ROOT = path.resolve(__dirname, '..');
 const QUIET = process.argv.includes('--quiet');
 
+/**
+ * 待实现规则登记位（CONVENTIONS §7.1 纪律 7 · 机制③）。
+ * ★ 本脚本是**汇总入口**、不自己判事（见头部「定位」节）⇒ 无待实现规则，空名单即诚实表态。
+ */
+const PENDING_RULES = [];
+
 /** 依次要跑的脚本（★ `check-*` 在前，`gen-*` 在后 —— 后者是"视图一致性"，通常更快更吵） */
 const STEPS = [
     { file: 'check-data.js', label: '契约 ↔ 配置表 + 文档表格 + 第一原则锚点' },

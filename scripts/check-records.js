@@ -48,7 +48,7 @@ const path = require('path');
 const { execFileSync } = require('child_process');
 
 // 共享判据（单一真源）—— 与 `gen-agent-log.js` 同用，避免「同一事实写两处」
-const { headingName, sectionByKeyword, touchesContracts } = require('./lib/record-rules.js');
+const { headingName, sectionByKeyword, touchesContracts, rolesOf, executorField } = require('./lib/record-rules.js');
 
 const ROOT = path.resolve(__dirname, '..');
 const DALU = 'F:/zxc/Project/qiuyuan-dalu';
@@ -587,6 +587,20 @@ function loadEvidenceNames() {
       err('C1', `${bad[k].length} 篇记录缺「${k === 'status' ? '状态' : '执行者'}」节（方案 §6.1 记录模板必填）：${bad[k].join(' / ')}`);
     }
   }
+  // ★ G-9（X-0032）：执行者**还须含词表内角色**（反引号包裹）—— 只写「执行者：guild 侧」这类
+  //   无反引号角色的记录，能过上面的在场判据、却整体从 `agent-log` 静默消失（X-0022 / X-0023 实证）；
+  //   反引号里写仓名（`gbe-studio`）则会被归错 agent（X-0031 实证）。⇒ 与 `rolesOf` 同一词表。
+  //   **不可豁免**（同「状态 / 执行者」）：缺角色 = 视图必缺行，没有「留证容忍」的余地。
+  {
+    const noRole = [];
+    for (const f of files) {
+      const text = read(path.join(GUILD_RECORDS, f)) || '';
+      if (rolesOf(executorField(text)).length === 0) noRole.push(f.replace(/\.md$/, ''));
+    }
+    if (noRole.length) {
+      err('C1', `${noRole.length} 篇记录的「执行者」**无可识别角色**（须含反引号包裹的词表角色，如 \`arch\` / \`review\` / \`dev\`；仓名/路径不算）：${noRole.join(' / ')}`);
+    }
+  }
   // 「改动清单 / 验证证据 / 审核」缺 → warn（存量缺口，逐条点名）
   // ★ 软性节**可豁免**（`WAIVED.sections` · 须留证）；**硬性节（状态 / 执行者）不可豁免**
   const softName = { changes: '改动清单', evidence: '验证证据（或门禁）', review: '审核' };
@@ -931,6 +945,10 @@ if (process.argv.includes('--self-test')) {
     ['C1', '齐备样本 → 五节全在', (() => { const p = sectionPresence(REC_OK); return p.status && p.author && p.changes && p.evidence && p.review; })(), true],
     ['C1', '缺「状态」→ 必判缺', sectionPresence('# 标题\n- 执行者：a\n## 改动清单\n## 验证证据\n## 审核').status === false, true],
     ['C1', '缺「执行者」→ 必判缺', sectionPresence('# 标题\n- 状态：已完成\n## 改动清单\n## 验证证据\n## 审核').author === false, true],
+    // ★ G-9：执行者须含词表内角色（一正一反）
+    ['C1', '执行者 `arch` → 有角色（过）', rolesOf(executorField(REC_OK)).length > 0, true],
+    ['C1', '★ 执行者无反引号角色 → 必判缺（X-0022/X-0023 的静默消失）', rolesOf(executorField('# t\n- 执行者：**guild 侧**（文档更正）+ **dalu 侧**（同步）\n')).length === 0, true],
+    ['C1', '★ 反引号仓名不算角色（X-0031 被归错 agent）', rolesOf(executorField('# t\n- 执行者：guild 规范中枢 ＋ 直接改上游 `gbe-studio` / `gbe-assets`\n')).length === 0, true],
     ['C1', '「门禁与自检」也算验证证据节', sectionPresence('# t\n状态：x\n执行者：y\n改动清单\n## 门禁与自检\n审核').evidence === true, true],
     // ★ G-4 的原始漏洞 + 「收紧判据不许误杀另一类模板」（我自己第一版就误杀了 4 篇审阅卡，见 X-0033 §四-2）
     ['C1', '正文顺带提一句「门禁」而无节 → **不算**证据节（G-4 的洞）', sectionPresence('# t\n状态：x\n执行者：y\n## 改动清单\n本次未跑门禁。\n## 审核').evidence, false],

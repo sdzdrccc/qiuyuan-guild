@@ -102,7 +102,7 @@ node scripts/check-data.js            # R1~R10
 node scripts/check-contract-gate.js   # G1
 node scripts/check-identifiers.js     # I1
 node scripts/check-records.js         # C1~C8
-node scripts/check-doc-anchors.js     # D1~D4
+node scripts/check-doc-anchors.js     # D1~D5
 node scripts/check-asset-ref.js       # A1~A5
 node scripts/check-version-pins.js    # P1~P5（版本配套表 ↔ 契约版本）
 node scripts/check-docs-index.js      # E1~E3（docs/ 顶层索引覆盖率）
@@ -151,7 +151,7 @@ mysql -u root -e "..."                # 落库实测（字段 / 索引 / 注释 
 
 ### 第 6 步 · 复审与销号（`X-0018` 补 · **此前完全缺失**）
 
-> **缺口实证**：五步流程覆盖「审 → 产记录」，**没有一步说「修完之后怎么办」**。
+> **缺口实证**：此前的五步流程覆盖「审 → 产记录」，**没有一步说「修完之后怎么办」**（故补本步）。
 > `X-0015` 状态长期停在 `待验收`，而 dalu 已修 6 处、门禁已转绿 ——
 > 实际是靠「**又开一篇 `X-0016`**」承担，属**流程外自发**。
 
@@ -316,7 +316,7 @@ mysql -u root -e "..."                # 落库实测（字段 / 索引 / 注释 
 7. **文档与脚本之间会长出「没有锚的接口」**（`X-0018` 补）。
    `REVIEW-PROCESS.md` 自述与 `CONVENTIONS.md` / `AGENTS.md` 同级，却**没有任何门禁引用它**；
    实测 `D1` 一上线就抓到 `CONVENTIONS.md` 列了**不存在的** `check-interfaces.js`。
-   → 靠 `check-doc-anchors.js`（**`D1`~`D4`**）钉住：脚本清单 / 规则 ID / skill 版本 三处同步。
+   → 靠 `check-doc-anchors.js`（**`D1`~`D5`**）钉住：脚本清单 / 规则 ID / skill 版本 / README 禁抄版本号 四处同步。
 
 8. ★ **「判据反向」比「判据过宽」危险得多**（`X-0018` 复核发现）。
    **判据过宽**会**误报** —— 你**立刻**知道它坏了（本仓自纠的 5 处**全是这一类**）。
@@ -350,7 +350,7 @@ mysql -u root -e "..."                # 落库实测（字段 / 索引 / 注释 
 
 > **审阅 `<仓库> <范围>`**（例：「审阅 qiuyuan-dalu M1 波次 2」）
 
-skill **`qiuyuan-review-pipeline`** 即加载本流程，按 §3 五步执行。
+skill **`qiuyuan-review-pipeline`** 即加载本流程，按 §3 **六步**执行。
 
 | 场景 | 怎么做 |
 |---|---|
@@ -365,7 +365,7 @@ skill **`qiuyuan-review-pipeline`** 即加载本流程，按 §3 五步执行。
 ## 8. 与其他机制的关系
 
 > ★ **本节只写「关系」，不写「状态」**（`X-0018` 修正）。
-> 机制落没落、建没建，**真源是 `CONVENTIONS.md` §7.1 的脚本清单**（已由 `check-doc-anchors.js` **`D1`~`D4`** 锚定）。
+> 机制落没落、建没建，**真源是 `CONVENTIONS.md` §7.1 的脚本清单**（已由 `check-doc-anchors.js` **`D1`~`D5`** 锚定）。
 > 在这里复写状态 = **同一事实写两处 = 迟早不一致**（`CONVENTIONS.md` §9 的原话）。
 
 | 机制 | 与本流程的关系 |

@@ -28,6 +28,13 @@ const ROOT = path.resolve(__dirname, '..');
 const REVIEWS = path.join(ROOT, 'reviews');
 const INDEX = path.join(REVIEWS, 'INDEX.md');
 
+/**
+ * 待实现规则登记位（CONVENTIONS §7.1 纪律 7 · 机制③）。
+ * ★ 本脚本是**视图生成器**（不判事、无规则 ID）—— 空名单即诚实表态：
+ *   D4 要的是「登记位在场」，不是「有货」；缺这一行反而会被判「已承诺未实现无处登记」。
+ */
+const PENDING_RULES = [];
+
 /** 从正文抽「标题 + 状态」——纯函数，便于 `--self-test` 喂合成样本。 */
 function parseReviewText(text) {
   const lines = text.split(/\r?\n/);

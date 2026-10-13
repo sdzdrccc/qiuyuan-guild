@@ -28,54 +28,44 @@
 
 ```
 docs/
-  MULTI-AGENT-DEV-PLAN.md   多 Agent 协作开发方案（总纲 · v0.28）
+  MULTI-AGENT-DEV-PLAN.md   多 Agent 协作开发方案（总纲）
   AGENTS.md                 ★ 跨库 AI 硬纪律（给 AI 看的，优先级高于临时指令）
-  CONVENTIONS.md            ★ 工程约定（铁律级，升版需 ADR · v0.6）
-  REVIEW-PROCESS.md         ★ 审阅流程 —— 「审阅怎么审」的唯一真源（六步 / 判据来源 / 输出模板 / 五条纪律 · v1.2）
+  CONVENTIONS.md            ★ 工程约定（铁律级，升版需 ADR）
+  REVIEW-PROCESS.md         ★ 审阅流程 —— 「审阅怎么审」的唯一真源（六步 / 判据来源 / 输出模板 / 五条纪律）
   DECISIONS.md              ★ ADR 台账 —— 「为什么这么定」的唯一真源
   ROADMAP.md                ★ 里程碑路线图 —— 84 项功能 → 17 个里程碑
-  PROJECT-STRUCTURE.md      ★ 工程结构详案 —— UE 创建规格 / 目录全貌 / 手机端判据（M1 施工图 · v1.6）
+  PROJECT-STRUCTURE.md      ★ 工程结构详案 —— UE 创建规格 / 目录全貌 / 手机端判据（M1 施工图）
   ENVIRONMENT.md            ★ 环境与工具链台账 —— **应用 / 锁定版本 / 实测现状的唯一真源**
   MOBILE-PLAN.md            ★ 手机端专案书 —— 方案 / 出包链路 / 归置表 / 启停判据
   SERVER-ARCH.md            ★ 服务端架构与拆分时机 —— 九类进程 / 起步 8 合 1 / 四条拆分前提 / 何时拆 / **`server/` 内部结构（技术模块切）**
   SKILL-ROUTING.md          角色 → skill 路由表
+> ★ **版本号不在本页复制** —— 各文档版本以其**文件头部**为唯一真源；门面抄版本必腐
+>   （2026-10-12 实测 7 份里腐了 4 份），由 `check-doc-anchors.js` **D5** 锚定。
+
 contracts/                  ★ 唯一真源（三方只读消费，禁止本地副本）
-  data-contract.md            数据模型（**逻辑层**：实体 / 境界 / 灵根 / 属性 / 战斗公式 · v0.6）
+  data-contract.md            数据模型（**逻辑层**：实体 / 境界 / 灵根 / 属性 / 战斗公式）
   asset-ref-contract.md       资产引用契约（格式 / 交付基准 / 装配 / 场景清单）
-  protocol-contract.md        协议契约（**客户端 ↔ 服务端 = WS + JSON**；**REST 属 GM 后台的那条线** —— §1 / §4 · v0.3）
-records/                    ★ 完成记录（guild 侧编号 **`X-*`**；dalu 侧用 `T-*`）
-  X-0001.md                    v0.14 契约去物理化（**补记**，依据 `e77661f`）
-  X-0002.md                    v0.15 境界口径裁定 + 审核机制补完
-  X-0003.md                    v0.16 ROADMAP 表格列位复位 + 门禁补 R8
-  X-0004.md                    v0.17 第一设计原则（世界真实性优先）
-  X-0005.md                    v0.18 UE 工程规格 + 手机端预留（ADR-0010）
-  X-0006.md                    v0.19 手机端专案化：归置 + 出包 + iOS 硬约束（ADR-0011）
-  X-0007.md                    v0.21 环境台账 + dalu 开工（ADR-0012 / 0013）
-  X-0008.md                    v0.22 protoc 归位 M4（ADR-0014）
-  X-0009.md                    v0.23 服务端架构专章化 + 补录 Go 裁决（ADR-0015）
-  X-0010.md                    v0.24 server/ 结构定案：技术模块切（ADR-0016）
-  X-0011.md                    v1.2 M1 工具链装机：Go 1.27.1 + Luban v5.1.0
-  X-0012.md                    v0.25 UE 工程创建规格按 5.8 实测更正（ADR-0017）
-  X-0013.md                    v1.9 路线 B 实测：**非向导等价物**（ADR-0017 §七）
-  X-0014.md                    v0.26 M1 出身收敛「北桢 · 槐阴村」+ 账号协议口径勘误（ADR-0018）
-  X-0015.md                    ★ M1 波次 1 审阅（缺陷 6 条 + 契约变更包 7 节 + 门禁 4 脚本 + 提案 8 条）
-  X-0016.md                    ★ 审阅流程化 + 落 X-0015 §五 三条机制（REVIEW-PROCESS + skill `qiuyuan-review-pipeline`）
-  X-0017.md                    审阅模板补「执行环境」节（REVIEW-PROCESS v1.1）
-  X-0018.md                    ★ 审阅流程 v1.2 —— 补八条（复审销号 / 纪元所有权 / 独立复算 / 反事实复验 / 未覆盖声明 / 文档锚 / `--strict` / `C4` 误报源）+ 门禁 `C7`·`C8`·`D1`~`D4`
-  X-0019.md                    ★ 落 ADR-0019（7 节契约变更包 + 连带勘误）+ **销号 `X-0018` 遗留 7 项**（存量 35 项：判据修正 4 + 留证豁免 31）+ 建 `gen-agent-log.js`
-  X-0020.md                    ★ 落 ADR-0020（法术灵根准入禁止 —— 无对应灵根**不可学、不可放**）+ 销号 `X-0018` 遗留 7（**大人明确认可**）
-  X-0021.md                    ★ 落 ADR-0021（体质觉醒的灵根准入 —— **删 5 种五行灵体 · 留风雷冰 · `fit_root` 升为觉醒准入**）→ 派生「空池回落」待裁（阻塞 M1 波次 3）
+  protocol-contract.md        协议契约（**客户端 ↔ 服务端 = WS + JSON**；**REST 属 GM 后台的那条线** —— §1 / §4）
+reviews/                    ★ 完成记录（guild 侧编号 **`X-*`**；dalu 侧用 `T-*`）
+  INDEX.md                  总索引（**视图** · 由 `scripts/gen-review-index.js` 生成，禁止手改）
+  X-0001.md … X-0040.md     一篇不落；★ 逐篇清单看 `INDEX.md`，**本页不复制**
+                            （手抄清单追不上正文 —— 原 21 行手工列表 2026-10-13 废除）
 registry/                   ★ 跨库登记（第三条铁律的落点）—— **全部是视图，非真源**
   cross-repo-ledger.md         跨库需求 / 交付台账（**索引视图**）
   agent-log.md                 按 agent 的完成记录视图（**派生视图 · 由 `scripts/gen-agent-log.js` 生成，禁止手改**）
-  schema-layers.md             三处 schema 层次登记（待建）
+  schema-layers.md             三处 schema 层次登记（L1/L2/L3 索引 · X-0041 补建）
 scripts/                    ★ 校验脚本（没有校验脚本的契约 = 装饰品）
   check-data.js               契约↔配置表内容 + 文档表格结构 + 原则锚点（R1~R10）
   check-contract-gate.js      契约完备性闸门（G1：ROADMAP 声明「新增展开」的实体须真有展开节）
   check-identifiers.js        跨文档标识符一致性（I1：引用的表名 / 键名须存在；退役名须标明）
   check-records.js            记录与台账齐备（C1~C8：必备节 / 双向核对 / 二值 / 分级 / 同批记录 / 契约回执 / 纪元自洽 / 未覆盖声明）
-  check-doc-anchors.js        文档↔门禁锚定（D1~D4：脚本清单 / 规则 ID / skill 版本 三处同步）
+  check-doc-anchors.js        文档↔门禁锚定（D1~D5：脚本清单 / 规则 ID / skill 版本 / README 禁抄版本号）
   check-asset-ref.js          资产引用 + 跨层一致性（A1~A5）
+  check-version-pins.js       版本配套表 ↔ 契约版本（P1~P5）
+  check-docs-index.js         docs/ 顶层索引覆盖率（E1~E3：黑户 / 幽灵）
+  gen-review-index.js         `reviews/INDEX.md` 视图**生成器**（默认只校验）
+  run-all-checks.js           门禁**汇总入口**（依次跑全部；跳过 ≠ 通过，单列展示）
+  install-hooks.js            装机：把 `core.hooksPath` 指向 `scripts/hooks/`（pre-push 门禁）
   gen-agent-log.js            `agent-log` 视图**生成器**（默认只校验：与仓库内文件逐字节比对；`--write` 重生成）
   # ★ 每个脚本都带两条：--self-test（反向测试）与 PENDING_RULES（待实现规则登记位）
   # ★ `check-*.js` 清单由 `check-doc-anchors.js` 的 `D1` **双向核对**（三份真源：本节 / CONVENTIONS §7.1 / REVIEW-PROCESS §3）
@@ -100,7 +90,7 @@ scripts/                    ★ 校验脚本（没有校验脚本的契约 = 装
 
 ## 核心文档
 
-- [`docs/MULTI-AGENT-DEV-PLAN.md`](docs/MULTI-AGENT-DEV-PLAN.md) — 多 Agent 协作开发方案（**v0.28**）
+- [`docs/MULTI-AGENT-DEV-PLAN.md`](docs/MULTI-AGENT-DEV-PLAN.md) — 多 Agent 协作开发方案
 - [`AGENTS.md`](AGENTS.md) — **动手前先读这份**
 - [`docs/DECISIONS.md`](docs/DECISIONS.md) — **裁决台账**（改契约前必读）
 - [`docs/ROADMAP.md`](docs/ROADMAP.md) — **里程碑路线图**（不知道下一步做什么就读它）
@@ -108,7 +98,7 @@ scripts/                    ★ 校验脚本（没有校验脚本的契约 = 装
 - [`docs/PROJECT-STRUCTURE.md`](docs/PROJECT-STRUCTURE.md) — **工程结构详案**（**要建 UE 工程就读它**）
 - [`docs/MOBILE-PLAN.md`](docs/MOBILE-PLAN.md) — **手机端专案书**（**手机端的东西放哪 / 怎么出安装包就读它**）
 - [`docs/SERVER-ARCH.md`](docs/SERVER-ARCH.md) — **服务端架构与拆分时机**（**问「服务端现在几个进程 / 什么时候拆」就读它**）
-- [`docs/CONVENTIONS.md`](docs/CONVENTIONS.md) — 工程约定（**v0.6**）
+- [`docs/CONVENTIONS.md`](docs/CONVENTIONS.md) — 工程约定
 - [`docs/REVIEW-PROCESS.md`](docs/REVIEW-PROCESS.md) — **审阅流程**（**要审阅某个波次 / 里程碑 / 跨仓交付就读它**）
 - [`docs/SKILL-ROUTING.md`](docs/SKILL-ROUTING.md) — **角色 → skill 路由表**（**找该用哪个 skill / 装新 skill 前先过安全审计**）
 - [`registry/cross-repo-ledger.md`](registry/cross-repo-ledger.md) — 跨库登记台账

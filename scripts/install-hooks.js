@@ -27,6 +27,37 @@ const { execFileSync } = require('child_process');
 const ROOT = path.resolve(__dirname, '..');
 const HOOKS_DIR = 'scripts/hooks';
 
+/**
+ * 待实现规则登记位（CONVENTIONS §7.1 纪律 7 · 机制③）。
+ * ★ 本脚本是**装机工具**（不判事）⇒ 无待实现规则，空名单即诚实表态。
+ */
+const PENDING_RULES = [];
+
+/** 纯函数：pre-push 钩子是否在场（供 --self-test 喂合成目录，不碰真仓） */
+function prePushPresent(root, hooksDir) {
+  return fs.existsSync(path.join(root, hooksDir, 'pre-push'));
+}
+
+function selfTest() {
+  const cases = [];
+  const os = require('os');
+  const tmp = fs.mkdtempSync(path.join(os.tmpdir(), 'qyd-hooks-'));
+  const t = (name, got, want) => cases.push([name, got === want, got, want]);
+  t('钩子在场 → true', prePushPresent(tmp, 'scripts/hooks') === false, true); // 空临时目录：先证「不在场」可判
+  fs.mkdirSync(path.join(tmp, 'scripts', 'hooks'), { recursive: true });
+  fs.writeFileSync(path.join(tmp, 'scripts', 'hooks', 'pre-push'), '#!/bin/sh\n');
+  t('建了 pre-push → true', prePushPresent(tmp, 'scripts/hooks'), true);
+  t('hooks 目录名写错 → false（不静默放行）', prePushPresent(tmp, 'script/hooks'), false);
+  let bad = 0;
+  console.log('[install-hooks] 反向测试（--self-test）');
+  for (const [name, okk, got, want] of cases) {
+    if (!okk) bad++;
+    console.log(`  ${okk ? '✓' : '✗'} ${name}${okk ? '' : `  → 实际 ${got} / 期望 ${want}`}`);
+  }
+  console.log(`  结果：${bad ? '不通过' : '通过'}（${cases.length - bad} / ${cases.length}）`);
+  process.exit(bad ? 1 : 0);
+}
+
 function git(args) {
     return execFileSync('git', args, { cwd: ROOT, encoding: 'utf8', stdio: ['ignore', 'pipe', 'pipe'] });
 }
@@ -51,4 +82,5 @@ function main() {
     console.log('  放行一次：QYD_SKIP_CHECKS=1 git push');
 }
 
-main();
+if (process.argv.includes('--self-test')) selfTest();
+else main();
