@@ -82,7 +82,7 @@ scripts/                    ★ 校验脚本（没有校验脚本的契约 = 装
 ```
 
 > **契约不含物理映射**（表名 / 前缀 / 主键命名 / 存储引擎 / 分片键）—— 归下游 `qiuyuan-dalu` 自决。详见 `docs/DECISIONS.md` ADR-0001。
-> **`registry/` 里全部是视图，不是真源** —— 索引视图的正文在 `records/`，视图可重生成。详见 `docs/CONVENTIONS.md` §5.6。
+> **`registry/` 里全部是视图，不是真源** —— ★ 索引视图的正文在 **`reviews/`**（由 `scripts/gen-agent-log.js` 从 `reviews/X-*.md` 派生；★ 原文写 `records/` 是错的，2026-10-13 订正），视图可重生成。详见 `docs/CONVENTIONS.md` §5.6。
 
 ## 生态定位（6 库）
 
@@ -100,7 +100,7 @@ scripts/                    ★ 校验脚本（没有校验脚本的契约 = 装
 ## 核心文档
 
 - [`docs/MULTI-AGENT-DEV-PLAN.md`](docs/MULTI-AGENT-DEV-PLAN.md) — 多 Agent 协作开发方案（**v0.27**）
-- [`docs/AGENTS.md`](docs/AGENTS.md) — **动手前先读这份**
+- [`AGENTS.md`](AGENTS.md) — **动手前先读这份**
 - [`docs/DECISIONS.md`](docs/DECISIONS.md) — **裁决台账**（改契约前必读）
 - [`docs/ROADMAP.md`](docs/ROADMAP.md) — **里程碑路线图**（不知道下一步做什么就读它）
 - [`docs/ENVIRONMENT.md`](docs/ENVIRONMENT.md) — **环境与工具链台账**（**要装工具 / 查版本 / 问缺什么就读它**）

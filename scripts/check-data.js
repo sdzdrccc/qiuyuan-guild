@@ -549,7 +549,7 @@ function scanTables(text, file) {
 const PRINCIPLE_KEY = '世界真实性';
 const PRINCIPLE_ANCHORS = [
   'README.md',
-  'docs/AGENTS.md',
+  'AGENTS.md',
   'docs/CONVENTIONS.md',
   'docs/MULTI-AGENT-DEV-PLAN.md',
 ];
