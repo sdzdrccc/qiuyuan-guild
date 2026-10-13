@@ -468,8 +468,21 @@ function configDirVerdict(allFiles) {
 //       留住一条基于错事实的 `warn` 仍是负债。（若要重新引入，须附**复现用例**。）
 // ─────────────────────────────────────────────────────────────
 
-const TROW = /^\s*\|.*\|\s*$/;            // 表头 / 数据行
-const TDELIM = /^\s*\|[\s:|-]+\|\s*$/;    // 分隔行（|---|---|）
+  const TROW = /^\s*\|.*\|\s*$/;            // 表头 / 数据行
+  const TDELIM = /^\s*\|[\s:|-]+\|\s*$/;    // 分隔行（|---|---|）
+
+  /**
+   * 纯函数：一行的**列数**。
+   * ★★ 2026-10-13 修正（`X-0040`）：原实现是**裸 `split('|')`** ⇒ ★ 把
+   *   单元格里的**转义竖线 `\|`** 也当成了列分隔符 ⇒ ★ **误报**。
+   *   ★ 而 `\|` 是 Markdown 表格里**写一个字面竖线的规范写法**（GitHub / Obsidian /
+   *     markdown-it 都认）⇒ ★ 属「**判据过宽 → 误报**」。
+   *   ★★ 实证：`reviews/X-0040.md` 里写「转义竖线 `\|`」这一句，被判「列数 4 ≠ 表头 3」。
+   *   ★ 判据：**数结构之前，先把它"不是结构"的部分去掉。**
+   */
+  function tableCols(line) {
+    return line.replace(/\\\|/g, '').split('|').length - 2;
+  }
 
 /** 纯函数：便于 `--self-test` 反向测试 */
 function scanTables(text, file) {
@@ -490,10 +503,10 @@ function scanTables(text, file) {
 
     out.tables++;
     // ① ② 逐行核对（原「表格前一行须为空行」判据已于 2026-09-30 删除 —— 见上方勘误）
-    const cols = lines[i].split('|').length - 2;
-    let j = i + 2;
-    for (; j < lines.length && !inCode[j] && TROW.test(lines[j]); j++) {
-      const n = lines[j].split('|').length - 2;
+      const cols = tableCols(lines[i]);
+      let j = i + 2;
+      for (; j < lines.length && !inCode[j] && TROW.test(lines[j]); j++) {
+        const n = tableCols(lines[j]);
       if (n !== cols) {
         out.errors.push(`${file}:${j + 1} 列数 ${n} ≠ 表头 ${cols}`);
       } else if (cols > 1 && /\|\s*\|\s*$/.test(lines[j])) {
@@ -803,6 +816,12 @@ if (process.argv.includes('--self-test')) {
     ['R8', '行尾空单元格 → 必告警', scanTables('\n| a | b |\n|---|---|\n| 1 | |', 'x.md').warns.length > 0, true],
     ['R8', '标准表格 → 不得报错', scanTables('\n| a | b |\n|---|---|\n| 1 | 2 |', 'x.md').errors.length === 0, true],
     ['R8', '代码块内伪表格 → 不得误报', scanTables('\n```\n| a | b |\n|---|---|\n| 1 |\n```', 'x.md').errors.length === 0, true],
+    // ★★ 2026-10-13 新增（`X-0040`）：**一正一反**。★ 上面几条只测"坏表被拦"或"好表通过"，
+    //   ★ 若判据把**转义竖线**当列分隔符，它们**全都照样过** ⇒ ★ 必须专门测这一条。
+    ['R8', '★★ 单元格含**转义竖线**（表格里写字面 `|` 的规范写法）→ **不得误报**',
+      scanTables('\n| a | b |\n|---|---|\n| `x \\| y` | ok |', 'x.md').errors.length === 0, true],
+    ['R8', '★ 反向：转义竖线**不能**把真错掩盖 —— 列数真不齐仍必报',
+      scanTables('\n| a | b |\n|---|---|\n| `x \\| y` | ok | extra |', 'x.md').errors.length > 0, true],
     // R9 · 第一设计原则锚点（v0.5）
     ['R9', '缺一处锚点 → 必报错并点名', missingAnchors('世界真实性', [['a.md', '世界真实性优先'], ['b.md', '无关内容']]).length === 1, true],
     ['R9', '四处齐备 → 不得报错', missingAnchors('世界真实性', [['a.md', '世界真实性'], ['b.md', '世界真实性优先']]).length === 0, true],
