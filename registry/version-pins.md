@@ -22,7 +22,7 @@
 | `asset-ref-contract` | **v0.1** | `contracts/asset-ref-contract.md` |
 | `gbe-studio` | **v0.6.4** | `../gbe-studio/VERSION` |
 | `gbe-assets` | **v0.6.3** | `../gbe-assets/VERSION` |
-| `qiuyuan-dalu` | **`541c6ab`** | 该仓 git HEAD（★ **提交哈希，不是版本号** —— 见 §三） |
+| `qiuyuan-dalu` | **`fe1dbf6`** | 该仓 git HEAD（★ **提交哈希，不是版本号** —— 见 §三） |
 
 ★ **登记时间**：2026-10-13　|　★ **登记人**：`arch`
 
