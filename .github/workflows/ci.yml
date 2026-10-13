@@ -1,0 +1,85 @@
+name: CI
+
+# ==============================================================
+#  qiuyuan-guild CI —— 把「靠人记得手敲」的门禁变成「每次推送自动验」
+#
+#  WHY（2026-10-13 · X-0044）：
+#    本仓此前无 CI、无 hook 时，`check-records.js` 报的 35 错长期没人看见
+#    （门禁在 A 仓、被检对象在 B 仓、B 仓从不跑它）。hook 已由 `install-hooks.js` 补上；
+#    本文件补「别的机器 / 别的克隆」这一层 —— 推送即验。
+#
+#  ★★ 跨仓可见性矩阵（本 CI 的诚实边界，别当成全量）：
+#    · gbe-assets —— **公开** ⇒ 本 CI 拉下来，A 系列跨层校验**真跑**；
+#    · qiuyuan-dalu —— **私有** ⇒ 本 CI **拿不到** ⇒ C5 / C6 / C7 / C9 的 dalu 侧
+#      与 R6 / R10 / I1 会**显式跳过**（输出带「不可读 → 跳过（NOT a pass）」，
+#      run-all-checks 会把这些行**单列**在「跳过」区 —— 跳过 ≠ 通过）。
+#    ★ dalu 侧的真验证由**它自己的 CI** 跑：dalu 的 gates.yml 会把本仓拉下来跑
+#      `check-records.js`（T11），且已设 `QYD_DALU_REPO` 指到它自己的检出目录（X-0044）。
+#    ★ 若将来想让本 CI 也覆盖 dalu：加一个 PAT secret 并在这里 checkout 它 + 设
+#      `QYD_DALU_REPO` —— 届时应把上面这段注释改掉（别留一份过时的说明）。
+# ==============================================================
+
+on:
+  push:
+  pull_request:
+
+# 同一分支的新推送取消旧跑 —— 本仓无部署语义，只为省 runner 分钟数。
+#  （dalu 的 gates.yml 有同样一段；那边多一条「红久一点」的取舍注释。）
+concurrency:
+  group: guild-ci-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  checks:
+    name: run-all-checks（10 脚本）
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+
+    steps:
+      # ★ `fetch-depth: 0` 是硬前提：C5 / C7 要**完整 git 历史**
+      #   （浅克隆会让 C5 只剩 1 笔提交、C7 定位不到纪元 ⇒ 空集真空通过）。
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+
+      # gbe-assets（公开仓）—— `check-asset-ref.js` 的 A1~A4 跨层校验依赖它。
+      # ★ 用它自己的 `GBE_ASSETS_REPO` 环境变量指路（与 gbe-studio `sync-ports.js` 同一约定）。
+      - name: checkout gbe-assets (public sibling)
+        uses: actions/checkout@v4
+        with:
+          repository: sdzdrccc/gbe-assets
+          path: gbe-assets
+          fetch-depth: 1
+
+      - name: run-all-checks
+        env:
+          GBE_ASSETS_REPO: ${{ github.workspace }}/gbe-assets
+          # QYD_DALU_REPO: ★ 不设 —— dalu 私有，本 CI 拉不到；dalu 侧判据会显式跳过（见头部矩阵）。
+        run: node scripts/run-all-checks.js --quiet
+
+  self-tests:
+    name: 反向自测（每个脚本 --self-test）
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+
+      # 纪律 2：「没失败过的校验脚本 = 未被验证过的校验脚本」——
+      #   每个脚本的自测必须在这里全过（本机 = 门禁的一部分，CI = 第二道）。
+      - name: all scripts self-test
+        run: |
+          set -e
+          fail=0
+          for f in scripts/*.js; do
+            echo "── $f --self-test"
+            node "$f" --self-test || fail=1
+          done
+          exit $fail

@@ -49,14 +49,15 @@ function pendingNotice(list) {
     .join(' / ');
 }
 
-const GBE_ASSETS = 'F:/zxc/Project/gbe-assets';
+// ★ 环境变量覆盖点（X-0044）—— ★ 与 gbe-studio `sync-ports.js` 用**同一个变量名**（单一约定）。
+const GBE_ASSETS = process.env.GBE_ASSETS_REPO || 'F:/zxc/Project/gbe-assets';
 const L2_ASSET_SCHEMA = path.join(GBE_ASSETS, 'catalog', 'schema', 'asset.v2.schema.json');
 const GBE_KITS = path.join(GBE_ASSETS, 'kits');
 
 // 场景清单的搜索位置（本仓 + 下游工程）
 const MANIFEST_DIRS = [
   path.join(ROOT, 'contracts', 'manifests'),
-  'F:/zxc/Project/qiuyuan-dalu/data',
+  `${process.env.QYD_DALU_REPO || 'F:/zxc/Project/qiuyuan-dalu'}/data`,   // ★ X-0044 覆盖点
 ];
 
 const errors = [];

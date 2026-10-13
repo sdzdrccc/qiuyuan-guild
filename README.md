@@ -69,6 +69,9 @@ scripts/                    ★ 校验脚本（没有校验脚本的契约 = 装
   gen-agent-log.js            `agent-log` 视图**生成器**（默认只校验：与仓库内文件逐字节比对；`--write` 重生成）
   # ★ 每个脚本都带两条：--self-test（反向测试）与 PENDING_RULES（待实现规则登记位）
   # ★ `check-*.js` 清单由 `check-doc-anchors.js` 的 `D1` **双向核对**（三份真源：本节 / CONVENTIONS §7.1 / REVIEW-PROCESS §3）
+.github/workflows/       ★ CI（X-0044）—— `ci.yml`：run-all-checks ＋ 全脚本反向自测；
+                            ★ gbe-assets 公开可拉（跨层真跑）· dalu 私有拉不到（其判据**显式跳过**）
+                            ★ 脚本读下游路径走环境变量：`QYD_DALU_REPO` / `GBE_ASSETS_REPO`（覆盖点，不设回退本机默认）
 ```
 
 > **契约不含物理映射**（表名 / 前缀 / 主键命名 / 存储引擎 / 分片键）—— 归下游 `qiuyuan-dalu` 自决。详见 `docs/DECISIONS.md` ADR-0001。

@@ -406,7 +406,8 @@ function classifyPending(allCount, proposedCount) {
 //      ⚠️ 本规则此前**没有反向测试**（违反 §7.1 纪律 2）—— v0.21 一并补齐（6 用例）。
 // ─────────────────────────────────────────────────────────────
 
-const DATA_DIR = 'F:/zxc/Project/qiuyuan-dalu/data';
+// ★ 环境变量覆盖点（X-0044）：CI 可搬运；不设则回退本机默认路径。
+const DATA_DIR = `${process.env.QYD_DALU_REPO || 'F:/zxc/Project/qiuyuan-dalu'}/data`;
 
 /** 配置表文件（Luban 表源：Excel / CSV / JSON —— 上游 §6.2） */
 const CFG_FILE = /\.(json|csv|ya?ml|xlsx?)$/i;
@@ -615,7 +616,7 @@ function missingAnchors(key, pairs) {
 //     ㈣ 用 `qydl_game_config` 的公式参数**手算**品级值，须与表内 ppm 一致
 // ─────────────────────────────────────────────────────────────
 
-const DALU_DATA = 'F:/zxc/Project/qiuyuan-dalu/data';
+const DALU_DATA = `${process.env.QYD_DALU_REPO || 'F:/zxc/Project/qiuyuan-dalu'}/data`;   // ★ 同上（X-0044）
 
 /**
  * 纯函数：解析 Luban CSV 表源（只认 A 列为 `##var` 的表）

@@ -52,7 +52,9 @@ const { execFileSync } = require('child_process');
 const { headingName, sectionByKeyword, touchesContracts, rolesOf, executorField } = require('./lib/record-rules.js');
 
 const ROOT = path.resolve(__dirname, '..');
-const DALU = 'F:/zxc/Project/qiuyuan-dalu';
+// ★ 环境变量覆盖点（X-0044）：CI 上 dalu 不在 F: 盘 —— 不设则回退本机默认路径。
+//   ★ 覆盖点存在的原因：T11 要在 CI 上跑本脚本检 dalu 的卡；路径必须可搬运。
+const DALU = process.env.QYD_DALU_REPO || 'F:/zxc/Project/qiuyuan-dalu';
 const STRICT = process.argv.includes('--strict');
 
 // ─────────────────────────────────────────────────────────────
@@ -761,7 +763,7 @@ const REPO_LABEL = { [DALU]: 'dalu', [ROOT]: 'guild' };
   for (const repo of [DALU, ROOT]) {
     const label = REPO_LABEL[repo];
     const cs = commits(repo, 0);   // 全量（X-0043：原 200 上限会静默漏检旧缺口）
-    if (cs === null) { warn('C5', `${label}：git 不可用 → 本仓 C5 跳过`); continue; }
+    if (cs === null) { warn('C5', `${label}：git 不可用（${repo}）→ 本仓 C5 跳过（NOT a pass · 可用 QYD_DALU_REPO 指路）`); continue; }
 
     const epoch = epochSet(repo, GATE_EPOCH[repo]);
     if (epoch === null) {
@@ -823,6 +825,7 @@ function daluRecordFiles() {
 }
 
 (function c6() {
+  if (!fs.existsSync(DALU)) { warn('C6', `dalu 仓不可读（${DALU}）→ 本规则跳过（NOT a pass · 可用 QYD_DALU_REPO 指路）`); return; }
   const files = daluRecordFiles();
   if (files.length === 0) { ok('C6', 'dalu 暂无 `T-*` 记录 → 本规则不适用'); return; }
 
@@ -862,6 +865,7 @@ function daluRecordFiles() {
 const PITFALL_EPOCH_CARD = 'T-0093';
 
 (function c9() {
+  if (!fs.existsSync(DALU)) { warn('C9', `dalu 仓不可读（${DALU}）→ 本规则跳过（NOT a pass · 可用 QYD_DALU_REPO 指路）`); return; }
   const files = daluRecordFiles();
   if (files.length === 0) { ok('C9', 'dalu 暂无 `T-*` 记录 → 本规则不适用'); return; }
   const cutoff = Number(PITFALL_EPOCH_CARD.slice(2));
@@ -906,6 +910,12 @@ const PITFALL_EPOCH_CARD = 'T-0093';
   for (const repo of [ROOT, DALU]) {
     const label = REPO_LABEL[repo];
     const ep = GATE_EPOCH[repo];
+
+    // ★ 仓不可读（CI 上 dalu 可能不在）→ 响亮跳过，不是 err 也不是 ok（X-0044）
+    if (!fs.existsSync(repo)) {
+      warn('C7', `${label}：仓不可读（${repo}）→ 本仓 C7 跳过（NOT a pass · 可用 QYD_DALU_REPO 指路）`);
+      continue;
+    }
 
     if (git(repo, ['rev-parse', '--verify', `${ep}^{commit}`]) === null) {
       err('C7', `${label}：门禁纪元 \`${ep}\` **无法解析**（不是本仓的提交？）`);

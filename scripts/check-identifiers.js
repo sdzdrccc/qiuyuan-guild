@@ -44,7 +44,8 @@ const fs = require('fs');
 const path = require('path');
 
 const ROOT = path.resolve(__dirname, '..');
-const DALU = 'F:/zxc/Project/qiuyuan-dalu';
+// ★ 环境变量覆盖点（X-0044）：CI 可搬运；不设则回退本机默认路径。
+const DALU = process.env.QYD_DALU_REPO || 'F:/zxc/Project/qiuyuan-dalu';
 const DALU_DATA = path.join(DALU, 'data');
 const DALU_DB = path.join(DALU, 'db');
 const STRICT = process.argv.includes('--strict');

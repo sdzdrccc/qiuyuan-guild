@@ -435,6 +435,9 @@ node scripts/run-all-checks.js         # ★★ **汇总入口**（2026-10-13 ·
                                        #   ★ 已由 `scripts/hooks/pre-push` 在**每次 push 时自动跑**（`node scripts/install-hooks.js` 启用）
 # ★ 每个脚本都必须带两条：--self-test（反向测试）与 PENDING_RULES（待实现规则登记位）
 # ★ `check-*.js` 清单由 `check-doc-anchors.js` 的 `D1` **双向核对** —— 加脚本忘了写这里，门禁会红
+# ★ 脚本读下游仓路径一律走**环境变量覆盖点**（X-0044 · CI 可搬运）：`QYD_DALU_REPO`（dalu 仓根）· `GBE_ASSETS_REPO`（gbe-assets 仓根，
+#   与 gbe-studio `sync-ports.js` **同一变量名**）；**不设则回退本机默认路径**。仓不可读时相关判据**显式跳过**（含「NOT a pass」字样，
+#   由 `run-all-checks.js` 单列）——★ 绝不静默降级成绿。
 # ★ 两个 `gen-*.js`（agent-log / review-index）不在 `check-*` 命名空间内，故 `D1` 不管它们；但它们**由 `reviews/` 派生**，
 #   跑它就是一致性校验（`node scripts/gen-agent-log.js` → 不一致即 exit 1）
 ```
