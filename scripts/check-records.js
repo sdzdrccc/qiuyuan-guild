@@ -24,6 +24,7 @@
  *   C6 下游卡契约回执      ← 机制⑦（来源 X-0016）—— dalu 卡须有**非空**「契约回执」节
  *   C7 门禁纪元自洽        ← `REVIEW-PROCESS.md` §S2（来源 X-0018）—— 可解析 / 是 HEAD 祖先 / **未被推进**
  *   C8 审阅记录须声明未覆盖 ← `REVIEW-PROCESS.md` §S5（来源 X-0018）—— 只对**审阅类**记录生效
+ *   C9 下游卡坑登记        ← 断点 B 执法（来源 X-0042 · T-0092 遗留 1）—— dalu 卡自 **T-0093** 起须有**非空**「坑登记」节
  *   ── 豁免（`WAIVED`）──     ← 来源 X-0016；`X-0019` 销号 31 项存量时扩为**三个命名空间**
  *                               `commits`（C5）／ `sections`（C1 · **只对软性节**）／ `records`（C6）
  *
@@ -430,6 +431,17 @@ function contractReceiptPresence(text) {
   return sec.split(/\r?\n/).slice(1).join('\n').trim().length > 0;   // 去掉标题行后非空
 }
 
+/**
+ * 纯函数：是否含**非空**的「坑登记」节（C9 · 下游卡义务 · 来源 `X-0042`）。
+ * ★ 与 C6 同哲学：**「无」也算非空** —— 要的是**显式表态**（这轮有没有新坑/新判据），
+ *   不是「写点好话」；★ 节标题认「坑登记」开头（`## 坑登记（PITFALLS）`也认）。
+ */
+function pitfallReceiptPresence(text) {
+  const sec = sectionByKeyword(text, '坑登记');
+  if (sec === null) return false;
+  return sec.split(/\r?\n/).slice(1).join('\n').trim().length > 0;
+}
+
 /** 纯函数：审核节声明的**触发级别**（L0~L3）；未声明 → `null`（方案 §5.3） */
 function declaredLevel(text) {
   const sec = reviewSection(text);
@@ -827,6 +839,39 @@ function daluRecordFiles() {
 })();
 
 // ─────────────────────────────────────────────────────────────
+// C9 · 下游卡「坑登记」节（断点 B 的执法 · 来源 X-0042）
+//
+// 治的是 `T-0092` 登记的**断点 B**：「新坑该进 `docs/PITFALLS.md`」只靠
+// `AGENTS.md` §6 自检清单里一句**自觉**，无门禁 ⇒ 记不记全凭想起来。
+// ★ 与 C6 同哲学：**非空即过、「无」也算合格**（显式表态 > 写点好话）。
+// ★ **不回填历史**（X-0018 §六）：机制自 **T-0093** 起适用，此前的卡整段豁免并留痕 ——
+//   回填是把今天的话塞进旧记录，那是造假（同 ADR-0025「追认另开一条」的形状）。
+// ─────────────────────────────────────────────────────────────
+
+/** 「坑登记」机制的起始卡号（含）—— 改它 = 改适用范围，须落记录 + 大人裁 */
+const PITFALL_EPOCH_CARD = 'T-0093';
+
+(function c9() {
+  const files = daluRecordFiles();
+  if (files.length === 0) { ok('C9', 'dalu 暂无 `T-*` 记录 → 本规则不适用'); return; }
+  const cutoff = Number(PITFALL_EPOCH_CARD.slice(2));
+  const bad = [];
+  let legacy = 0;
+  for (const f of files) {
+    const id = f.replace(/\.md$/, '');
+    if (Number(id.slice(2)) < cutoff) { legacy++; continue; }   // 机制前的卡：不回填、不报
+    const t = read(path.join(DALU_RECORDS, f)) || '';
+    if (!pitfallReceiptPresence(t)) bad.push(id);
+  }
+  for (const id of bad) {
+    err('C9', `dalu 卡**缺「坑登记」节（或该节为空）**（须写清本轮有没有新坑/新判据进 \`docs/PITFALLS.md\` · 无则显式写「无」）：${id}`);
+  }
+  if (bad.length === 0) {
+    ok('C9', `坑登记齐备（${PITFALL_EPOCH_CARD} 起 ${files.length - legacy} 篇全含非空「坑登记」节；此前 ${legacy} 篇按「不回填历史」整段豁免）`);
+  }
+})();
+
+// ─────────────────────────────────────────────────────────────
 // C7 · 门禁纪元自洽（来源 X-0018 · `REVIEW-PROCESS.md` S2）
 // ─────────────────────────────────────────────────────────────
 /**
@@ -949,6 +994,11 @@ if (process.argv.includes('--self-test')) {
     ['C1', '执行者 `arch` → 有角色（过）', rolesOf(executorField(REC_OK)).length > 0, true],
     ['C1', '★ 执行者无反引号角色 → 必判缺（X-0022/X-0023 的静默消失）', rolesOf(executorField('# t\n- 执行者：**guild 侧**（文档更正）+ **dalu 侧**（同步）\n')).length === 0, true],
     ['C1', '★ 反引号仓名不算角色（X-0031 被归错 agent）', rolesOf(executorField('# t\n- 执行者：guild 规范中枢 ＋ 直接改上游 `gbe-studio` / `gbe-assets`\n')).length === 0, true],
+    // C9 · 坑登记（断点 B 执法）
+    ['C9', '有「坑登记」节且非空 → 过', pitfallReceiptPresence('# t\n\n## 坑登记（PITFALLS）\n- 无\n'), true],
+    ['C9', '节在但为空 → 必判缺（同 C6 哲学）', pitfallReceiptPresence('# t\n\n## 坑登记\n\n## 别的\n'), false],
+    ['C9', '无该节 → 必判缺', pitfallReceiptPresence('# t\n\n## 改动清单\n- x\n'), false],
+    ['C9', '★ 正文顺带提「坑登记」四字而**无节** → 不算（不许被正文骗过）', pitfallReceiptPresence('# t\n\n## 改动清单\n- 本轮无需坑登记\n'), false],
     ['C1', '「门禁与自检」也算验证证据节', sectionPresence('# t\n状态：x\n执行者：y\n改动清单\n## 门禁与自检\n审核').evidence === true, true],
     // ★ G-4 的原始漏洞 + 「收紧判据不许误杀另一类模板」（我自己第一版就误杀了 4 篇审阅卡，见 X-0033 §四-2）
     ['C1', '正文顺带提一句「门禁」而无节 → **不算**证据节（G-4 的洞）', sectionPresence('# t\n状态：x\n执行者：y\n## 改动清单\n本次未跑门禁。\n## 审核').evidence, false],

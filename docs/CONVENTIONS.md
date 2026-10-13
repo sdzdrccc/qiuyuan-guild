@@ -282,6 +282,10 @@ $ <命令>
 > **「契约回执」节的性质（v0.5 新增 · 机制⑦ · 来源 `X-0016`）**：它是**上报通道**，不是**质量判据**。
 > **仅下游卡（`T-*`）必填** —— guild 自己的 `X-*` 不适用。门禁：`check-records.js` **`C6`**。
 > **写「无」也算合格** —— 它要的是**显式表态**（契约有没有缺口），不是「写点好话」。
+
+> **「坑登记」节的性质（`X-0042` 新增 · C9）**：它是**断点 B 的执法**——「本轮有没有新坑/新判据该进 `docs/PITFALLS.md`」
+> 此前只靠 `AGENTS.md` §6 自检清单的自觉，无门禁 ⇒ 记不记全凭想起来（`T-0092` 实证：规则不接门禁 = 会静默失效）。
+> **仅下游卡（`T-*`）必填、自 `T-0093` 起适用**（不回填历史——回填是把今天的话塞进旧记录）；**写「无」也算合格**。门禁：`check-records.js` **`C9`**。
 > 缘起：`X-0015` §五-⑦ —— **guild 自己的契约往后一天，无人发现**；方案 §5.2 的「审核者 = 下游消费者」
 > 表里**没有任何一行**覆盖「guild 的契约由谁审」⇒ 让**下游每张卡自动上报**补上这个真空。
 >
@@ -416,7 +420,7 @@ $ <命令>
 node scripts/check-data.js            # 契约 ↔ 配置表**内容** + 文档表格结构 + 第一原则锚点（R1~R10）
 node scripts/check-contract-gate.js   # 契约完备性：ROADMAP 声明「新增展开」的实体，contracts/ 须真有展开节（G1）
 node scripts/check-identifiers.js     # 跨文档标识符：文档引用的配置表 / DB 表须存在；退役名须同行标明（I1）
-node scripts/check-records.js         # 记录与台账齐备：必备节 / 双向核对 / 二值 / **分级** / 同批记录 / **契约回执** / **纪元自洽** / **未覆盖声明**（C1~C8）
+node scripts/check-records.js         # 记录与台账齐备：必备节 / 双向核对 / 二值 / **分级** / 同批记录 / **契约回执** / **纪元自洽** / **未覆盖声明** / **坑登记**（C1~C9）
 node scripts/check-doc-anchors.js     # 文档 ↔ 门禁锚定：脚本清单 / 规则 ID / skill 版本 / README 禁抄版本号 四处同步（D1~D5）
 node scripts/check-asset-ref.js       # 场景引用 ↔ 资源清单 ↔ 实际资产（A1~A5）
 node scripts/check-version-pins.js    # ★ 版本配套表 ↔ 契约版本（`registry/version-pins.md` ↔ `contracts/*.md`）（P1~P5）

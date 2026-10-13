@@ -101,7 +101,7 @@
 node scripts/check-data.js            # R1~R10
 node scripts/check-contract-gate.js   # G1
 node scripts/check-identifiers.js     # I1
-node scripts/check-records.js         # C1~C8
+node scripts/check-records.js         # C1~C9
 node scripts/check-doc-anchors.js     # D1~D5
 node scripts/check-asset-ref.js       # A1~A5
 node scripts/check-version-pins.js    # P1~P5（版本配套表 ↔ 契约版本）
