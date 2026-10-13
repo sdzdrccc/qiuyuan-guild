@@ -469,8 +469,18 @@ function git(repo, args) {
 }
 
 /** 读某仓提交（含改动文件清单）。返回 null = git 不可用 */
+/**
+ * 取某仓提交列表（含每笔改动的文件）。
+ * @param limit 0 = **全量**（不加 `-n`）—— X-0043 修：原写死 `-n 200`，
+ *   ★ 历史超过 200 笔后，**更早的缺口静默漏检**（扫描窗口滑过去了，没人会知道）。
+ *   ★ 判据：宁可扫全量（本生态仓均在百级笔数，`--name-only` 全史 <1s），
+ *     也不留一个「会随时间长大的静默盲区」（与坑 9「未覆盖 -> 静默」同族）。
+ */
 function commits(repo, limit) {
-  const raw = git(repo, ['log', `-n`, String(limit), '--name-only', '--pretty=format:@@%H%x09%ad%x09%s', '--date=short']);
+  const args = ['log'];
+  if (limit) args.push('-n', String(limit));
+  args.push('--name-only', '--pretty=format:@@%H%x09%ad%x09%s', '--date=short');
+  const raw = git(repo, args);
   if (raw === null) return null;
   const out = [];
   let cur = null;
@@ -750,7 +760,7 @@ const REPO_LABEL = { [DALU]: 'dalu', [ROOT]: 'guild' };
 (function c5() {
   for (const repo of [DALU, ROOT]) {
     const label = REPO_LABEL[repo];
-    const cs = commits(repo, 200);
+    const cs = commits(repo, 0);   // 全量（X-0043：原 200 上限会静默漏检旧缺口）
     if (cs === null) { warn('C5', `${label}：git 不可用 → 本仓 C5 跳过`); continue; }
 
     const epoch = epochSet(repo, GATE_EPOCH[repo]);

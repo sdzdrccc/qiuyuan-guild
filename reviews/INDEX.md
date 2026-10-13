@@ -3,7 +3,7 @@
 > ★ **本文件是视图，不是第二真源** —— 由 `scripts/gen-review-index.js` 生成，**不得手工编辑**。
 > 要改内容请改 `reviews/` 下的正文，然后重跑生成器（`node scripts/gen-review-index.js --write`）。
 >
-> 真源：审阅记录 `reviews/X-*.md`（40 篇） · 外部报告 `reviews/ext/`（1 篇）
+> 真源：审阅记录 `reviews/X-*.md`（41 篇） · 外部报告 `reviews/ext/`（1 篇）
 > 一行一事的台账仍在 `registry/cross-repo-ledger.md`（那边管**跨库交付**，这里管**目录视图**）。
 
 ## 一、审阅记录（`reviews/X-*.md`）
@@ -50,6 +50,7 @@
 | [`X-0040`](X-0040.md) | X-0040 给 `ue-ai-ops` 补自动执行 ＋ 修它自己的一处"假绿" | 已完成 |
 | [`X-0041`](X-0041.md) | X-0041 guild 自修：G-5 门禁扩面 · G-7 README 防腐 · G-8 补 schema-layers · G-9 执行者归位 | 已完成 |
 | [`X-0042`](X-0042.md) | X-0042 跨库总账：X-0032 遗留缺陷修复批次（guild C9 · gbe-studio v0.6.4 · gbe-assets v0.6.3 · dalu T-0093） | 已完成 |
+| [`X-0043`](X-0043.md) | X-0043 收尾批：ADR-0026/0027 · 契约收紧（G-6/D-5）· 门禁两小疵 · 断点 D 系统审计 | 已完成 |
 
 ## 二、外部审阅报告（`reviews/ext/`）
 

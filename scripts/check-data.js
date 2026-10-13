@@ -149,6 +149,8 @@ function errataIssues(t) {
 })();
 
 // ─────────────────────────────────────────────────────────────
+// ★ v 扩模（X-0043 · ADR-0027 ①）：原只认 `xx_`（原型前缀），契约里 3 处 `qydl_*` 下游物理表名
+//   **看不见**（X-0032 G-6）—— 现已从契约摘除，判据同步扩到 `qydl_`，再进即红。
 // R7 · ADR-0001 门禁：契约不含物理映射（表名 / 前缀）
 //      判据：**标题**（实体名所在处）与**代码块**（示例）里不得出现 `xx_`。
 //      §1 实体总览的「原型对应（仅备查）」列是**合法引用**，故不检查普通表格行。
@@ -164,17 +166,17 @@ function scanPhysicalNames(text) {
     if (/^\s*```/.test(l)) { inCode = !inCode; return; }
 
     // ① 标题里的表名 —— 说明实体被按物理名定义
-    if (/^#{2,4}\s[^\n]*xx_[a-z]/.test(l)) {
+    if (/^#{2,4}\s[^\n]*(?:xx|qydl)_[a-z]/.test(l)) {
       out.push({ line: i + 1, kind: '标题含表名' });
       return;
     }
     // ② 代码块里的表名 —— 说明物理细节进了示例
-    if (inCode && /xx_[a-z]/.test(l)) {
+    if (inCode && /(?:xx|qydl)_[a-z]/.test(l)) {
       out.push({ line: i + 1, kind: '代码块含表名' });
       return;
     }
     // ③ 字段表首列直接写表名（| `xx_foo` | ...）
-    if (/^\|\s*`xx_[a-z][^`]*`\s*\|/.test(l)) {
+    if (/^\|\s*`(?:xx|qydl)_[a-z][^`]*`\s*\|/.test(l)) {
       out.push({ line: i + 1, kind: '表格首列含表名' });
     }
   });
@@ -194,7 +196,7 @@ function scanPhysicalNames(text) {
   if (violations.length) {
     err('R7', `契约含物理表名（ADR-0001：逻辑进契约，物理归下游）：${violations.join(' / ')}`);
   } else {
-    ok('R7', 'ADR-0001 生效：契约标题 / 代码块 / 字段表首列均无物理表名');
+    ok('R7', 'ADR-0001 生效：契约标题 / 代码块 / 字段表首列均无物理表名（xx_ / qydl_ 双前缀 · ADR-0027 ① 扩模）');
   }
 })();
 
@@ -337,7 +339,9 @@ function scanBackfillRefs(text) {
 // v0.3 改造：**取消魔法数字下限**（原 `EXPECTED_FLOOR = 3`，ADR 裁定后必然失效），
 //            改为**与 ADR 台账联动** —— 契约的待裁项与 `docs/DECISIONS.md` 的 `proposed` 条数
 //            必须**方向一致**。这才是真正的漏报防线。
-const PENDING = /待裁决|待裁定|待裁\b|待确认|待大人|proposed|⚠️\s*待/;
+// ★ X-0043 修一处死分支：原 `待裁\b` 的 `\b` 只认 ASCII 词字符，汉字后永无边界
+//   =>「待裁）」「待裁项」这类**漏报**。改纯 `待裁`（长形态本就在同 alternation 里，不漏匹配）。
+const PENDING = /待裁决|待裁定|待裁|待确认|待大人|proposed|⚠️\s*待/;
 
 /** 纯函数：便于 `--self-test` 反向测试 */
 function findPending(text, file) {
@@ -794,6 +798,9 @@ if (process.argv.includes('--self-test')) {
     ['R7', '实体名标题 → 不得误报', scanPhysicalNames('### 3.1 角色 `Role`（角色主实体）').length === 0, true],
     ['R7', '备查列引用表名 → 不得误报', scanPhysicalNames('| 账号 `Account` | `account` | `xx_players` | 平台账号层 |').length === 0, true],
     ['R7', '正文提到 `xx_` 前缀约定 → 不得误报', scanPhysicalNames('`xx_` 前缀是原型的占位约定，不构成约束').length === 0, true],
+    ['R7', '★ 标题含 qydl_ 下游表名 → 必拦下（ADR-0027 ① 扩模）', scanPhysicalNames('### 3.1 `qydl_game_config`（全局配置）').length > 0, true],
+    ['R7', '★ 表格首列含 qydl_ → 必拦下', scanPhysicalNames('| `qydl_physique_def_config` | 体质名单 |').length > 0, true],
+    ['R7', '变更记录行叙述「摘除了 qydl_」→ 不得误报（历史留痕，非活引用）', scanPhysicalNames('| **v0.8** | 2026-10-13 | 摘除物理表名 `qydl_physique_def_config` |').length === 0, true],
     // R2 · 缺待裁项标注必须报错
     ['R2', '缺 ADR-0004 标注 → 必报错', errataIssues('9 大境界 ADR-0006 金木水火土风雷冰 勘误一').errors.length > 0, true],
     ['R2', 'ADR 齐备 → 不得报错', errataIssues('9 大境界 ADR-0004 ADR-0006 金木水火土风雷冰 勘误一').errors.length === 0, true],

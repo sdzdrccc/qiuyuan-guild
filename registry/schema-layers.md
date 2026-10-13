@@ -15,6 +15,8 @@
 | **L2 资产包交付** | `gbe-assets/packages/schema/` | 资产**交付包**契约（asset / source / assembly / kit / collection / ports） | `packages/schema/package.json` 的 `version`（★ 与 `schema_version === "2"` 闸门是两码事，后者见 ADR-0001） | **gbe-assets** | **改需 ADR** |
 | **L3 游戏侧** | `qiuyuan-guild/contracts/`（**本仓**） | **游戏消费面**：数据模型 / 资产引用 / 协议 / 资源清单 | 各契约**文件头部**的「状态」行 | **guild**（`arch`） | **改需 ADR** |
 
+> ⚠️ **记号撞车（2026-10-13 断点 D 审计登记）**：`L1/L2/L3` **在本文件 = schema 层次**；而在 **`gbe-studio` 侧 = 几何粒度**（ADR-0006：L1 原语 / L2 构件 / L3 建筑，见其 `docs/PLAN.md` 与 `core/contracts/`）。★ **同一记号两套语义，各自都合法**（管的是不同的事 · A62 同型）—— 但**跨仓对话必须带限定词**（「schema L2」vs「粒度 L2」），别让一个 L2 在两个仓指两个东西。
+
 ## 二、两条铁律（`CONVENTIONS.md` §3 原文口径）
 
 1. **不跨层引用。** L3 **不直接引用 L1** 的 schema —— L3 只认 L2（资产包交付面）。L1 怎么变是 gbe-studio 的家事，不外溢。

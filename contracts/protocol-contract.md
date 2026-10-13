@@ -1,6 +1,6 @@
 # 协议契约（Protocol Contract）
 
-> **层**：L3 游戏侧（本仓 `contracts/`）　|　**状态**：**v0.4**（2026-10-01 **M1 契约补齐包** —— `DECISIONS.md` **ADR-0023**；上一版 v0.3 = 体质灵根准入 · ADR-0021）
+> **层**：L3 游戏侧（本仓 `contracts/`）　|　**状态**：**v0.5**（2026-10-13 **契约收紧 + 补记** —— `DECISIONS.md` **ADR-0027**：① 摘除 2 处下游物理表名引用（`qydl_game_config.origin_tag` → 逻辑键 + 指针）· ② 补登记 `list_characters_fail`；上一版 v0.4 = M1 契约补齐包 · ADR-0023）
 > **真源**：本文件。客户端与服务端**双向**只读消费。
 > **来源**：从 Codex 原型的 `MessageTypes` + `docs/03-protocol-and-api.md`（216 行）**提炼**，非新设计。
 > **战略地位**：服务端**重写 Go**（已定）时，**Java 侧最有价值的产出就是本契约**（协议 + 数据表）——那 22 个 Spring 服务会被丢弃，本契约不会。
@@ -164,6 +164,7 @@
 | `register_ok` | `{accountId, phone}` | 注册成功 |
 | `register_fail` | `{message}` | 注册失败 |
 | `characters` | `{accountId, characters:[...]}` | 角色列表（**单角色制：长度 0 或 1**） |
+| `list_characters_fail` | `{message}` | 角色列表查询失败（**v0.5 补记 · `ADR-0027` ②** —— 该回包服务端自 M1 起就在回、客户端早已在处理，本次仅**补登记**，无行为变更） |
 | `create_ok` | `{character:{...}}` | 建角成功 |
 | `create_fail` | `{message}` | 建角失败 |
 | `logout_ok` | `{}` | 退出确认（客户端据此回登录界面） |
@@ -290,7 +291,7 @@
 ```
 
 > ★ **`origin` 是 v0.4 新增（`ADR-0023` ⑧）** —— 出身。取值 `Origin.NorthZhen.Huaiyin`（M1 唯一）；
-> **真源 = 下游 `qydl_game_config.origin_tag`**，**由配置派生、不落库**。
+> **真源 = 下游全局配置的 `origin_tag` 键**（**物理落点见 `qiuyuan-dalu/docs/DATA-LAYOUT.md`** · `ADR-0027` ① —— 契约不含物理映射），**由配置派生、不落库**。
 >
 > ★★ **它为什么不进 `data-contract.md` §3.1 `Role`** —— 因为**这两份契约回答的不是同一个问题**：
 >
@@ -313,7 +314,7 @@
 | `bodyTier` | `0~3` | `data-contract.md` §3.1 |
 | `roots[].purity` | **`1~100`**（均匀随机，**与品级无关** —— 裁定 G） | `data-contract.md` §3.2 |
 | `roots[].sortOrder` | **`0` = 主灵根 = 纯度最高者** | `data-contract.md` §3.2 |
-| `origin` | ★ **出身标签** | **v0.4 新增（`ADR-0023` ⑧）**。M1 唯一取值 `Origin.NorthZhen.Huaiyin`；**真源 = 下游 `qydl_game_config.origin_tag`**，**由配置派生、不落库**（故**不在** `data-contract.md` §3.1 `Role` 里 —— 见下方说明） |
+| `origin` | ★ **出身标签** | **v0.4 新增（`ADR-0023` ⑧）**。M1 唯一取值 `Origin.NorthZhen.Huaiyin`；**真源 = 下游全局配置的 `origin_tag` 键**（物理落点见 `qiuyuan-dalu/docs/DATA-LAYOUT.md` · `ADR-0027` ①），**由配置派生、不落库**（故**不在** `data-contract.md` §3.1 `Role` 里 —— 见下方说明） |
 
 > ✅ **灵力命名已统一（v0.2 · ADR-0019 ④）**：字段由 **`spiritPower` → `mp`**（上限 `maxMp`）——
 > 与 `data-contract.md` §3.1 的同名字段一致。**原「两个名字指同一资源」的状态已消除**
@@ -427,6 +428,7 @@ ID 格式 **`gong_<root>`**（`gong_jin` / `gong_mu` / `gong_shui` / `gong_huo` 
 
 | 版本 | 日期 | 变更 |
 |---|---|---|
+| **v0.5** | **2026-10-13** | ★ **契约收紧 + 补记**（`DECISIONS.md` **ADR-0027**）：<br>**① §2.1 / §5.1 摘除 2 处物理表名**（`qydl_game_config.origin_tag` → 「下游全局配置的 `origin_tag` 键」+ 物理落点指针）—— 落实 `ADR-0001` 规矩 1「契约不含物理映射」，消掉两处必腐的跨层重复；<br>**② §3.1 补 `list_characters_fail` 行**（补记：服务端早已在回、客户端早已在处理，仅补登记）。 |
 | **v0.4** | **2026-10-01** | ★ **M1 契约补齐包**（`DECISIONS.md` **ADR-0023**）—— 一次集中处理下游三张记录（`T-0022` / `T-0023` / `T-0024`）**§契约回执**累计上报的 **8 处**缺口：<br>**① §1/§2.1 身份字段出请求体**（`create_character` / `list_characters` 去掉 `accountId`；§1 加「身份一律取自会话」+ **范围闸门**：其余段落的 `characterId` 只登记不改）—— **安全缺口**；<br>**② §2.1 同步「回落 = 落凡体」**（原写「待裁」，与 `data-contract.md` v0.7 矛盾）；<br>**③ §3.0 新增通用 `error`**（原缺「协议层错误」回包的定义）+ 写明与 `*_fail` 的分工；<br>**④ §4 `/api/stats` 扩字段** —— `connections` / `loggedIn` / `sources`，并**明文区分 `online`（已进世界）与 `connections`（连着的人）**；<br>**⑤ §4 新增 `/api/gm/config` 与 `/api/gm/config/{table}`**（GM 读配置表）；<br>**⑥ §1 补「`data` 内字段一律 camelCase」**；<br>**⑦ §3.1 `login_fail` 补「防枚举」的完整要求** —— 文案与**耗时**双相当 + 封禁账号**具名**的三段式；<br>**⑧ §5.1 角色对象新增 `origin`**，并说明它**为何不进** `data-contract.md` 的 `Role`（**存什么** vs **看什么**，两份契约回答两个问题）。<br>★ **本节起补上变更记录**。 |
 | **v0.3** | **2026-09-30** | 体质灵根准入（`ADR-0021`） |
 | **v0.2** | **2026-09-30** | M1 契约对齐（`ADR-0019`）：`{phone, password}` · `accountId` · `mp` / `maxMp` · §5.1 `realmId` · `layer` |
