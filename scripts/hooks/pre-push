@@ -1,0 +1,35 @@
+#!/bin/sh
+#
+# qiuyuan-guild pre-push 钩子 —— 推送前跑全部 8 个校验脚本
+# ============================================================
+# 由 `node scripts/install-hooks.js` 通过 `git config core.hooksPath scripts/hooks` 启用。
+#
+# ★ 为什么需要它（2026-10-13 实测 · `X-0036` §追加「处理盲区问题」）：
+#   本仓有 8 个校验脚本，但**没有任何自动执行机制** ——
+#     无 CI（脚本硬编码本机绝对路径、零 env 覆盖 ⇒ 上不了 Actions）；
+#     无 git hook（`core.hooksPath` 未设，隔壁 gbe-* 两仓都设了）。
+#   ⇒ 后果实测：`check-records.js` 长期报 35 错，**而它报的红一直没人看见**。
+#   ⇒ 判据：一个只在"有人记得手动跑"时才存在的门禁，等于没有门禁。
+#
+# 逃生舱（仅限确知不需全跑的场合，且应在记录里写清原因）：
+#   QYD_SKIP_CHECKS=1 git push
+
+if [ "${QYD_SKIP_CHECKS}" = "1" ]; then
+  echo "[pre-push] QYD_SKIP_CHECKS=1 —— 跳过本仓门禁"
+  exit 0
+fi
+
+if ! command -v node >/dev/null 2>&1; then
+  echo "[pre-push] 警告：PATH 里没有 node，跳过门禁。" >&2
+  echo "           请手动跑一次：node scripts/run-all-checks.js" >&2
+  exit 0
+fi
+
+node scripts/run-all-checks.js || {
+  echo "" >&2
+  echo "[pre-push] 推送被拦下：本仓门禁有红。" >&2
+  echo "           看上面的 FAILED 清单；修完再推。" >&2
+  echo "           确需放行：QYD_SKIP_CHECKS=1 git push" >&2
+  echo "" >&2
+  exit 1
+}

@@ -423,6 +423,10 @@ node scripts/check-interfaces.js      # 跨模块接口 ↔ 契约（**待建**�
 node scripts/gen-agent-log.js         # `agent-log` 视图**生成器**（默认**只校验**：与仓库内文件逐字节比对；`--write` 重生成）
 node scripts/gen-review-index.js      # `reviews/INDEX.md` 审阅总索引视图**生成器**（同构：默认只校验 · `--write` 重生成 · 带 `--self-test`）
 
+node scripts/run-all-checks.js         # ★★ **汇总入口**（2026-10-13 · `X-0036` 追加）—— 依次跑上面**全部 8 个**，任一红即退出码 1
+                                       #   ★ **故意不叫 `check-*`** ⇒ `D1` 不管它 —— 它**不是第 9 条判据，是入口**
+                                       #   ★ 缺下游仓时**逐条列出「跳过 / 不可读 / 未执行」** —— ★ **跳过 ≠ 通过**
+                                       #   ★ 已由 `scripts/hooks/pre-push` 在**每次 push 时自动跑**（`node scripts/install-hooks.js` 启用）
 # ★ 每个脚本都必须带两条：--self-test（反向测试）与 PENDING_RULES（待实现规则登记位）
 # ★ `check-*.js` 清单由 `check-doc-anchors.js` 的 `D1` **双向核对** —— 加脚本忘了写这里，门禁会红
 # ★ 两个 `gen-*.js`（agent-log / review-index）不在 `check-*` 命名空间内，故 `D1` 不管它们；但它们**由 `reviews/` 派生**，

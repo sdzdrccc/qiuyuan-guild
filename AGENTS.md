@@ -245,3 +245,34 @@ Codex 原型是**消耗品**（验证用），已验证的结论**单向回流�
    ★ 实证：本轮核出 `docs/DECISIONS.md:357` 有一句「由 `records` 派生」是错的（真源是 `reviews/`），
    ★ **但它是 ADR 正文 ⇒ 一个字不动**，★ 只在 `AGENTS.md` §1 与 `README.md` 订正，★ **并在此登记**（该靠新 ADR 或下轮订正）。
 6. **判据**：★ **"这个文件还有没有人读？"** —— 没人读且不会再有 ⇒ 删；★ 还有人读 ⇒ **改，不删**。
+
+---
+
+## 10. 门禁怎么跑（★ **本仓没有 CI** · **2026-10-13 新增**）
+
+> ★ 来源：`X-0036` §追加「处理盲区问题」。★ **这一节治的是本仓最要命的一条** ——
+> ★★ **8 个校验脚本此前没有任何自动执行机制** ⇒ `check-records.js` 长期报 **35 错**、**而无人看见**。
+
+### 10.1 ★★ 一个命令跑全部
+
+```bash
+node scripts/run-all-checks.js            # 依次跑 8 个脚本；任一红 → 退出码 1
+node scripts/run-all-checks.js --quiet    # 只出汇总
+```
+
+★ 汇总里会**单独列出**含「跳过 / 不可读 / 未执行」的行 —— ★★ **跳过不是绿**（本仓最忌"跳过长得像绿灯"）。
+
+### 10.2 ★★ 已装 git hook 兜底（**别再靠"记得"**）
+
+```bash
+node scripts/install-hooks.js     # → core.hooksPath = scripts/hooks ⇒ 每次 push 自动跑
+```
+
+★ 机制与隔壁 `gbe-studio` / `gbe-assets` **同一套**（它们的 pre-push 校版本号，本仓的跑门禁）。
+★ 逃生舱：`QYD_SKIP_CHECKS=1 git push` —— ★ **用了它要在记录里写清原因**。
+
+### 10.3 ★ 为什么没有 CI（★ 别以为是忘了配）
+
+★ **当前配不了**：这些脚本**硬编码本机绝对路径**（`F:/zxc/Project/qiuyuan-dalu` · `F:/zxc/Project/gbe-assets`）
+且**零 `process.env` 覆盖点** ⇒ ★ 在 GitHub Actions 上必然 ENOENT。
+★ 要上 CI **得先给这些脚本加环境变量覆盖点**（★ 那是另一件事，★ 别在没做之前假装"有 CI 就安全了"）。
