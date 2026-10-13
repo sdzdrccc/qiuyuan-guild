@@ -24,7 +24,7 @@
 
 | 日期 | 层 | 变更 | 记录 |
 |---|---|---|---|
-| 2026-10-13 | L2 | 新增 `ports.schema.json`（端口真源入 schema）；`catalog.config.json` 的重复端口登记已删；assembly 语义校验补 `params.instance_count === instances.length` | gbe-assets 发布批次（X-0041） |
+| 2026-10-13 | L2 | 新增 `ports.schema.json`（端口真源入 schema）；`catalog.config.json` 的重复端口登记已删；assembly 语义校验补 `params.instance_count === instances.length` | gbe-assets **v0.6.3**（发布批次总账 X-0042） |
 
 > ★ 本表**只记跨层可见的变更**；层内的日常修订（不影响下层的）不进表 —— 否则它就成了第二个 CHANGELOG。
 > ★ 「影响下层」的判定拿不准时，**先登记再观察**（登记过剩的成本是一条行，漏登的成本是静默不一致）。
