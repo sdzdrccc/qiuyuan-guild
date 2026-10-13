@@ -28,7 +28,7 @@
 
 ```
 docs/
-  MULTI-AGENT-DEV-PLAN.md   多 Agent 协作开发方案（总纲 · v0.27）
+  MULTI-AGENT-DEV-PLAN.md   多 Agent 协作开发方案（总纲 · v0.28）
   AGENTS.md                 ★ 跨库 AI 硬纪律（给 AI 看的，优先级高于临时指令）
   CONVENTIONS.md            ★ 工程约定（铁律级，升版需 ADR · v0.6）
   REVIEW-PROCESS.md         ★ 审阅流程 —— 「审阅怎么审」的唯一真源（六步 / 判据来源 / 输出模板 / 五条纪律 · v1.2）
@@ -92,14 +92,15 @@ scripts/                    ★ 校验脚本（没有校验脚本的契约 = 装
 | gbe-studio | `F:/zxc/Project/gbe-studio` | 资产生成端 · **现行**（上游 · **只读**） |
 | gbe-assets | `F:/zxc/Project/gbe-assets` | 资产仓储端（上游 · **只读**） |
 | **qiuyuan-guild** | `F:/zxc/Project/qiuyuan-guild` | **协作规范中枢（本仓库）· 契约真源** |
-| Godot 原型 | `…/Documents/Codex/2026-08-04/a/outputs/xiuxian-mmo` | 已验证原型（**验证方** · 留在原地） |
+| ★ `ue-ai-ops` | `F:/zxc/Project/ue-ai-ops` | ★★ **UE 通用经验**（工程操作层：编译 / MCP / UMG / 避坑）· **上游 · 只读** |
+| ~~Godot 原型~~ | `…/Documents/Codex/2026-08-04/a/outputs/xiuxian-mmo` | ★★ **2026-10-13 已退役**（结论早已回流契约层；★ 契约仍以它作「来源」叙述 = 历史事实，不许改） |
 | qiuyuan-dalu | `F:/zxc/Project/qiuyuan-dalu` | **UE5 正式工程**（交付方） |
 
 > ~~tbg-3d / tbg-assets~~ 已弃用——仅支持 Godot，已被多引擎（godot / unity / unreal）的 GBE 取代。
 
 ## 核心文档
 
-- [`docs/MULTI-AGENT-DEV-PLAN.md`](docs/MULTI-AGENT-DEV-PLAN.md) — 多 Agent 协作开发方案（**v0.27**）
+- [`docs/MULTI-AGENT-DEV-PLAN.md`](docs/MULTI-AGENT-DEV-PLAN.md) — 多 Agent 协作开发方案（**v0.28**）
 - [`AGENTS.md`](AGENTS.md) — **动手前先读这份**
 - [`docs/DECISIONS.md`](docs/DECISIONS.md) — **裁决台账**（改契约前必读）
 - [`docs/ROADMAP.md`](docs/ROADMAP.md) — **里程碑路线图**（不知道下一步做什么就读它）
