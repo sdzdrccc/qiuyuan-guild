@@ -3,7 +3,7 @@
 > ★ **本文件是视图，不是第二真源** —— 由 `scripts/gen-review-index.js` 生成，**不得手工编辑**。
 > 要改内容请改 `reviews/` 下的正文，然后重跑生成器（`node scripts/gen-review-index.js --write`）。
 >
-> 真源：审阅记录 `reviews/X-*.md`（37 篇） · 外部报告 `reviews/ext/`（1 篇）
+> 真源：审阅记录 `reviews/X-*.md`（38 篇） · 外部报告 `reviews/ext/`（1 篇）
 > 一行一事的台账仍在 `registry/cross-repo-ledger.md`（那边管**跨库交付**，这里管**目录视图**）。
 
 ## 一、审阅记录（`reviews/X-*.md`）
@@ -47,6 +47,7 @@
 | [`X-0037`](X-0037.md) | X-0037 版本配套表 ＋ 两条新门禁（文档索引覆盖率 / 版本锚点）· 收掉 X-0036 遗留 4 | 已完成 |
 | [`X-0038`](X-0038.md) | X-0038 生态换员：`ue-ai-ops` 进场 · Godot 原型退役（6 仓） | 已完成 |
 | [`X-0039`](X-0039.md) | X-0039 技能提炼机制：`ue-ai-ops` 补 `AGENTS.md`（编写规范）＋ guild 立「开发 → 提炼 → 沉淀」流程 | 已完成 |
+| [`X-0040`](X-0040.md) | X-0040 给 `ue-ai-ops` 补自动执行 ＋ 修它自己的一处"假绿" | 已完成 |
 
 ## 二、外部审阅报告（`reviews/ext/`）
 
