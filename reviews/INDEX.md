@@ -3,7 +3,7 @@
 > ★ **本文件是视图，不是第二真源** —— 由 `scripts/gen-review-index.js` 生成，**不得手工编辑**。
 > 要改内容请改 `reviews/` 下的正文，然后重跑生成器（`node scripts/gen-review-index.js --write`）。
 >
-> 真源：审阅记录 `reviews/X-*.md`（44 篇） · 外部报告 `reviews/ext/`（1 篇）
+> 真源：审阅记录 `reviews/X-*.md`（45 篇） · 外部报告 `reviews/ext/`（1 篇）
 > 一行一事的台账仍在 `registry/cross-repo-ledger.md`（那边管**跨库交付**，这里管**目录视图**）。
 
 ## 一、审阅记录（`reviews/X-*.md`）
@@ -54,6 +54,7 @@
 | [`X-0044`](X-0044.md) | X-0044 CI 硬化批：guild 环境变量覆盖点 ＋ CI · dalu T11 修真红灯 · ops CI | 已完成 |
 | [`X-0045`](X-0045.md) | X-0045 路线图校准落地 —— 客户端预置记进真源 ＋ 补出口判据（`ADR-0028`）·『修 炼』改判 M3 · 三格转上游 `U-0005` | 已完成（guild 侧五处 ＋ dalu 侧同笔 `T-0098` 均已落地：编… |
 | [`X-0046`](X-0046.md) | X-0046 技能提炼批 —— 两条 UE 通用判据进 `ue-ai-ops`（编译僵死 · `python` 是商店别名桩） | 已完成 |
+| [`X-0047`](X-0047.md) | X-0047 技能提炼批 —— 四条 UE 通用判据进 `ue-ai-ops`（真点击通道 · Slot 访问器语义 · UButton 灰底 · 树序即 z 序） | 已完成 |
 
 ## 二、外部审阅报告（`reviews/ext/`）
 
