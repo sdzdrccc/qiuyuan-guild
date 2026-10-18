@@ -17,7 +17,7 @@
 
 | 项 | 值 | 真源 |
 |---|---|---|
-| `protocol-contract` | **v0.5** | `contracts/protocol-contract.md` |
+| `protocol-contract` | **v0.7** | `contracts/protocol-contract.md` |
 | `data-contract` | **v0.8** | `contracts/data-contract.md` |
 | `asset-ref-contract` | **v0.1** | `contracts/asset-ref-contract.md` |
 | `gbe-studio` | **v0.6.4** | `../gbe-studio/VERSION` |
