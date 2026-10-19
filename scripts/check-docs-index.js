@@ -41,12 +41,34 @@ const INDEX = path.join(ROOT, 'README.md');
 // 待实现规则登记位 —— 机制③（来源 X-0016）
 // ─────────────────────────────────────────────────────────────
 const PENDING_RULES = [
-    // { id: 'E4', from: 'X-0037', desc: '把 docs/ 子目录也纳入点名', due: '另议' },
+    {
+        id: 'E4', from: 'X-0037', due: '条件触发：`docs/` 出现子目录时',
+        desc: '把 docs/ 子目录也纳入点名',
+        status: 'wontfix',
+        why: '`docs/` 当前**无子目录** ⇒ 扩域即「空集真空通过」；判据边界仍按 E1~E3 只判顶层。`X-0054` G-2 裁决：不做也要留条目（★ 不许再注释掉）。',
+    },
 ];
 
+/** ★ `wontfix` 与「待做」必须分开：前者**不该**让 `--strict` 长红（否则就是永久误报）。 */
+function splitPending(list) {
+    const ok = Array.isArray(list) ? list : [];
+    return {
+        todo: ok.filter(r => r.status !== 'wontfix'),
+        wontfix: ok.filter(r => r.status === 'wontfix'),
+    };
+}
+
 function pendingNotice(list) {
-    if (!Array.isArray(list) || list.length === 0) return null;
-    return list.map(r => `${r.id || '?'}(from ${r.from || '⚠缺来源'}${r.due ? ', due ' + r.due : ''})`).join(' / ');
+    const { todo } = splitPending(list);
+    if (todo.length === 0) return null;
+    return todo.map(r => `${r.id || '?'}(from ${r.from || '⚠缺来源'}${r.due ? ', due ' + r.due : ''})`).join(' / ');
+}
+
+/** 纯函数：wontfix 的可见输出（★ 不做也要能被看见，且写清为什么不做） */
+function wontfixNotice(list) {
+    const { wontfix } = splitPending(list);
+    if (wontfix.length === 0) return null;
+    return wontfix.map(r => `${r.id}(from ${r.from})「${r.desc}」— ${r.why || '⚠缺理由'}`).join(' / ');
 }
 
 // ─────────────────────────────────────────────────────────────
@@ -86,6 +108,7 @@ function main() {
 
     const pn = pendingNotice(PENDING_RULES);
     if (pn) warns.push(`★ 已承诺未实现的规则（本脚本尚未覆盖）：${pn}`);
+    const wf = wontfixNotice(PENDING_RULES);
 
     if (!fs.existsSync(DOCS)) { err('E1', '`docs/` 不存在'); }
     if (!fs.existsSync(INDEX)) { err('E1', '`README.md` 不存在 —— 它是本条的被检索引'); }
@@ -110,6 +133,7 @@ function main() {
         if (!errs.length) console.log(`  ✓ 覆盖 ${have.length}/${have.length}（100%），无幽灵`);
     }
 
+    if (wf) console.log('  ○ WONTFIX  ' + wf);
     warns.forEach(w => console.log('  ⚠ ' + w));
     if (errs.length) {
         console.log('');
@@ -153,6 +177,12 @@ function selfTest() {
 
     // ── E3 覆盖自证 ──
     t('E3', '★ 扫到 0 份 → 调用方须 err（判据失效）', diffIndex([], new Map()).orphans.length, 0);
+
+    // ── 机制③ · wontfix（X-0054 G-2：不许用注释让规则消失）──
+    const P = [{ id: 'E4', from: 'X-1', desc: 'd', why: 'w', status: 'wontfix' }, { id: 'E5', from: 'X-2', desc: 'd2', due: 'M9' }];
+    t('机制③', '★ wontfix 不进「待做」（否则 --strict 永久红）', pendingNotice(P), 'E5(from X-2, due M9)');
+    t('机制③', '★ wontfix 仍要可见（带理由）', /E4.*why|E4.*w/.test(wontfixNotice(P) || ''), true);
+    t('机制③', '无 wontfix → 不打印', wontfixNotice([{ id: 'E5', from: 'X-2' }]), null);
 
     const failed = cases.filter(x => !x.ok);
     console.log('  [check-docs-index] 反向测试（--self-test）');

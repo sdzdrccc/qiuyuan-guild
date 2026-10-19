@@ -20,11 +20,11 @@
 | `protocol-contract` | **v0.7** | `contracts/protocol-contract.md` |
 | `data-contract` | **v0.8** | `contracts/data-contract.md` |
 | `asset-ref-contract` | **v0.1** | `contracts/asset-ref-contract.md` |
-| `gbe-studio` | **v0.6.4** | `../gbe-studio/VERSION` |
-| `gbe-assets` | **v0.6.3** | `../gbe-assets/VERSION` |
-| `qiuyuan-dalu` | **`fe1dbf6`** | 该仓 git HEAD（★ **提交哈希，不是版本号** —— 见 §三） |
+| `gbe-studio` | **v0.6.5** | `../gbe-studio/VERSION` |
+| `gbe-assets` | **v0.7.0** | `../gbe-assets/VERSION` |
+| `qiuyuan-dalu` | **`a60b73e`** | 该仓 git HEAD（★ **提交哈希，不是版本号** —— 见 §三） |
 
-★ **登记时间**：2026-10-13　|　★ **登记人**：`arch`
+★ **登记时间**：2026-10-19　|　★ **登记人**：`review`（X-0053 项目群全量审查 —— ★ 双仓版本钉落后 1~2 版，本轮按 `VERSION` 实测更正）
 
 > ★★ **为什么表里只有 4 行，而生态是 6 仓**（★ 判据，别当成漏了）：
 > · **`虬渊大陆`（设定真源）与 `ue-ai-ops`（UE 经验仓）不登记** —— ★ 它们**没有"版本轴"**：

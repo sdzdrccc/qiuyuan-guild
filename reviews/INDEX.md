@@ -3,7 +3,7 @@
 > ★ **本文件是视图，不是第二真源** —— 由 `scripts/gen-review-index.js` 生成，**不得手工编辑**。
 > 要改内容请改 `reviews/` 下的正文，然后重跑生成器（`node scripts/gen-review-index.js --write`）。
 >
-> 真源：审阅记录 `reviews/X-*.md`（50 篇） · 外部报告 `reviews/ext/`（1 篇）
+> 真源：审阅记录 `reviews/X-*.md`（52 篇） · 内部源材料 `reviews/work/`（4 篇） · 外部源材料 `reviews/ext/`（0 篇）
 > 一行一事的台账仍在 `registry/cross-repo-ledger.md`（那边管**跨库交付**，这里管**目录视图**）。
 
 ## 一、审阅记录（`reviews/X-*.md`）
@@ -60,9 +60,18 @@
 | [`X-0050`](X-0050.md) | X-0050 —— M1 打通前置包：`resume` 补登记 · §5.1 补 `exp`/`expMax` · 端口登记进唯一真源 | 进行中（契约与端口已落、门禁已跑；★ 下游实现未完 ⇒ 见 §五「还欠」） |
 | [`X-0051`](X-0051.md) | X-0051 —— 角色页前置包：补 `character_attributes` 的完整字段清单（键名照抄 §7.2 · 分期只改值的来源） | 契约已落并过门禁（服务端实现与角色页接线在 `qiuyuan-dalu` 侧进行… |
 | [`X-0052`](X-0052.md) | X-0052 —— 周日项目审查：M1 收口 ＋ 排期序列 B1~B10（保留 M 号）＋ 装备挂待定 | 已落地（`ROADMAP.md` v0.25 ＋ `DECISIONS.md` … |
+| [`X-0053`](X-0053.md) | X-0053 项目群全量审阅 —— 六仓 × 世界观库 × 三条必产出 | 已完成（只读审阅 · 未改任何被审对象 · 待大人复核） |
+| [`X-0054`](X-0054.md) | X-0054 `X-0053` 遗留修复 —— guild 侧 7 条缺陷 ＋ 7 个机制洞 | 已完成（待大人复核） |
 
-## 二、外部审阅报告（`reviews/ext/`）
+## 二、内部源材料（本仓派出去的 agent 各一份 · `reviews/work/`）
 
 | 目录 | 说明 |
 |---|---|
-| [`ext/mimo-m1-波次5-2026-10-01/`](ext/mimo-m1-波次5-2026-10-01/) | M1-REVIEW-2026-10-01.md |
+| [`work/mimo-all-repos/`](work/mimo-all-repos/) | PROJECT-REVIEW-MiMoDesktop-MiMo-2026-10-01.md |
+| [`work/mimo-qiuyuan-dalu/`](work/mimo-qiuyuan-dalu/) | PROJECT-REVIEW-MiMoDesktop-MiMo-2026-10-01.md |
+| [`work/traecode-all-repos/`](work/traecode-all-repos/) | PROJECT-REVIEW-TraeCode-DeepSeek-V4.1-Flash-2026-10-19.md |
+| [`work/workbuddy-all-repos/`](work/workbuddy-all-repos/) | PROJECT-REVIEW-WorkBuddy-DeepSeek-V4.1-Flash-2026-10-19.md |
+
+## 三、外部源材料（非本仓派出 · `reviews/ext/`）
+
+（暂无）

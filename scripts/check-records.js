@@ -269,14 +269,14 @@ function evidenceSectionNames(templateText) {
     const m = /^#{2,4}\s*(?:[一二三四五六七八九十]+|\d+)?\s*[、.．]?\s*([^（(←\s][^（(←]*)/.exec(line);
     if (!m) continue;
     const name = m[1].trim();
-    if (/^(验证证据|可复现验证证据|证据摘要|实测证据|缺陷清单|门禁与自检|门禁自检)$/.test(name)) names.add(name);
+    if (/^(验证证据|可复现验证证据|证据摘要|实测证据|缺陷清单|门禁与自检|门禁自检|门禁与提交号)$/.test(name)) names.add(name);
   }
   return [...names].sort();
 }
 
 /** 纯函数：记录是否有**证据类节**（认节标题，不认正文顺带一提） */
 function hasEvidenceSection(text, names) {
-  const list = (names && names.length ? names : ['验证证据', '可复现验证证据', '证据摘要', '实测证据', '缺陷清单', '门禁与自检'])
+  const list = (names && names.length ? names : ['验证证据', '可复现验证证据', '证据摘要', '实测证据', '缺陷清单', '门禁与自检', '门禁与提交号'])
     .map((n) => n.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'))
     .join('|');
   const re = new RegExp(`^#{1,6}\\s*(?:(?:[一二三四五六七八九十]+|\\d+)\\s*[、.．)）]?\\s*)?(?:${list})(?![\\u4e00-\\u9fff])`);
@@ -293,7 +293,9 @@ function sectionPresence(text, evidenceNames) {
     // ★ 证据节改判**标题**（G-4）；`changes` / `review` 两条仍是全文关键词命中，**同一形状的漏洞还在那里**，
     //   本次只按大人点的 G-4 修 evidence，另两条登记为遗留 —— 一并收紧会把与本次无关的存量卡一次性打红。
     evidence: hasEvidenceSection(t, evidenceNames),
-    review: /审核/.test(t),
+    // ★ 改成「真有审核**节**」而不是全文出现「审核」二字（`X-0054` · 机制② 的后半）——
+    //   全文命中会把「正文提了一句审核机制」判成有审核节（`X-0024` 即先例）。
+    review: Boolean(reviewSection(t)),
   };
 }
 
@@ -579,17 +581,22 @@ function guildRecordFiles() {
 }
 
 /**
- * 纯函数：证据类节名 —— **从两份模板真源现抽**，脚本里不留第二份清单。
- * 抽不到时不静默：回落硬编码集合并打一条 warn（宁可退化可见，不可退化成误杀）。
+ * 纯函数：证据类节名 —— **从两份模板真源现抽**，再与内置合法形态**取并集**。
+ * ★ 为什么是并集而不是「抽到就用抽到的」（`X-0054` · G-4）：
+ *   抽到 ≠ 抽全 —— `门禁与提交号` 是 `X-0049` 的真实形态（命令 + 输出齐备），
+ *   但模板里没出现这个名字 ⇒ 只认模板会把**真证据节判成缺失**（误报）。
+ * ★ 内置集合只收**已出现过的合法形态**；新增形态仍应先进模板，再回填此处。
  */
 function loadEvidenceNames() {
+  const BUILTIN = ['验证证据', '可复现验证证据', '证据摘要', '实测证据', '缺陷清单', '门禁与自检', '门禁与提交号'];
   const fromDocs = [path.join(ROOT, 'docs', 'CONVENTIONS.md'), path.join(ROOT, 'docs', 'REVIEW-PROCESS.md')]
     .map((p) => evidenceSectionNames(read(p) || ''))
     .flat();
-  const names = [...new Set(fromDocs)].sort();
-  if (names.length >= 2) return names;
-  warn('C1', `未能从模板文档抽出证据节名（只抽到 ${names.length} 个）→ 回落内置集合，判据可能偏严`);
-  return ['可复现验证证据', '实测证据', '缺陷清单', '证据摘要', '门禁与自检', '验证证据'];
+  const names = [...new Set([...fromDocs, ...BUILTIN])].sort();
+  if (fromDocs.length < 2) {
+    warn('C1', `模板文档只抽出 ${fromDocs.length} 个证据节名 → 已并入内置合法形态（判据不会因此误杀）`);
+  }
+  return names;
 }
 
 (function c1() {
@@ -824,18 +831,39 @@ function daluRecordFiles() {
   return fs.readdirSync(DALU_RECORDS).filter(f => /^T-\d+\.md$/.test(f)).sort();
 }
 
+/**
+ * 纯函数：从「契约回执」节里捞出**要点行**（`X-0054` · G-3 —— 回执此前**只判非空、不读内容**）。
+ * ★ 只认回执节内部；★ 只认「读不通 / 缺定义」这类**有信息量的表态**，
+ *   不认「无」「已对齐」这类合格声明（那正是我们想看到的结果，不该进要点清单）。
+ */
+function receiptHighlights(text) {
+  const sec = sectionByKeyword(text, '契约回执');
+  if (sec === null) return [];
+  return sec.split(/\r?\n/)
+    .map(l => l.trim())
+    .filter(l => l && !/^[#|>]/.test(l))
+    .filter(l => !/[：:]\s*(无|无。|none|已对齐|已一致|不涉及)\s*$/.test(l))   // ★ 合格声明不是缺口
+    .filter(l => !/^[-*_`\s]*(?:读不通|缺定义|无对应|未定义|缺节|需变更|待补|未覆盖|不一致)[^，。；;]{0,24}[：:]\s*$/.test(l))  // ★ 小标题行不算要点
+    .filter(l => /读不通|缺定义|无对应|未定义|缺节|需变更|待补|未覆盖|不一致/.test(l))
+    .map(l => l.replace(/^[-*]\s*/, '').slice(0, 90));
+}
+
 (function c6() {
   if (!fs.existsSync(DALU)) { warn('C6', `dalu 仓不可读（${DALU}）→ 本规则跳过（NOT a pass · 可用 QYD_DALU_REPO 指路）`); return; }
   const files = daluRecordFiles();
   if (files.length === 0) { ok('C6', 'dalu 暂无 `T-*` 记录 → 本规则不适用'); return; }
 
   const epoch = epochSet(DALU, GATE_EPOCH[DALU]);
-  const fresh = [], backlog = [], waivedIds = [];
+  const fresh = [], backlog = [], waivedIds = [], highlights = [];
   for (const f of files) {
     const id = f.replace(/\.md$/, '');
     if (waivedReason(WAIVED.records, id)) { waivedIds.push(id); continue; }
     const t = read(path.join(DALU_RECORDS, f)) || '';
-    if (contractReceiptPresence(t)) continue;
+    if (contractReceiptPresence(t)) {
+      // ★ 内容也被消费（G-3）：不是只数「有没有这一节」
+      for (const h of receiptHighlights(t)) highlights.push(`${id}· ${h}`);
+      continue;
+    }
     (fileIsFresh(DALU, `records/${f}`, epoch) === true ? fresh : backlog).push(id);
   }
 
@@ -846,8 +874,13 @@ function daluRecordFiles() {
     warn('C6', `dalu **存量** ${backlog.length} 篇 T-* 卡缺「契约回执」节（纪元 \`${GATE_EPOCH[DALU]}\` 之前，须补记或书面豁免 · 落 WAIVED.records）：${backlog.join(' / ')}`);
   }
   for (const g of waivedGroup(waivedIds.map(id => [id, waivedReason(WAIVED.records, id)]))) ok('C6', waivedLine(g));
+  // ★ 回执要点汇总（G-3）：让「哪一处读不通」**从 106 张卡里被捞出来**，而不是靠人翻。
+  if (highlights.length) {
+    const head = highlights.slice(0, 8).join(' ｜ ');
+    ok('C6', `回执要点 ${highlights.length} 条（★ 内容已被消费，非只判非空）：${head}${highlights.length > 8 ? ' …（余 ' + (highlights.length - 8) + ' 条见各卡）' : ''}`);
+  }
   if (!fresh.length && !backlog.length && waivedIds.length === 0) {
-    ok('C6', `下游卡契约回执齐备（${files.length} 篇 T-*，全含非空「契约回执」节）`);
+    ok('C6', `下游卡契约回执齐备（${files.length} 篇 T-*，全含非空「契约回执」节${highlights.length ? '' : ' · 无「读不通」类要点'}）`);
   }
 })();
 
@@ -1020,6 +1053,7 @@ if (process.argv.includes('--self-test')) {
     ['C9', '无该节 → 必判缺', pitfallReceiptPresence('# t\n\n## 改动清单\n- x\n'), false],
     ['C9', '★ 正文顺带提「坑登记」四字而**无节** → 不算（不许被正文骗过）', pitfallReceiptPresence('# t\n\n## 改动清单\n- 本轮无需坑登记\n'), false],
     ['C1', '「门禁与自检」也算验证证据节', sectionPresence('# t\n状态：x\n执行者：y\n改动清单\n## 门禁与自检\n审核').evidence === true, true],
+    ['C1', '★「门禁与提交号（★ 全部实跑）」也算（X-0049 的真实形态 · G-4 误报修复）', sectionPresence('# t\n状态：x\n执行者：y\n## 改动清单\n## 四、门禁与提交号（★ 全部实跑）\n审核').evidence === true, true],
     // ★ G-4 的原始漏洞 + 「收紧判据不许误杀另一类模板」（我自己第一版就误杀了 4 篇审阅卡，见 X-0033 §四-2）
     ['C1', '正文顺带提一句「门禁」而无节 → **不算**证据节（G-4 的洞）', sectionPresence('# t\n状态：x\n执行者：y\n## 改动清单\n本次未跑门禁。\n## 审核').evidence, false],
     ['C1', '审阅卡模板的「## 二、缺陷清单」→ **算**证据节（别误杀）', sectionPresence('# t\n状态：x\n执行者：y\n## 改动清单\n## 二、缺陷清单\n## 审核').evidence, true],
@@ -1102,6 +1136,15 @@ if (process.argv.includes('--self-test')) {
     // 契约回执节识别收严（同上 · 来源 X-0016）
     ['C6', '★ 标题只是提到「契约回执」→ 不得误认', contractReceiptPresence('# t\n\n### 2. 契约回执机制说明\n- x') === false, true],
     ['C6', '「## 契约回执（下游 → 上游）」→ 认作该节', contractReceiptPresence('# t\n\n## 契约回执（下游 → 上游）\n- 无') === true, true],
+    // ★ G-3（X-0054）· 回执内容也要被消费，不只判非空
+    ['C6', '★ 回执里的「读不通」→ 被捞出（内容被消费）',
+      receiptHighlights('# t\n## 契约回执\n- 消费：§3.1\n- 读不通：`character_attributes` 无键名清单').length, 1],
+    ['C6', '★ 回执写「无」→ **不得**进要点（合格声明不是缺口）',
+      receiptHighlights('# t\n## 契约回执\n- 读不通：无').length, 0],
+    ['C6', '★ 回执节外的「读不通」→ 不捞（防误报）',
+      receiptHighlights('# t\n- 读不通：xx\n\n## 契约回执\n- 无').length, 0],
+    ['C6', '★ 回执里的「缺定义 / 需变更」也捞',
+      receiptHighlights('# t\n## 契约回执\n- 缺定义：`realm_id` 上限\n- 需变更：§5.1 增字段').length, 2],
     // WAIVED 豁免花名册（来源 X-0016 · 补 X-0015 §六「书面豁免」无实现位之缺）
     ['C5', '豁免名单命中 → 返回理由', waivedReason({ e1ff46e: '骨架期前置 · 大人 2026-09-30' }, 'e1ff46e') === '骨架期前置 · 大人 2026-09-30', true],
     ['C5', '未命中 → null', waivedReason({}, 'e1ff46e') === null, true],

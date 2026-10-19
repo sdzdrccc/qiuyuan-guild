@@ -21,10 +21,13 @@
  *   C **覆盖自证**：扫到 0 份契约 ⇒ err（★ 本仓最忌「空集真空通过」）。
  *
  * ── 刻意不做的事（★ 边界，别扩）─────────────────────────────
- *   ★ **不校验** `gbe-studio` / `gbe-assets` / `dalu` 那三行 —— ★ 它们的真源**在别的仓**：
- *     若把它们也纳入，★ 那两仓**发个版就会把本仓门禁弄红** ⇒
+ *   ★ **不把** `gbe-studio` / `gbe-assets` / `dalu` 那三行做成 **err** —— ★ 它们的真源**在别的仓**：
+ *     若做成硬判据，★ 那两仓**发个版就会把本仓门禁弄红** ⇒
  *     ★ 本仓**不是它们的发布守门人**（判据：**别把别人的事变成自己的红**）。
- *     详见 `registry/version-pins.md` §遗留 1。
+ *   ★★ 但「不红」≠「不看」（`X-0054` 修正）：实测这三行**真腐过**（写 v0.6.4/v0.6.3 时真源已
+ *     v0.6.5/v0.7.0）⇒ 现做成 **`P6` 软判据**：读到真源就比、不一致只 **warn**；
+ *     读不到（CI / 别机克隆）**打印「跳过（NOT a pass）」**，绝不静默。
+ *     ★ 详见 `registry/version-pins.md` §遗留 1。
  *
  * 用法：
  *   node scripts/check-version-pins.js              # 常规
@@ -45,12 +48,14 @@ const PINS_FILE = path.join(ROOT, 'registry', 'version-pins.md');
 /**
  * 本脚本**承诺但尚未实现**的规则。非空时**启动即打印**（warn），`--strict` 时 err。
  * ★ 规则真做了 → **立即移出**本数组（删掉，不是注释掉）。
+ *
+ * ★ 2026-10-19（`X-0054` · G-7 / MiMo D4）：原来的 `P2` 条目**被注释掉**了 ——
+ *   「承诺未落且不可见」，正是纪律 7 要治的病。现改为：
+ *   · 三行兄弟仓版本钉**做成软判据 `P6`**（见 main 尾部）：读到就比、不一致就 **warn 不 err**；
+ *   · 理由不变 —— ★ **本仓不是它们的发布守门人**，不能把别人发版变成自己的红；
+ *   · 但「软」不等于「不看」：★ 不可读时也**打印「跳过（NOT a pass）」**。
  */
-const PENDING_RULES = [
-    // { id: 'P2', from: 'X-0037', desc: '把 gbe-* 与 dalu 三行也纳入比对', due: '另议' },
-    //   ★ **当前刻意不做** —— 见文件头「刻意不做的事」：那两仓发版会把本仓门禁弄红，
-    //     ★ 本仓不是它们的发布守门人。★ 若将来要做，应先落一条 ADR。
-];
+const PENDING_RULES = [];
 
 /** 纯函数：待实现规则的提示文本（空名单 → `null`，便于自测） */
 function pendingNotice(list) {
@@ -107,6 +112,62 @@ function diffPins(contracts, pins) {
 }
 
 // ─────────────────────────────────────────────────────────────
+// P6（软）· 兄弟仓版本钉 ↔ 真源 `VERSION`（`X-0054` · G-7 / MiMo D4）
+//   ★ 软的理由：本仓不是它们的发布守门人 ⇒ **不一致不阻断**（warn）。
+//   ★ 仍要看的理由：这三行**真腐过**，而「锚点表腐坏」比没有表更坏（有人会拿它做决定）。
+// ─────────────────────────────────────────────────────────────
+
+/** 兄弟仓真源路径（环境变量优先 —— CI / 别机克隆用） */
+const SIBLINGS = [
+    {
+        name: 'gbe-studio',
+        file: process.env.GBE_STUDIO_REPO
+            ? path.join(process.env.GBE_STUDIO_REPO, 'VERSION')
+            : path.resolve(ROOT, '..', 'gbe-studio', 'VERSION'),
+    },
+    {
+        name: 'gbe-assets',
+        file: process.env.GBE_ASSETS_REPO
+            ? path.join(process.env.GBE_ASSETS_REPO, 'VERSION')
+            : path.resolve(ROOT, '..', 'gbe-assets', 'VERSION'),
+    },
+];
+
+/** 纯函数：解析 `VERSION` 文件内容（单行 SemVer；读不出 → null，**不猜**） */
+function parseVersionFile(text) {
+    const m = String(text || '').trim().match(/^v?(\d+\.\d+(?:\.\d+)?)\s*$/);
+    return m ? m[1] : null;
+}
+
+/**
+ * 纯函数：比对兄弟仓版本钉。
+ * @param {Map<string,string>} pins  配套表（name → 版本）
+ * @param {Array<{name:string, version:string|null}>} readings 真源读数
+ * @returns {{matched:string[], mismatched:string[], unreadable:string[], unregistered:string[]}}
+ *   ★ 四类**分开**，不许压成一句「3 项异常」—— 修复手段不同（改表 / 加路径 / 补登记）。
+ */
+function diffSiblingPins(pins, readings) {
+    const out = { matched: [], mismatched: [], unreadable: [], unregistered: [] };
+    for (const r of readings) {
+        if (r.version === null) { out.unreadable.push(r.name); continue; }
+        if (!pins.has(r.name)) { out.unregistered.push(r.name); continue; }
+        if (pins.get(r.name) !== r.version) out.mismatched.push(`${r.name}: 表=v${pins.get(r.name)} 真源=v${r.version}`);
+        else out.matched.push(`${r.name} v${r.version}`);
+    }
+    return out;
+}
+
+function readSiblings() {
+    return SIBLINGS.map(s => {
+        try {
+            return { name: s.name, version: parseVersionFile(fs.readFileSync(s.file, 'utf8')) };
+        } catch {
+            return { name: s.name, version: null };
+        }
+    });
+}
+
+// ─────────────────────────────────────────────────────────────
 
 function readContracts() {
     if (!fs.existsSync(CONTRACTS_DIR)) return null;
@@ -123,9 +184,10 @@ function readContracts() {
 function main() {
     const errs = [], warns = [];
     const err = (id, msg) => errs.push({ id, msg });     // ★ 带规则 ID（D3 要核对）
+    const warn = (id, msg) => warns.push({ id, msg });   // ★ 软判据也带 ID（P6）—— 否则 D3 看不见它
 
     const pn = pendingNotice(PENDING_RULES);
-    if (pn) warns.push(`★ 已承诺未实现的规则（本脚本尚未覆盖）：${pn}`);
+    if (pn) warn(null, `★ 已承诺未实现的规则（本脚本尚未覆盖）：${pn}`);
 
     const contracts = readContracts();
     if (contracts === null) { err('P1', '`contracts/` 不存在'); }
@@ -146,6 +208,16 @@ function main() {
         for (const n of d.missing) err('P3', `\`contracts/${n}.md\` **未在配套表登记** —— ★ 加了契约要同批登记`);
         for (const n of d.extra) err('P3', `配套表登记了 \`${n}\`，但 \`contracts/\` 下**没有这份契约** —— ★ 删了契约要同批销行`);
 
+        // ── P6（软）· 兄弟仓版本钉 ↔ 真源 `VERSION` ──
+        //   ★ 不一致**只 warn**（本仓不是它们的发布守门人）；★ 不可读**显式写「跳过 · NOT a pass」**。
+        const sib = diffSiblingPins(pins, readSiblings());
+        for (const m of sib.mismatched) warn('P6', `${m} —— ★ 软判据：不阻断 · 但不许当没看见（改 \`registry/version-pins.md\` 或对方真源）`);
+        for (const n of sib.unregistered) warn('P6', `${n}：配套表**未登记** —— ★ 补一行，否则这一仓等于没人管`);
+        const seen = sib.matched.length + sib.mismatched.length;
+        warn('P6', `兄弟仓版本钉：读到 ${seen} / ${SIBLINGS.length} 项`
+            + (sib.matched.length ? `（一致 ${sib.matched.join(' / ')}）` : '')
+            + (sib.unreadable.length ? `（**不可读 → 跳过 · NOT a pass**：${sib.unreadable.join(' / ')}）` : ''));
+
         console.log('  [check-version-pins] 版本配套表 ↔ 契约版本');
         console.log(`  契约 ${contracts.size} 份 · 配套表登记 ${pins.size} 项`);
         if (!errs.length) {
@@ -153,7 +225,7 @@ function main() {
         }
     }
 
-    warns.forEach(w => console.log('  ⚠ ' + w));
+    warns.forEach(w => console.log('  ⚠ ' + (w.id ? w.id + '  ' : '') + w.msg));
     if (errs.length) {
         console.log('');
         errs.forEach(e => console.log(`  ✗ ${e.id}  ${e.msg}`));
@@ -207,6 +279,20 @@ function selfTest() {
         diffPins(c, new Map([...good, ['qiuyuan-dalu', '5f7']])).extra.length, 0);
     t('C', '★ 但契约版本为 null（读不出）→ 由调用方 err，比对本身不崩',
         diffPins(new Map([['x-contract', null]]), new Map([['x-contract', '0.1']])).mismatched.length, 1);
+
+    // ── P6 · 兄弟仓版本钉（软）──
+    t('P6', 'VERSION 单行 → 取出 0.6.5', parseVersionFile('0.6.5\n'), '0.6.5');
+    t('P6', '★ 带 v 前缀也认', parseVersionFile('v0.7.0'), '0.7.0');
+    t('P6', '空文件 / 垃圾 → null（★ 不猜）', parseVersionFile(''), null);
+    const pins6 = new Map([['gbe-studio', '0.6.5'], ['gbe-assets', '0.7.0']]);
+    const sibOk = diffSiblingPins(pins6, [{ name: 'gbe-studio', version: '0.6.5' }, { name: 'gbe-assets', version: '0.7.0' }]);
+    t('P6', '两侧一致 → 不得误报（matched 两项）', sibOk.matched.length + sibOk.mismatched.length, 2);
+    t('P6', '★ 表落后真源 → mismatched 必报（只 warn 不 err）',
+        diffSiblingPins(pins6, [{ name: 'gbe-studio', version: '0.6.4' }]).mismatched.length, 1);
+    t('P6', '★ 真源不可读 → 单列 unreadable（跳过 · NOT a pass）',
+        diffSiblingPins(pins6, [{ name: 'gbe-assets', version: null }]).unreadable.join(','), 'gbe-assets');
+    t('P6', '★ 表里没登记 → unregistered（不许静默放过）',
+        diffSiblingPins(pins6, [{ name: 'ue-ai-ops', version: '0.1.0' }]).unregistered.join(','), 'ue-ai-ops');
 
     const failed = cases.filter(x => !x.ok);
     console.log('  [check-version-pins] 反向测试（--self-test）');

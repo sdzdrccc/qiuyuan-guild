@@ -358,6 +358,105 @@ function readmeVersionClaims(readmeText, baseName) {
 })();
 
 // ─────────────────────────────────────────────────────────────
+// D5（扩面）· 门面**只写指针，不写状态与区间**（`X-0054` · 治 G-1 的五类漂移）
+//
+// ★ 病灶：`X-0053` 实测 README / AGENTS 五处「自称」与真源冲突，而 `D5` 只锚版本号 ——
+//   ★ **漂移的从来不只是版本号**：记录号区间、里程碑状态、脚本计数、CI 有无，四类全都腐过。
+//   ★ 修法与 D5 同源：**不给它第二处副本**，而不是"配个校对判据把两份对齐"。
+// ★ 判据边界（防误报 = 纪律 1）：
+//   · 只扫 `README.md` / `AGENTS.md` 两份**门面/纪律**文档（契约/流程文档不在此列）；
+//   · 只认**四类机械可比**的形态，语义判断（"这段写得对不对"）不碰；
+//   · 记录号区间、CI 断言、里程碑状态：**有即错**（无豁免——只有一个真源）；
+//   · 脚本计数：**与 `run-all-checks.js` 的 `STEPS.length` 比**，不是与 `check-*.js` 文件数比
+//     （两者本就不同：8 条判据 ＋ 2 条视图一致性 = 10）。★ 口径写错比数字写错更难发现。
+// ─────────────────────────────────────────────────────────────
+
+/** 纯函数：抄下来的记录号区间（`X-0001 … X-0040` / `X-0001~X-0052`） */
+function recordSpanClaims(text) {
+  const out = [];
+  for (const line of String(text).split(/\r?\n/)) {
+    const m = line.match(/\bX-(\d{4})(?:\.md)?\s*(?:…|\.\.\.|~|–|—|-)\s*X-(\d{4})/);
+    if (m) out.push(`X-${m[1]}…X-${m[2]}`);
+  }
+  return out;
+}
+
+/** 纯函数：「本仓没有 CI」类断言（CI 实际存在时即为漂移） */
+function ciDenialClaims(text) {
+  const out = [];
+  for (const line of String(text).split(/\r?\n/)) {
+    // ★ 只认「本仓/全仓 + 无 CI」的**现状断言**；历史叙述（「此前无 CI」）不在此列
+    if (/(?:本仓|全仓|这里)[^。\n]{0,6}(?:没有|无|未配|没配)\s*CI/.test(line)) out.push(line.trim());
+  }
+  return out;
+}
+
+/** 纯函数：里程碑表行自带状态（`| **M1** | … | ⏭ 下一步 |`） */
+function milestoneStatusRows(text) {
+  const out = [];
+  for (const line of String(text).split(/\r?\n/)) {
+    if (!/^\|\s*\**\s*M\d+\**\s*\|/.test(line)) continue;
+    if (/(✅|⏭|🟡|🔴|已完成|未开始|进行中|下一步)/.test(line)) out.push(line.trim());
+  }
+  return out;
+}
+
+/** 纯函数：文档里「跑 N 个脚本」的计数断言 */
+function scriptCountClaims(text) {
+  const out = [];
+  for (const line of String(text).split(/\r?\n/)) {
+    const m = line.match(/(?:依次跑|汇总跑|一共跑|跑)\s*(\d+)\s*个(?:校验)?脚本/);
+    if (m) out.push(Number(m[1]));
+  }
+  return out;
+}
+
+/** 纯函数：`run-all-checks.js` 实跑的条目数（`STEPS` 数组长度）——★ 计数的唯一真源 */
+function runAllEntryCount(scriptText) {
+  const m = String(scriptText).match(/const\s+STEPS\s*=\s*\[([\s\S]*?)\n\];/);
+  if (!m) return null;
+  return (m[1].match(/\{\s*file:\s*'/g) || []).length;
+}
+
+(function d5b() {
+  const ci = fs.existsSync(path.join(ROOT, '.github', 'workflows', 'ci.yml'));
+  const runAll = runAllEntryCount(read(path.join(ROOT, 'scripts', 'run-all-checks.js')) || '');
+  const targets = [
+    { file: 'README.md', label: 'README 门面' },
+    { file: 'AGENTS.md', label: 'AGENTS 纪律' },
+  ];
+  let checked = 0;
+  for (const { file, label } of targets) {
+    const t = read(path.join(ROOT, file));
+    if (t === null) { warn('D5', `${label}（${file}）读不到 → 跳过`); continue; }
+    checked++;
+    let hit = 0;
+
+    for (const s of recordSpanClaims(t)) {
+      hit++;
+      err('D5', `${label}：抄了记录号区间 \`${s}\` —— 记录清单唯一真源是 \`reviews/INDEX.md\`（G-1 实证：写到 X-0040 时已到 X-0053）`);
+    }
+    for (const n of scriptCountClaims(t)) {
+      if (runAll === null) { warn('D5', `${label}：写了脚本计数 ${n}，但读不出 \`run-all-checks.js\` 的 \`STEPS\` → 无法核对`); continue; }
+      if (n !== runAll) {
+        hit++;
+        err('D5', `${label}：写「跑 ${n} 个脚本」而 \`run-all-checks.js\` 实跑 **${runAll}** 条 —— 计数只住脚本（8 条判据 ＋ 2 条视图一致性），文档不复写`);
+      }
+    }
+    if (ci) for (const s of ciDenialClaims(t)) {
+      hit++;
+      err('D5', `${label}：断言「没有 CI」而 \`.github/workflows/ci.yml\` 存在 —— \`${s.slice(0, 50)}\``);
+    }
+    if (file === 'README.md') for (const s of milestoneStatusRows(t)) {
+      hit++;
+      err('D5', `${label}：里程碑行写了状态（\`${s.slice(0, 40)}\`）—— 状态唯一真源是 \`docs/ROADMAP.md\`，门面只写指针`);
+    }
+    if (hit === 0) ok('D5', `${label}：无易腐事实副本（记录号区间 / 脚本计数 / CI 断言 / 里程碑状态）`);
+  }
+  if (checked === 0) warn('D5', '两份门面文档均不可读 → 扩面判据未执行');
+})();
+
+// ─────────────────────────────────────────────────────────────
 // D2 · 仓外 skill 与流程文档**版本同步**（warn —— 跨机不强求）
 // ─────────────────────────────────────────────────────────────
 
@@ -442,6 +541,18 @@ if (process.argv.includes('--self-test')) {
     ['D5', '没抄版本号 → 空（合规 · 不许误报）', readmeVersionClaims('data-contract.md  数据模型', 'data-contract.md').length, 0],
     ['D5', '一行抄两个 → 两个都报（不猜哪个对）', readmeVersionClaims('x.md a v1.0 / b v2.0', 'x.md').join(','), 'v1.0,v2.0'],
     ['D5', '别的行提到同名无关文本不受影响', readmeVersionClaims('aaa.md v1.0\nbbb.md 无版本', 'bbb.md').length, 0],
+    // D5 扩面 · 门面禁写易腐事实（X-0054 · G-1）
+    ['D5', '★ 抄了记录号区间 → 必抓（G-1 的实证形态）', recordSpanClaims('  X-0001.md … X-0040.md     一篇不落').join(','), 'X-0001…X-0040'],
+    ['D5', '★ 单个记录号不算区间（不许误报）', recordSpanClaims('见 `reviews/X-0053.md`').length, 0],
+    ['D5', '★「本仓没有 CI」→ 必抓', ciDenialClaims('## 10. 门禁怎么跑（★ **本仓没有 CI** · 2026-10-13 新增）').length, 1],
+    ['D5', '★ 历史叙述「此前无 hook」→ 不得误报成 CI 断言', ciDenialClaims('★ 当时无 CI、无 git hook（这是历史）').length, 0],
+    ['D5', '★ 里程碑行带 ⏭ → 必抓', milestoneStatusRows('| **M1** | 建号 | ⏭ **下一步** |').length, 1],
+    ['D5', '★ 里程碑行进位符 ✅ → 也抓', milestoneStatusRows('| **M0** | 契约层 | ✅ **已完成** |').length, 1],
+    ['D5', '★ 里程碑行无状态 → 不得误报（指针形态是正解）', milestoneStatusRows('| **M2** | 首战 | 见 `docs/ROADMAP.md` §2 |').length, 0],
+    ['D5', '★「依次跑 8 个脚本」→ 抓出计数', scriptCountClaims('node scripts/run-all-checks.js            # 依次跑 8 个脚本；任一红 → 退出码 1').join(','), '8'],
+    ['D5', '★「8 个校验脚本此前没有机制」→ 不算计数断言（无「跑」）', scriptCountClaims('★★ **8 个校验脚本此前没有任何自动执行机制**').length, 0],
+    ['D5', '★ run-all 条目数：从 STEPS 数组数 file 项', runAllEntryCount("const STEPS = [\n  { file: 'a.js', label: 'x' },\n  { file: 'b.js', label: 'y' },\n];"), 2],
+    ['D5', '★ 读不出 STEPS → null（调用方降级为警告，不许当成 0）', runAllEntryCount('没有这段'), null],
   ];
 
   const fails = cases.filter(([, , got, want]) => got !== want);

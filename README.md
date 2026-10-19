@@ -48,8 +48,8 @@ contracts/                  ★ 唯一真源（三方只读消费，禁止本地
   protocol-contract.md        协议契约（**客户端 ↔ 服务端 = WS + JSON**；**REST 属 GM 后台的那条线** —— §1 / §4）
 reviews/                    ★ 完成记录（guild 侧编号 **`X-*`**；dalu 侧用 `T-*`）
   INDEX.md                  总索引（**视图** · 由 `scripts/gen-review-index.js` 生成，禁止手改）
-  X-0001.md … X-0040.md     一篇不落；★ 逐篇清单看 `INDEX.md`，**本页不复制**
-                            （手抄清单追不上正文 —— 原 21 行手工列表 2026-10-13 废除）
+  X-*.md                    逐篇清单看 `INDEX.md`，**本页不列区间、不记篇数**
+                            （手抄必腐：2026-10-19 实测本行原写「到 X-0040 为止」，当时已到 X-0053 —— 连区间一起废除）
 registry/                   ★ 跨库登记（第三条铁律的落点）—— **全部是视图，非真源**
   cross-repo-ledger.md         跨库需求 / 交付台账（**索引视图**）
   agent-log.md                 按 agent 的完成记录视图（**派生视图 · 由 `scripts/gen-agent-log.js` 生成，禁止手改**）
@@ -59,9 +59,9 @@ scripts/                    ★ 校验脚本（没有校验脚本的契约 = 装
   check-contract-gate.js      契约完备性闸门（G1：ROADMAP 声明「新增展开」的实体须真有展开节）
   check-identifiers.js        跨文档标识符一致性（I1：引用的表名 / 键名须存在；退役名须标明）
   check-records.js            记录与台账齐备（C1~C9：必备节 / 双向核对 / 二值 / 分级 / 同批记录 / 契约回执 / 纪元自洽 / 未覆盖声明 / 坑登记）
-  check-doc-anchors.js        文档↔门禁锚定（D1~D5：脚本清单 / 规则 ID / skill 版本 / README 禁抄版本号）
+  check-doc-anchors.js        文档↔门禁锚定（D1~D5：脚本清单 / 规则 ID / skill 版本 / README 禁抄版本号**与易腐事实**）
   check-asset-ref.js          资产引用 + 跨层一致性（A1~A5）
-  check-version-pins.js       版本配套表 ↔ 契约版本（P1~P5）
+  check-version-pins.js       版本配套表 ↔ 契约版本（P1~P6：契约硬判 ＋ 兄弟仓版本钉**软判**）
   check-docs-index.js         docs/ 顶层索引覆盖率（E1~E3：黑户 / 幽灵）
   gen-review-index.js         `reviews/INDEX.md` 视图**生成器**（默认只校验）
   run-all-checks.js           门禁**汇总入口**（依次跑全部；跳过 ≠ 通过，单列展示）
@@ -130,14 +130,14 @@ scripts/                    ★ 校验脚本（没有校验脚本的契约 = 装
 
 ## 当前状态
 
-**规划已冻结** → **M0 契约层地基已完成**（2026-09-27）→ **下一步 M1「建号」**。
+**规划已冻结**；**里程碑进度与「下一步」只住 [`docs/ROADMAP.md`](docs/ROADMAP.md) §2** —— 本页**不复制状态**（手抄必腐：2026-10-19 实测本表 M1 仍写「下一步」而 ROADMAP 已收口）。
 
-| 里程碑 | 内容 | 状态 |
-|---|---|---|
-| **M0** | 契约层地基（规则 / 契约 / 校验脚本） | ✅ **已完成** |
-| **M1** | **建号** —— 注册登录 → 建角（灵根 / 体质 / **固定出身：北桢 · 槐阴村**）→ 属性面板 | ⏭ **下一步** |
-| M2 | 首战 —— 移动 / 伤害结算 / 死亡复活 | 未开始 |
-| M3+ | 见 [`docs/ROADMAP.md`](docs/ROADMAP.md) | 未开始 |
+| 里程碑 | 内容 |
+|---|---|
+| **M0** | 契约层地基（规则 / 契约 / 校验脚本） |
+| **M1** | **建号** —— 注册登录 → 建角（灵根 / 体质 / **固定出身：北桢 · 槐阴村**）→ 属性面板 |
+| M2 | 首战 —— 移动 / 伤害结算 / 死亡复活 |
+| M3+ | 见 [`docs/ROADMAP.md`](docs/ROADMAP.md) |
 
 > ✅ **M1 契约侧硬前置已解除（2026-09-28 · v0.15）**：**ADR-0004 / 0005 / 0006** 已全部裁定 —— 境内 **9 层（82 台阶）** / 属性**上限不落库** / `realm_id` **`1~9`**。契约升 **v0.3**，`Role` / `RealmLevelConfig` 的字段定义已落笔。
 > 余下待裁项为**里程碑级**（M5 装备槽位 / M7 队伍人数），**不阻塞 M1**。
@@ -158,10 +158,10 @@ scripts/                    ★ 校验脚本（没有校验脚本的契约 = 装
 node scripts/check-data.js             # 契约↔配置表内容 + 文档表格结构 + 原则锚点（R1~R10）
 node scripts/check-contract-gate.js    # 契约完备性闸门（G1）
 node scripts/check-identifiers.js      # 跨文档标识符一致性（I1）
-node scripts/check-records.js          # 记录与台账齐备闸门（C1~C8）
-node scripts/check-doc-anchors.js      # 文档↔门禁锚定（D1~D4）
+node scripts/check-records.js          # 记录与台账齐备闸门（C1~C9）
+node scripts/check-doc-anchors.js      # 文档↔门禁锚定（D1~D5）
 node scripts/check-asset-ref.js        # 资产引用 + 跨层一致性（A1~A5）
-node scripts/check-version-pins.js     # 版本配套表 ↔ 契约版本（P1~P5）
+node scripts/check-version-pins.js     # 版本配套表 ↔ 契约版本（P1~P6）
 node scripts/check-docs-index.js       # docs/ 顶层索引覆盖率（E1~E3）
 node scripts/gen-agent-log.js          # `agent-log` 视图一致性（逐字节比对；`--write` 重生成）
 # 任一脚本加 --self-test = ★ 反向测试（注入坏样本，断言必失败）

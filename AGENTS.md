@@ -258,15 +258,17 @@
 
 ---
 
-## 10. 门禁怎么跑（★ **本仓没有 CI** · **2026-10-13 新增**）
+## 10. 门禁怎么跑（★ **CI 已有** · **2026-10-13 新增** ／ **2026-10-19 订正**）
 
 > ★ 来源：`X-0036` §追加「处理盲区问题」。★ **这一节治的是本仓最要命的一条** ——
-> ★★ **8 个校验脚本此前没有任何自动执行机制** ⇒ `check-records.js` 长期报 **35 错**、**而无人看见**。
+> ★★ **8 条 `check-*` 判据此前没有任何自动执行机制** ⇒ `check-records.js` 长期报 **35 错**、**而无人看见**。
+> ★ 2026-10-19 订正三处已过期说法（`X-0054` · G-1/G-6）：**CI 已有**（`.github/workflows/ci.yml` · `X-0044`）·
+> **脚本计数**要说口径（`run-all-checks` 跑 10 条 = 8 条判据 ＋ 2 条视图一致性）· **`process.env` 覆盖点**已有 5 处。
 
 ### 10.1 ★★ 一个命令跑全部
 
 ```bash
-node scripts/run-all-checks.js            # 依次跑 8 个脚本；任一红 → 退出码 1
+node scripts/run-all-checks.js            # 依次跑 10 个脚本；任一红 → 退出码 1
 node scripts/run-all-checks.js --quiet    # 只出汇总
 ```
 
@@ -281,11 +283,15 @@ node scripts/install-hooks.js     # → core.hooksPath = scripts/hooks ⇒ 每�
 ★ 机制与隔壁 `gbe-studio` / `gbe-assets` **同一套**（它们的 pre-push 校版本号，本仓的跑门禁）。
 ★ 逃生舱：`QYD_SKIP_CHECKS=1 git push` —— ★ **用了它要在记录里写清原因**。
 
-### 10.3 ★ 为什么没有 CI（★ 别以为是忘了配）
+### 10.3 ★ CI 的诚实边界（**2026-10-19 订正** · 原节标题「为什么没有 CI」已过期）
 
-★ **当前配不了**：这些脚本**硬编码本机绝对路径**（`F:/zxc/Project/qiuyuan-dalu` · `F:/zxc/Project/gbe-assets`）
-且**零 `process.env` 覆盖点** ⇒ ★ 在 GitHub Actions 上必然 ENOENT。
-★ 要上 CI **得先给这些脚本加环境变量覆盖点**（★ 那是另一件事，★ 别在没做之前假装"有 CI 就安全了"）。
+★ `ci.yml` 做两件事：`run-all-checks.js --quiet` ＋ 全脚本 `--self-test`。★ 但跨仓可见性**不对称**，别当成全量：
+
+- **`gbe-assets` 公开** ⇒ A 系列跨层校验**真跑**；
+- **`qiuyuan-dalu` 私有** ⇒ CI 拉不到 ⇒ `C5`/`C6` 的 dalu 侧与 `R6`/`R10`/`I1` **显式跳过**（输出带「不可读 → 跳过（NOT a pass）」）；dalu 侧由它自己的 `gates.yml` 反向拉本仓跑；
+- 本机路径一律走环境变量覆盖点（`GBE_ASSETS_REPO` / `QYD_DALU_REPO`），★ 不设则回退本机默认 —— **CI 上必须设**。
+
+★ 判据：**跳过 ≠ 通过** —— 汇总里含「跳过 / 不可读 / 未执行」的行会被**单列**。
 
 ---
 

@@ -9,8 +9,9 @@
  * （与 `gen-agent-log.js` 同构：视图可丢，正文不可丢；重建视图 = 重跑生成器。）
  *
  * ── 真源 ────────────────────────────────────────────────────────
- * · 审阅记录正文：`reviews/X-*.md`（每篇的 H1 标题 + 头部「状态」行）
- * · 外部报告：    `reviews/ext/<名>/`（目录即一篇）
+ * · 审阅记录正文（**判定正本**）：`reviews/X-*.md`（每篇的 H1 标题 + 头部「状态」行）
+ * · 内部源材料：  `reviews/work/<名>/`（目录即一篇）—— ★ `ADR-0032` 第三档（2026-10-19）
+ * · 外部源材料：  `reviews/ext/<名>/`（目录即一篇）
  *
  * ★ 注意：本文件注释里**不能出现** `*` 紧跟 `/` 的写法（哪怕是举例路径）——
  *   它会**提前闭合块注释**，把后面的行当代码解析（本文件第一版就这么炸的）。
@@ -87,6 +88,15 @@ function selfTest() {
   const farStatus = '# X-9997\n\n' + '\n'.repeat(25) + '- 状态：**已完成**\n';
   eq('边界 · 状态行超 20 行不算', parseReviewText(farStatus).status, '—');
 
+  // ⑤ ★ 分区列举（`ADR-0032` 第三档 · 扩域判据**必补覆盖用例** · `REVIEW-PROCESS` §6 坑 9）
+  const ents = [
+    { name: 'b-x', isDirectory: () => true },
+    { name: 'a-x', isDirectory: () => true },
+    { name: 'README.md', isDirectory: () => false },
+  ];
+  eq('★ 分区只数目录、不数文件（README 不算一篇报告）', pickDirNames(ents).join(','), 'a-x,b-x');
+  eq('★ 空分区 ⇒ 空数组（不编造）', pickDirNames([]).length, 0);
+
   let bad = 0;
   console.log('[gen-review-index] 反向测试（--self-test）');
   console.log('─'.repeat(60));
@@ -99,16 +109,28 @@ function selfTest() {
   process.exit(bad ? 1 : 0);
 }
 
+/** 纯函数：从 `readdirSync` 的条目里挑「**子目录**名」并排序（= 一个分区里的一篇）。
+ *  ★ 只认目录 —— **文件不算**：分区里的 `README.md` 是**收件说明**，不是一篇报告。
+ *  ★ 目录不存在 ⇒ 由调用方给空数组（**不编造**）。
+ */
+function pickDirNames(entries) {
+  return entries.filter((e) => e.isDirectory()).map((e) => e.name).sort();
+}
+
+/** 列某分区（`work` / `ext`）下的子目录名；分区不存在 ⇒ 空数组。 */
+function listTierDirs(name) {
+  const d = path.join(REVIEWS, name);
+  return fs.existsSync(d) ? pickDirNames(fs.readdirSync(d, { withFileTypes: true })) : [];
+}
+
 function buildMarkdown() {
   const reviews = fs.readdirSync(REVIEWS)
     .filter((f) => /^X-\d{4}\.md$/.test(f))
     .sort()
     .map(parseReview);
 
-  const extDir = path.join(REVIEWS, 'ext');
-  const exts = fs.existsSync(extDir)
-    ? fs.readdirSync(extDir, { withFileTypes: true }).filter((d) => d.isDirectory()).map((d) => d.name).sort()
-    : [];
+  const works = listTierDirs('work');
+  const exts = listTierDirs('ext');
 
   const L = [];
   L.push('# reviews/INDEX.md —— 审阅文档总索引');
@@ -116,7 +138,7 @@ function buildMarkdown() {
   L.push('> ★ **本文件是视图，不是第二真源** —— 由 `scripts/gen-review-index.js` 生成，**不得手工编辑**。');
   L.push('> 要改内容请改 `reviews/` 下的正文，然后重跑生成器（`node scripts/gen-review-index.js --write`）。');
   L.push('>');
-  L.push(`> 真源：审阅记录 \`reviews/X-*.md\`（${reviews.length} 篇） · 外部报告 \`reviews/ext/\`（${exts.length} 篇）`);
+  L.push(`> 真源：审阅记录 \`reviews/X-*.md\`（${reviews.length} 篇） · 内部源材料 \`reviews/work/\`（${works.length} 篇） · 外部源材料 \`reviews/ext/\`（${exts.length} 篇）`);
   L.push('> 一行一事的台账仍在 `registry/cross-repo-ledger.md`（那边管**跨库交付**，这里管**目录视图**）。');
   L.push('');
   L.push('## 一、审阅记录（`reviews/X-*.md`）');
@@ -127,23 +149,28 @@ function buildMarkdown() {
     L.push(`| [\`${r.id}\`](${r.id}.md) | ${r.title} | ${r.status} |`);
   }
   L.push('');
-  L.push('## 二、外部审阅报告（`reviews/ext/`）');
-  L.push('');
-  if (exts.length === 0) {
-    L.push('（暂无）');
-  } else {
-    L.push('| 目录 | 说明 |');
-    L.push('|---|---|');
-    for (const e of exts) {
-      // 目录名即「来源-对象-日期」，原样列出；说明读目录里的 README/主 md 首行（有就写，没有就 —）
-      let note = '—';
-      const dir = path.join(extDir, e);
-      const files = fs.readdirSync(dir).filter((f) => f.endsWith('.md'));
-      if (files.length) note = files.sort()[0];
-      L.push(`| [\`ext/${e}/\`](ext/${e}/) | ${note} |`);
+  const tiers = [
+    { n: '二', key: 'work', label: '内部源材料（本仓派出去的 agent 各一份 · `reviews/work/`）', list: works },
+    { n: '三', key: 'ext', label: '外部源材料（非本仓派出 · `reviews/ext/`）', list: exts },
+  ];
+  for (const t of tiers) {
+    L.push(`## ${t.n}、${t.label}`);
+    L.push('');
+    if (t.list.length === 0) {
+      L.push('（暂无）');
+    } else {
+      L.push('| 目录 | 说明 |');
+      L.push('|---|---|');
+      for (const e of t.list) {
+        // 目录名即「来源-对象」，原样列出；说明读目录里排序第一的 .md（有就写，没有就 —）
+        let note = '—';
+        const files = fs.readdirSync(path.join(REVIEWS, t.key, e)).filter((f) => f.endsWith('.md'));
+        if (files.length) note = files.sort()[0];
+        L.push(`| [\`${t.key}/${e}/\`](${t.key}/${e}/) | ${note} |`);
+      }
     }
+    L.push('');
   }
-  L.push('');
   return L.join('\n');
 }
 

@@ -4,15 +4,21 @@
 /**
  * run-all-checks.js —— 本仓门禁**汇总入口**（来源 `X-0036` §追加「处理盲区问题」· 2026-10-13）
  *
- * ── 为什么需要它（实测出来的盲区）──────────────────────────
- *   ★★ 本仓有 **8 个校验脚本**，但**没有任何自动执行机制**：
- *      · **无 CI** —— ★ 不是忘了配，是**当前配不了**：这些脚本硬编码本机绝对路径
- *        （`F:/zxc/Project/qiuyuan-dalu` · `F:/zxc/Project/gbe-assets`）且**零 `process.env` 覆盖点**
- *        ⇒ ★ 在 GitHub Actions 上必然 ENOENT；
- *      · **无 git hook** —— `core.hooksPath` 未设（隔壁 `gbe-*` 两仓都设了）。
+ * ── 为什么需要它（实测出来的盲区 · ★ 以下为 2026-10-13 立此脚本时的历史）──
+ *   ★★ 当时本仓有 **8 条 `check-*` 判据**，但**没有任何自动执行机制**：
+ *      · **无 CI**、**无 git hook**（`core.hooksPath` 未设）；
+ *      · 脚本硬编码本机绝对路径、**零 `process.env` 覆盖点** ⇒ 上 Actions 必然 ENOENT。
  *   ⇒ 后果实测：`check-records.js` 长期报 **35 错**（26 张 dalu 卡缺「契约回执」+ 9 笔无同批记录），
  *     ★ **而它报的红一直没人看见** —— 直到 2026-10-13 人工跑了一次。
  *   ⇒ ★★ **判据：一个只在"有人记得手动跑"时才存在的门禁，等于没有门禁。**
+ *
+ * ── ★ 现状（2026-10-19 订正 · `X-0054` G-6）─────────────────
+ *   · **CI 已有**：`.github/workflows/ci.yml`（`X-0044`）—— 上面那两条「无 CI / 配不了」已过期；
+ *   · **覆盖点已有**：`check-data` / `check-identifiers` / `check-asset-ref` / `check-records`
+ *     与本脚本共 5 处读 `process.env`（`GBE_ASSETS_REPO` / `QYD_DALU_REPO`）；
+ *   · **汇总口径**：本文件跑 **10 条** = 8 条 `check-*` 判据 ＋ 2 条 `gen-*` 视图一致性。
+ *     ★ 文档写「N 个脚本」时以本文件的 `STEPS.length` 为准（`D5` 会核）。
+ *   · ★ **历史陈述不改写**（上面那段保留原样），只在此追加现状 —— 改历史会让"为什么这么做"失传。
  *
  * ── 定位：它不是第 9 条判据，是**入口** ────────────────────
  *   ★ 命名**故意不叫 `check-*`** —— 那个命名空间由 `check-doc-anchors.js` 的 **D1** 双向核对
@@ -51,11 +57,11 @@ const STEPS = [
     { file: 'check-data.js', label: '契约 ↔ 配置表 + 文档表格 + 第一原则锚点' },
     { file: 'check-contract-gate.js', label: '契约完备性（ROADMAP 声明 ↔ contracts/）' },
     { file: 'check-identifiers.js', label: '跨文档标识符（配置表 / DB 表 / 退役名）' },
-    { file: 'check-doc-anchors.js', label: '脚本清单 / 规则 ID / skill 版本 三处同步' },
+    { file: 'check-doc-anchors.js', label: '脚本清单 / 规则 ID / skill 版本 / README 禁抄版本号与易腐事实' },
     { file: 'check-asset-ref.js', label: '资产引用契约 ↔ gbe-assets（只读交叉校验）' },
-    { file: 'check-version-pins.js', label: '版本配套表 ↔ 契约版本' },
+    { file: 'check-version-pins.js', label: '版本配套表 ↔ 契约版本 ＋ 兄弟仓版本钉（软）' },
     { file: 'check-docs-index.js', label: 'docs/ 顶层索引覆盖率（黑户 / 幽灵）' },
-    { file: 'check-records.js', label: '记录与台账齐备（C1~C8）' },
+    { file: 'check-records.js', label: '记录与台账齐备（C1~C9）' },
     { file: 'gen-agent-log.js', label: 'agent-log 视图一致性（默认只校验）' },
     { file: 'gen-review-index.js', label: 'reviews/INDEX 视图一致性（默认只校验）' },
 ];
