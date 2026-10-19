@@ -67,7 +67,7 @@
 
 | 目录 | 说明 |
 |---|---|
-| [`work/mimo-all-repos/`](work/mimo-all-repos/) | PROJECT-REVIEW-MiMoDesktop-MiMo-2026-10-01.md |
+| [`work/mimo-all-repos/`](work/mimo-all-repos/) | PROJECT-REVIEW-MiMoDesktop-MiMo-2026-10-19.md |
 | [`work/mimo-qiuyuan-dalu/`](work/mimo-qiuyuan-dalu/) | PROJECT-REVIEW-MiMoDesktop-MiMo-2026-10-01.md |
 | [`work/traecode-all-repos/`](work/traecode-all-repos/) | PROJECT-REVIEW-TraeCode-DeepSeek-V4.1-Flash-2026-10-19.md |
 | [`work/workbuddy-all-repos/`](work/workbuddy-all-repos/) | PROJECT-REVIEW-WorkBuddy-DeepSeek-V4.1-Flash-2026-10-19.md |
