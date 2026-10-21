@@ -1,6 +1,6 @@
 # 协议契约（Protocol Contract）
 
-> **层**：L3 游戏侧（本仓 `contracts/`）　|　**状态**：**v0.7**（2026-10-18 **角色页前置包** —— `DECISIONS.md` **ADR-0030**：新增 **§3.3.1** 补 `character_attributes` 的完整字段清单（键名一律取 `data-contract.md` §7.2，★ 不另立一名）＋ 三条硬口径（**分期只改"值从哪来"不改"有哪些键"** · M1 只发境界裸值 · `armorBreak` 单位待裁）；上一版 v0.6（2026-10-17 **M1 打通前置包** —— `DECISIONS.md` **ADR-0029**：① §2.1 / §3.1 补登记 `resume` / `resume_ok` / `resume_fail`（凭令牌复原登录 · 来源 dalu 建议书 `GUILD-PROPOSAL-X0029.md`，正式号 **X-0050**）· ② §5.1 补 `exp` / `expMax`（修为；`expMax` 派生自境界配置、不落库）· ③ §5.1 明记 `shenshi` 是**单值属性**，防界面再画成进度条；上一版 v0.5（2026-10-13 **契约收紧 + 补记** —— `DECISIONS.md` **ADR-0027**：① 摘除 2 处下游物理表名引用（`qydl_game_config.origin_tag` → 逻辑键 + 指针）· ② 补登记 `list_characters_fail`；上一版 v0.4 = M1 契约补齐包 · ADR-0023）
+> **层**：L3 游戏侧（本仓 `contracts/`）　|　**状态**：**v0.8**（2026-10-20 **M5 物品批的两条业务拒绝回包** —— `DECISIONS.md` **ADR-0034**：§3.5 补 `inventory_fail` / `storage_fail` ＋ 两者 `reason` 枚举（★ 只补**回包**，§2.5 / §2.6 的九个动作一字未动）；上一版 v0.7 = 角色页前置包 · ADR-0030）
 > **真源**：本文件。客户端与服务端**双向**只读消费。
 > **来源**：从 Codex 原型的 `MessageTypes` + `docs/03-protocol-and-api.md`（216 行）**提炼**，非新设计。
 > **战略地位**：服务端**重写 Go**（已定）时，**Java 侧最有价值的产出就是本契约**（协议 + 数据表）——那 22 个 Spring 服务会被丢弃，本契约不会。
@@ -255,6 +255,8 @@
 | `mail_claimed` | `{mailId, claimed}` | 邮件附件领取回执 |
 | `drop_result` | `{count, items:[...]}` | 掉落结果（世界掉落物已落库：无主 + 坐标） |
 | `storage` | `{characterId, body:{capacity,used}, storages:[...]}` | 储物总览 |
+| `inventory_fail` | `{message, reason?}` | ★ **物品侧业务拒绝**（`get_inventory` / `use_item` / `discard_item` / `enhance_item`）——境界不足 / 冷却中 / 不可用 / 不可丢弃 / 已达上限 / 实例不属于本角色。`reason` 取 `realm` / `cooldown` / `not_usable` / `locked` / `undiscardable` / `enhance_max` / `not_owner` / `no_slot` / `not_found`（★ 客户端据此区分"该练境界"与"该等冷却"，★ 不许都显示成"操作失败"） |
+| `storage_fail` | `{message, reason?}` | ★ **储物侧业务拒绝**（`storage_list` / `store` / `take` / `transfer`）——嵌套超两层 / 成环 / 容量不足 / 货币不占格 / 未认主。`reason` 取 `nest_limit` / `cycle` / `no_capacity` / `currency_no_slot` / `unbound` / `not_owner` / `not_found` |
 | `techniques` | `{characterId, techniques:[...]}` | 功法列表（`techniqueId/name/level/maxLevel/desc/cost/affixes`） |
 | `tasks` | `{characterId, tasks:[...]}` | 任务列表（`status 0锁定1可接2进行3可领4已领` / `progress` / `targetValue` / 奖励） |
 | `chat_message` | `{channel, fromId, fromName, text, time, targetId?}` | 聊天广播（world 全员 / scene 同场景 / private 仅目标；发送者私聊回执带 `toMe=true`） |
@@ -283,6 +285,7 @@
 | GET | `/api/players` | 玩家列表 |
 | GET | `/api/players/{id}/characters` | 玩家角色列表 |
 | POST | `/api/characters` | 创建角色 |
+| GET | `/api/characters?keyword=&limit=&offset=` | ★ **角色列表**（GM 选人用；`keyword` 空 = 全列，否则**名字模糊或 ID 精确**；`limit` 默认 50、上限 200；只读。`data` = `{rows:[{roleId,accountId,name,realmId,layer}], total, keyword, limit, offset}` · **ADR-0035**） |
 | POST | `/api/mail` | 发邮件 `{playerId, title, content, itemId, itemCount}` |
 | POST | `/api/mail/claim` | 领邮件附件 |
 | GET | `/api/techniques` | 功法目录（8 部，含 `perLevel` 词条） |
@@ -482,6 +485,7 @@ ID 格式 **`gong_<root>`**（`gong_jin` / `gong_mu` / `gong_shui` / `gong_huo` 
 
 | 版本 | 日期 | 变更 |
 |---|---|---|
+| **v0.8** | **2026-10-20** | ★ **M5 物品批：补两条业务拒绝回包**（`DECISIONS.md` **ADR-0034** · 卡 `X-0058` 追加 · 下游 `T-0115`）—— §3.5 加 **`inventory_fail`** ＋ **`storage_fail`**（各带 `reason` 枚举）。<br>**为什么补**：`ADR-0023` ③ 定了分工 —— 协议层错误回 `error`、**业务不成立回 `*_fail`**；而 §2.5 / §2.6 那九个物品与储物动作**只有成功下行**（`inventory` / `enhance_result` / `storage`），拒绝**无处可回**。★ 后果不是"少一条消息"，是**服务端只能把"境界不足"和"冷却中"都说成"操作失败"**，客户端无法区分（判据 2 要的就是这个区分）。<br>**三条口径**：① ★ **不改九个动作的请求体与成功回包**（只加拒绝侧）；② `reason` 是**机器码**、`message` 是**给人看的话**，两者**都要带** —— 只给文案，客户端就得靠中文字符串分支（本仓老坑同型）；③ ★ 物品侧**不新增下行成功包**（`use_item` 成功仍走 §3.5 `inventory` 刷新，不另立 `use_ok`）。<br>★ **§2.2~§2.8 一字未动 · 未新增消息方向 · 未改任何既有字段语义 · ADR 纯追加**。 |
 | **v0.7** | **2026-10-18** | ★ **角色页前置包**（`DECISIONS.md` **ADR-0030** · 卡 `X-0051`）——「继续把服务端和界面打通」推进到**角色页（属性面板）**时，撞上 §8 那条一直开着的待办：`character_attributes` **只列了分组、没有字段清单** ⇒ 双端各写一套键名只是时间问题。<br>**① 新增 §3.3.1 完整字段清单**：一级面板 18 项 ＋ `hp`/`mp` 当前值 ＋ 二级八系 ＋ `equipment`。★ **键名一律照抄 `data-contract.md` §7.2「词条键名」**（该表自述就是"跨配置表/协议/面板三方共用的标识符"）⇒ ★ 本清单不另立一名，发明键名 = 造第二真源。<br>**② 三条硬口径**：**分期只改"值从哪来"、不改"有哪些键"**（M1 有源的填裸值、无源填 `null`，★ 客户端不得造默认值、也不得因 M1 只有 16/18 就删键）· **M1 只发境界裸值**（§3.3 原注"已含装备词条与灵根增益"是**终态**描述 ⇒ 装备 M5 并入、灵根增益待裁并入，★ 都不改字段名）· **`armorBreak` 单位待裁**（配置 `def_break=0.30` 与 `crit_rate=5.50`（=5.50%）并列在同一张百分比表里 ⇒ 0.30% 还是 30% 差 100 倍，★ 契约不猜）。<br>**③ 销 §8 一条待办**，★ 同时**新登记两条**待裁（`armorBreak` 单位 · 寿元是否进一级面板）。<br>★ **未改**任何既有消息的方向与语义 · §2 请求表一字未动（`get_attributes` v0.2 就在） · 未新增里程碑。 |
 | **v0.6** | **2026-10-17** | ★ **M1 打通前置包**（`DECISIONS.md` **ADR-0029** · 卡 `X-0050`）——「把服务端和界面打通」开工前实测出的三处账实不符，**一次清完**：<br>**① §2.1 / §3.1 补 `resume` / `resume_ok` / `resume_fail`** —— 双端**早已实现并跑通**（服务端 `login/handler.go` 已登记、客户端登录屏在用），但契约全文 `resume` **0 命中** ⇒ ★ token 长期「签了没人验」。来源 dalu 建议书 `GUILD-PROPOSAL-X0029.md`（自留号 0029 从未入台账 ⇒ **正式号 X-0050**）。★ 并写清它与 §2.1「身份字段不得出现在请求体」**不冲突**：那条禁的是声明式身份，`token` 是服务端自发自验的凭据。<br>**② §5.1 补 `exp` / `expMax`** —— 修为值落库（`data-contract.md` §3.1 `Role.exp`）、上限**派生自境界配置 `exp_max`** 故不落库；此前协议视图没暴露 ⇒ 客户端 HUD 的「道」栏**无真值可接**。★ 顺带明记 **`exp` ≠ `mp`**（历史上合并过一次又拆开）。<br>**③ §5.1 明记 `shenshi` 是单值属性**（神识强度，非资源池）—— 下游画稿把它画成了 `420/520` 进度条 ⇒ 记一条防再错；界面须跟随契约，不是契约跟随画稿。<br>**④ 端口登记**（★ 不属本契约，但同一批账）：游戏服务端实占 **8080** 而唯一真源 `gbe-assets/catalog/ports.json` **从无此条**，且该文件把 8080 保留给了 `deferred` 的 unity-mcp ⇒ 登记 `qiuyuan-game-ws: 8080`，★ 并把**没人用的** unity 预留挪到 8090（挪预留，不动在听的生产端口）。<br>★ **未改**任何既有字段的语义 · **未新增消息方向** · §2.2~§2.8 一字未动。 |
 | **v0.5** | **2026-10-13** | ★ **契约收紧 + 补记**（`DECISIONS.md` **ADR-0027**）：<br>**① §2.1 / §5.1 摘除 2 处物理表名**（`qydl_game_config.origin_tag` → 「下游全局配置的 `origin_tag` 键」+ 物理落点指针）—— 落实 `ADR-0001` 规矩 1「契约不含物理映射」，消掉两处必腐的跨层重复；<br>**② §3.1 补 `list_characters_fail` 行**（补记：服务端早已在回、客户端早已在处理，仅补登记）。 |
