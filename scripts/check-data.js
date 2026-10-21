@@ -684,6 +684,146 @@ function computeGradeFormula(parsed, params) {
   });
 }
 
+/**
+ * itemDomainIssues —— R10 的物品域内容断言（★ 纯函数，好让 --self-test 注入样本）
+ *
+ * 判据来源：`contracts/data-contract.md` §7.3 品质轨与取值域 / §7.4 物品定义 / §7.6 容量两轴相乘 / §8.1 used_slots
+ *   ＋ 需求层《法宝系统》强化表（至宝不分阶）· 来源卡 `X-0058` / `ADR-0033`（dalu `T-0115`）。
+ *
+ * ★ 最要紧的三条：
+ *   ① quality 上界**由档表算出**，越界必须拦（契约禁止写死 54 / 63）；
+ *   ② 容量倍率 = 0 只允许给「上游未裁」那一档（现 = 地品）⇒ 别的档给 0 就是偷偷兜底；
+ *   ③ 等级段轴末段仍是 54 —— ★ 这条把「四张表留六档」的已知分叉钉成看得见的：谁改成 63 就是替上游补了数 ⇒ 必红。
+ */
+function itemDomainIssues(parsedByTable) {
+	const out = [];
+
+	// ㈤ 物品域（M5 · `X-0058` / `ADR-0033`）—— ★ 新表必须进本规则集（dalu DATA-LAYOUT §三 那条义务）
+	//   判据来源：`contracts/data-contract.md` §7.3 / §7.4 / §7.6 / §8.1 ＋ 需求层《储物系统》《法宝系统》
+	const itemDef = parsedByTable['qydl_item_def_config'];
+	const itemCat = parsedByTable['qydl_item_category_config'];
+	const gradeTbl = parsedByTable['qydl_quality_grade_config'];
+	const treasureTbl = parsedByTable['qydl_storage_treasure_def_config'];
+	const multTbl = parsedByTable['qydl_storage_quality_mult_config'];
+	const axisTbl = parsedByTable['qydl_storage_level_axis_config'];
+	const enhanceTbl = parsedByTable['qydl_enhance_rule_config'];
+
+	if (gradeTbl && itemDef) {
+	  // ㈤-1 每轨的阶区间必须**从 1 起、连续、无缝**（缝里掉的 quality 会显示成空品质名）
+	  const byTrack = new Map();
+	  for (const r of gradeTbl.rows) {
+	    const tk = String(r.track);
+	    if (!byTrack.has(tk)) byTrack.set(tk, []);
+	    byTrack.get(tk).push(r);
+	  }
+	  for (const [tk, list] of byTrack) {
+	    list.sort((a, b) => Number(a.tier_min) - Number(b.tier_min));
+	    let next = 1;
+	    for (const g of list) {
+	      if (Number(g.tier_min) !== next) {
+	        out.push(`quality_grade 轨 ${tk} 档「${g.grade_name}」阶区间不连续：期望从 ${next} 起，实为 ${g.tier_min}`);
+	      }
+	      if (Number(g.tier_max) < Number(g.tier_min)) {
+	        out.push(`quality_grade 轨 ${tk} 档「${g.grade_name}」区间倒挂 ${g.tier_min}–${g.tier_max}`);
+	      }
+	      next = Number(g.tier_max) + 1;
+	    }
+	  }
+	  if (byTrack.size !== 4) {
+	    out.push(`quality_grade 应有**四轨**（品阶 / 器道八档 / 符阵三阶九级 / 灵植三品十级），实得 ${byTrack.size}`);
+	  }
+	  // ㈤-2 每个物品的 quality 必须落在所属轨道的算出来的域内（★ 上界由档表给，不写死）
+	  const maxOf = new Map();
+	  for (const [tk, list] of byTrack) {
+	    maxOf.set(tk, Math.max(...list.map(g => Number(g.tier_max))));
+	  }
+	  const cats = new Set(itemCat ? itemCat.rows.map(r => String(r.category_id)) : []);
+	  for (const r of itemDef.rows) {
+	    const mx = maxOf.get(String(r.track));
+	    if (mx === undefined) {
+	      out.push(`item_def 物品 ${r.item_id}(${r.name}) 的轨道 ${r.track} 在档表里没有行`);
+	    } else if (Number(r.quality) < 1 || Number(r.quality) > mx) {
+	      out.push(`item_def 物品 ${r.item_id}(${r.name}) quality=${r.quality} 越界（轨 ${r.track} 合法域 1–${mx}）`);
+	    }
+	    if (itemCat && !cats.has(String(r.category_id))) {
+	      out.push(`item_def 物品 ${r.item_id}(${r.name}) 的分类 ${r.category_id} 不存在`);
+	    }
+	    if (Number(r.stack_max) < 1) {
+	      out.push(`item_def 物品 ${r.item_id}(${r.name}) stack_max=${r.stack_max}，必须 ≥ 1`);
+	    }
+	  }
+	}
+
+	// ㈤-3 品质轴容量倍率：★ 值为 0 只允许出现在「上游未给」那一档（现 = 地品），其余档必须 > 0
+	if (multTbl) {
+	  for (const r of multTbl.rows) {
+	    if (Number(r.mult_ppm) === 0 && r.grade_name !== '地品') {
+	      out.push(`storage_quality_mult 档「${r.grade_name}」倍率为 0 —— 0 只允许给上游未裁的「地品」`);
+	    }
+	    if (Number(r.mult_ppm) < 0) {
+	      out.push(`storage_quality_mult 档「${r.grade_name}」倍率为负`);
+	    }
+	  }
+	}
+
+	// ㈤-4 等级段轴：区间连续不重叠，且**末段仍写 54**（★ 这条把"四张表留六档"的分叉钉成可见事实）
+	if (axisTbl) {
+	  const rows = [...axisTbl.rows].sort((a, b) => Number(a.level_min) - Number(b.level_min));
+	  let next = 1;
+	  for (const r of rows) {
+	    if (Number(r.level_min) !== next) {
+	      out.push(`storage_level_axis 段 ${r.level_min}–${r.level_max} 与前段不衔接（期望从 ${next} 起）`);
+	    }
+	    next = Number(r.level_max) + 1;
+	  }
+	  const tail = Math.max(...rows.map(r => Number(r.level_max)));
+	  if (tail === 63) {
+	    out.push('storage_level_axis 末段被改到了 63 —— ★ 上游那张表只给到 54，地品行是**待裁**不是已配（X-0058 遗留 1）');
+	  }
+	  if (tail !== 54) {
+	    out.push(`storage_level_axis 末段 = ${tail}，期望 54（上游原文只给到 46–54 段）`);
+	  }
+	}
+
+	// ㈤-5 强化规则：档 1–5 的 level_max 单调不减；档 6–8（三档至宝）必须为 0（不分阶、不参与强化）
+	if (enhanceTbl) {
+	  const by = new Map(enhanceTbl.rows.map(r => [String(r.rank_idx), r]));
+	  let prev = 0;
+	  for (const rank of ['1', '2', '3', '4', '5']) {
+	    const r = by.get(rank);
+	    if (!r) { out.push(`enhance_rule 缺档 ${rank}`); continue; }
+	    if (Number(r.level_max) < prev) {
+	      out.push(`enhance_rule 档 ${rank}(${r.rank_name}) 上限 ${r.level_max} 低于上一档 ${prev} ⇒ 不单调`);
+	    }
+	    prev = Number(r.level_max);
+	    if (Number(r.rate_start_ppm) < Number(r.rate_end_ppm)) {
+	      out.push(`enhance_rule 档 ${rank} 成功率区间方向反了（${r.rate_start_ppm} → ${r.rate_end_ppm}）`);
+	    }
+	  }
+	  for (const rank of ['6', '7', '8']) {
+	    const r = by.get(rank);
+	    if (r && Number(r.level_max) !== 0) {
+	      out.push(`enhance_rule 档 ${rank}(${r.rank_name}) 是至宝档，需求层明写"不分阶、不参与强化"，上限却 = ${r.level_max}`);
+	    }
+	  }
+	}
+
+	// ㈤-6 储物法宝规格：item_id 必须在物品表里存在（否则"发物开空间"会算不出容量）
+	if (treasureTbl && itemDef) {
+	  const ids = new Set(itemDef.rows.map(r => String(r.item_id)));
+	  for (const r of treasureTbl.rows) {
+	    if (!ids.has(String(r.item_id))) {
+	      out.push(`storage_treasure_def 的 item_id ${r.item_id} 在物品表里没有对应行`);
+	    }
+	    if (Number(r.base_capacity) < 1) {
+	      out.push(`storage_treasure_def item ${r.item_id} base_capacity=${r.base_capacity}，必须 ≥ 1（★ 格数的真源在此列）`);
+	    }
+	  }
+	}
+
+	return out;
+}
+
 (function r10() {
   const datasDir = path.join(DALU_DATA, 'datas');
   if (!fs.existsSync(datasDir)) {
@@ -762,10 +902,13 @@ function computeGradeFormula(parsed, params) {
     }
   }
 
+  // ㈤ 物品域（M5）—— 判据已抽成纯函数，★ 反向测试在 --self-test 的 R10 段
+  issues.push(...itemDomainIssues(parsedByTable));
+
   if (issues.length) {
     issues.forEach(m => err('R10', m));
   } else {
-    ok('R10', `配置表内容断言通过（${csvs.length} 张表：字段数 / 概率合计 / 倍率单调 / 公式复现）`);
+    ok('R10', `配置表内容断言通过（${csvs.length} 张表：字段数 / 概率合计 / 倍率单调 / 公式复现 / 物品域档位与两轴与强化）`);
   }
 })();
 
@@ -775,6 +918,34 @@ function computeGradeFormula(parsed, params) {
 //   注入坏样本，断言**必须被拦下**；再注入好样本，断言**不得误报**。
 //   用法：node scripts/check-data.js --self-test
 // ─────────────────────────────────────────────────────────────
+
+// itemFixture —— 造一份**合法形态**的物品域表集，供反向测试改单一字段后断言。
+//
+// ★ 为什么先要有合法样本：收紧判据却不配"合法形态不得死"的用例，
+//   等于允许一条把正确数据也判红的规则存在（本仓踩过的假红灯）。
+function itemFixture(mut) {
+  const mk = (name, text) => [name, parseLubanCsv(text)];
+  const grade = mk("qydl_quality_grade_config",
+    "##var,track,grade_idx,grade_name,tier_min,tier_max,color_key,note\n" +
+    ",1,1,凡品,1,9,white,\n,1,2,灵品,10,18,green,\n,1,3,地品,19,27,blue,\n,1,4,天品,28,36,purple,\n" +
+    ",1,5,仙品,37,45,gold,\n,1,6,神品,46,54,red,\n,1,7,圣品,55,63,rainbow,\n" +
+    ",2,1,法器,1,1,,\n,3,1,灵,1,9,,\n,4,1,灵草,1,10,,\n");
+  const item = mk("qydl_item_def_config",
+    "##var,item_id,name,category_id,track,quality,enhance_rank,realm_req,stack_max\n,1001,补气丹,1,1,1,0,0,99\n");
+  const cat = mk("qydl_item_category_config", "##var,category_id,name,is_currency\n,1,丹药,0\n");
+  const mult = mk("qydl_storage_quality_mult_config",
+    "##var,grade_idx,grade_name,mult_ppm\n,1,凡品,1000000\n,2,灵品,1500000\n,3,地品,0\n,4,天品,2500000\n");
+  const axis = mk("qydl_storage_level_axis_config",
+    "##var,level_min,level_max,per_level_ppm\n,1,9,100000\n,10,18,150000\n,19,27,200000\n,28,36,250000\n,37,45,300000\n,46,54,500000\n");
+  const enh = mk("qydl_enhance_rule_config",
+    "##var,rank_idx,rank_name,level_min,level_max,rate_start_ppm,rate_end_ppm,fail_penalty,pity_max\n" +
+    ",1,法器,1,9,1000000,800000,0,0\n,2,灵器,10,18,700000,400000,1,10\n,3,宝器,19,27,350000,200000,2,20\n,4,仙器,28,36,150000,50000,3,50\n,5,神器,28,36,150000,50000,3,50\n,6,先天至宝,0,0,0,0,0,0\n,7,混沌至宝,0,0,0,0,0,0\n,8,造化至宝,0,0,0,0,0,0\n");
+  const tre = mk("qydl_storage_treasure_def_config", "##var,item_id,storage_type,base_capacity\n,1001,袋,10\n");
+  const base = {};
+  for (const [k, v] of [grade, item, cat, mult, axis, enh, tre]) base[k] = v;
+  if (mut) mut(base);
+  return base;
+}
 
 if (process.argv.includes('--self-test')) {
   // [规则, 用例名, 实际结果, 期望结果]
@@ -865,6 +1036,28 @@ if (process.argv.includes('--self-test')) {
       const r = computeGradeFormula(p, { v: 2, anchor: 2, p: 0.3 });
       return r && r[0].diff !== 0;
     })(), true],
+    // R10 · 物品域内容断言（X-0058 / ADR-0033 —— ★ 合法形态不得死 + 五种坏样本必拦）
+    ['R10', '物品域合法样本 → 一条都不许报', itemDomainIssues(itemFixture()).length, 0],
+    ['R10', 'quality 越出档表算出的上界 → 必拦下',
+      itemDomainIssues(itemFixture((b) => { b["qydl_item_def_config"].rows[0].quality = "999"; })).length > 0, true],
+    ['R10', '档区间留缝（地品从 20 起）→ 必拦下',
+      itemDomainIssues(itemFixture((b) => { b["qydl_quality_grade_config"].rows[2].tier_min = "20"; })).length > 0, true],
+    ['R10', '倍率 0 给到**非地品**那一档 → 必拦下（偷偷兜底的红线）',
+      itemDomainIssues(itemFixture((b) => {
+        b["qydl_storage_quality_mult_config"].rows[1].grade_name = "灵品";
+        b["qydl_storage_quality_mult_config"].rows[1].mult_ppm = "0";
+      })).length > 0, true],
+    ['R10', '★ 等级段轴末段被改成 63 → 必拦下（那是替上游补数，大人裁的是「只改物品」）',
+      itemDomainIssues(itemFixture((b) => {
+        b["qydl_storage_level_axis_config"].rows[5].level_max = "63";
+      })).length > 0, true],
+    ['R10', '至宝档给了强化上限 → 必拦下（需求层：不分阶、不参与强化）',
+      itemDomainIssues(itemFixture((b) => { b["qydl_enhance_rule_config"].rows[5].level_max = "9"; })).length > 0, true],
+    ['R10', '储物规格指向不存在的物品 → 必拦下',
+      itemDomainIssues(itemFixture((b) => { b["qydl_storage_treasure_def_config"].rows[0].item_id = "8888"; })).length > 0, true],
+    ['R10', '物品指向不存在的分类 → 必拦下',
+      itemDomainIssues(itemFixture((b) => { b["qydl_item_def_config"].rows[0].category_id = "77"; })).length > 0, true],
+
     // PEND 待实现规则登记位（机制③ · 来源 X-0016）
     ['PEND', '空名单 → 不告警（不打破现状）', pendingNotice([]) === null, true],
     ['PEND', '非空 → 生成提示（含来源）', pendingNotice([{ id: 'R11', from: 'X-0000' }]) === 'R11(from X-0000)', true],
