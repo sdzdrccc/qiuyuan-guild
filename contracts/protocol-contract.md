@@ -1,6 +1,6 @@
 # 协议契约（Protocol Contract）
 
-> **层**：L3 游戏侧（本仓 `contracts/`）　|　**状态**：**v0.8**（2026-10-20 **M5 物品批的两条业务拒绝回包** —— `DECISIONS.md` **ADR-0034**：§3.5 补 `inventory_fail` / `storage_fail` ＋ 两者 `reason` 枚举（★ 只补**回包**，§2.5 / §2.6 的九个动作一字未动）；上一版 v0.7 = 角色页前置包 · ADR-0030）
+> **层**：L3 游戏侧（本仓 `contracts/`）　|　**状态**：**v0.10**（2026-10-25 **神识拆两段 ＋ 上限改挂境界段** —— `DECISIONS.md` **ADR-0037**：`character_attributes` 新增 `shenshiFromRealm` / `shenshiCultivation`（★ 两段都下发，客户端不许自己减）；`shenshiPoolMax` 的输入由总强度改为**境界段**（修炼不撑池子）；★ 强度仍是单值、`ADR-0029` ④ 不变；上一版 v0.9 = 神识改名 ＋ 余量池 · ADR-0036）
 > **真源**：本文件。客户端与服务端**双向**只读消费。
 > **来源**：从 Codex 原型的 `MessageTypes` + `docs/03-protocol-and-api.md`（216 行）**提炼**，非新设计。
 > **战略地位**：服务端**重写 Go**（已定）时，**Java 侧最有价值的产出就是本契约**（协议 + 数据表）——那 22 个 Spring 服务会被丢弃，本契约不会。
@@ -208,7 +208,8 @@
 | `maxHp` / `maxMp` | 气血 / 灵力 上限 | 境界配置 `hp_max` / `mp_max` | 与 §5.1 角色对象同名同义 |
 | `physAttack` / `magAttack` | 物攻 / 法攻 | `phy_atk` / `mag_atk` | |
 | `physDefense` / `magDefense` | 物防 / 法防 | `phy_def` / `mag_def` | |
-| `shenshi` | 神识 | `shenshi_base` | ★ **单值**（§5.1 已记：它是属性不是资源池，**没有上限**） |
+| `shenshiIntensity` / `shenshiFromRealm` / `shenshiCultivation` | 神识强度 / **境界段** / **修炼段** | 境界段 = §4.1 两列现算；修炼段 = `Role.shenshi_cultivation`；强度 = 两者之和 | ★ 强度是**单值属性**，不画当前/上限；★ **两段都下发，客户端不许自己减**（那是把公式抄第二遍）。`ADR-0036` 改名 ＋ `ADR-0037` 拆段 |
+| `shenshiPool` / `shenshiPoolMax` | 神识余量 / 余量上限（**消耗池**） | `Role.shenshi_pool` ＋ `Role.shenshi_pool_updated_at`；上限 = **境界段** × 全局系数，不落库 | ★ 上限只看境界段 ⇒ 修炼不撑池子（`ADR-0037`）。顶栏那根条画的是这一对，★ 不是强度 |
 | `hit` / `dodge` | 命中 / 闪避 | `hit_rate` / `dodge_rate` | 百分比，见下方单位口径 |
 | `crit` / `critDamage` / `critResist` | 暴击率 / 暴击伤害 / 暴击抗性 | `crit_rate` / `crit_dmg` / `crit_resist` | 术语已按裁定 F 统一（原「会心」） |
 | `armorBreak` | 破防 | `def_break` | ⚠️ **单位待裁**（见本节末） |
@@ -241,8 +242,8 @@
 | `combat_hit` | `{attackerId, attackerName, targetId, targetName, skill, damage, miss, isCrit, isBlock, multiplier, targetHp, targetMaxHp, attackerXinmo, attackerKuangzao, attackerDanDu}` | 战斗命中（**全员广播**） |
 | `combat_death` | `{targetId, killerId}` | 目标陨落（广播） |
 | `combat_resurrect` | `{id, hp, maxHp}` | 复活回满（广播） |
-| `spell_effect` | `{spell, casterId, casterName, shield/heal/hp/maxHp?}` | 法术效果广播（护盾 / 治疗 / buff） |
-| `spell_fail` | `{message}` | 施法失败（灵力不足 / 目标不存在…） |
+| `spell_effect` | `{spell, casterId, casterName, shield/heal/hp/maxHp?, shenshiPool/shenshiPoolMax/message?}` | 法术效果广播（护盾 / 治疗 / buff ／神识探查） |
+| `spell_fail` | `{message}` | 施法失败（灵力不足 / 神识余量不足 / 目标不存在…） |
 | `chat_private` | `{fromId, fromName, text}` | 传音术私聊（**仅目标收到**） |
 | `chat_private_sent` | `{toId, fromName, text}` | 传音回执（施法者） |
 
@@ -330,7 +331,8 @@
   "bodyTier": 1, "bodyName": "风雷冰灵体",
   "origin": "Origin.NorthZhen.Huaiyin",
   "xinmo": 12.5, "kuangzao": 8.0, "danDu": 0.0,
-  "shenshi": 19.0,
+  "shenshiIntensity": 19.0,
+  "shenshiPool": 190.0, "shenshiPoolMax": 190.0,
   "hp": 100.0, "maxHp": 100.0
 }
 ```
@@ -368,7 +370,8 @@
 | `roots[].sortOrder` | **`0` = 主灵根 = 纯度最高者** | `data-contract.md` §3.2 |
 | `origin` | ★ **出身标签** | **v0.4 新增（`ADR-0023` ⑧）**。M1 唯一取值 `Origin.NorthZhen.Huaiyin`；**真源 = 下游全局配置的 `origin_tag` 键**（物理落点见 `qiuyuan-dalu/docs/DATA-LAYOUT.md` · `ADR-0027` ①），**由配置派生、不落库**（故**不在** `data-contract.md` §3.1 `Role` 里 —— 见下方说明） |
 | `exp` / `expMax` | 修为值 / **当前境界**突破所需修为（`expMax` **派生自境界配置，不落库**） | `data-contract.md` §3.1（`exp` 列）· §境界配置 `exp_max` · ★ **v0.6 补登记（`ADR-0029` ②）** |
-| `shenshi` | **神识强度 —— ★ 单值，不是「当前/上限」对** | `data-contract.md` §3.1（影响术法 / 施法速度 / 突破小加成 / 炼艺成功率）· ★ **v0.6 记此一条防再错（`ADR-0029` ④）**：它是**属性**不是**资源池**，界面**不得**画成 `420/520` 那种进度条 |
+| `shenshiIntensity` | **神识强度 = 境界段 ＋ 修炼段 —— ★ 单值，不是「当前/上限」对** | `data-contract.md` §3.1（影响术法 / 施法速度 / 突破小加成 / 炼艺成功率）· ★ **v0.6 记此一条防再错（`ADR-0029` ④）**：它是**属性**不是**资源池**，界面**不得**画成 `420/520` 那种进度条；★ **ADR-0036 改名**（原 `shenshi`）· ★ **ADR-0037 拆两段**：明细走 §3.3.1 的 `shenshiFromRealm` / `shenshiCultivation`（角色对象只给总和） |
+| `shenshiPool` / `shenshiPoolMax` | **神识余量 / 余量上限（消耗池）** | `data-contract.md` §3.1（`shenshi_pool`）＋ §3.3（`shenshi_pool_factor`）· ★ **ADR-0036 新增**：上限派生、不落库；顶栏那根「神识余量」条画的是这一对，不是强度。★ **ADR-0037**：上限的输入是**境界段**（不是总强度） |
 
 > ✅ **灵力命名已统一（v0.2 · ADR-0019 ④）**：字段由 **`spiritPower` → `mp`**（上限 `maxMp`）——
 > 与 `data-contract.md` §3.1 的同名字段一致。**原「两个名字指同一资源」的状态已消除**
@@ -413,7 +416,7 @@
 | `shield` | 灵力护盾 | 防御 | 消耗灵力生成护盾，**受击先扣盾** |
 | `impact` | 灵力冲击 | 攻击 | 远程法术伤害，与灵力/法攻挂钩 |
 | `lightstep` | 轻身术 | 辅助 | 移速/闪避提升（buff 广播） |
-| `detect` | 神识探查 | 辅助 | 探测周围（**占位**） |
+| `detect` | 神识探查 | 辅助 | 以神识扫过四周 · **消耗神识余量上限的 5%**（ADR-0036 已实装；目标清单随场景内容补） |
 | `control` | 御物术 | 通用 | 操控物品攻击（**占位**） |
 | `spiritarray` | 聚灵阵 | 辅助 | 提升修炼速度（buff 广播；打坐 ×2） |
 | `telepathy` | 传音术 | 辅助 | 私密传音给指定玩家 |
@@ -470,7 +473,7 @@ ID 格式 **`gong_<root>`**（`gong_jin` / `gong_mu` / `gong_shui` / `gong_huo` 
       ★ 连带留下两条**新的**待裁口径（不在本条范围内）：`armorBreak` 的百分比单位 ·
       寿元是否进一级面板（现按"不进"处理，§3.3.1 未列 `life`）。
 - [ ] 确认 `sceneId` 命名规范（与 `asset-ref-contract.md` §5.2 联动）
-- [ ] 核对「占位」法术（`detect` / `control` / `stealth` / `fasting`）在正式工程是否保留
+- [ ] 核对剩余「占位」法术（`control` / `stealth` / `fasting`）在正式工程是否保留（`detect` 已随 `ADR-0036` 实装）
 - [ ] 评估 WebSocket 是否需**消息版本协商**（旧客户端兼容靠「未带 token 放行」，不是长久之计）
 - [ ] **客户端段协议的分层差**（**M2 前须裁**）—— 本契约 §1 定 **WS + JSON**；上游《技术架构》**§3.2** 定客户端走 **TCP + UDP/KCP + Protobuf**（商业化期双通道）。
       判为「**分阶段**」（原型期务实选择 vs 目标形态）**而非冲突**，但**上游未写明这句过渡** → 须补。**不阻塞 M1**（M1 照 §1 走即可）。见 **ADR-0014** §附带。
@@ -485,6 +488,8 @@ ID 格式 **`gong_<root>`**（`gong_jin` / `gong_mu` / `gong_shui` / `gong_huo` 
 
 | 版本 | 日期 | 变更 |
 |---|---|---|
+| **v0.10** | **2026-10-25** | ★ **神识拆两段 ＋ 上限改挂境界段**（`DECISIONS.md` **ADR-0037** · 卡 `X-0061` · 数据侧 `data-contract.md` v0.11 同笔）：① §3.3.1 新增 **`shenshiFromRealm` / `shenshiCultivation`** —— 强度 = 境界段 ＋ 修炼段，★ 两段都下发，★ 客户端不得自己减（把公式抄第二遍是本仓老坑）；② **`shenshiPoolMax` 的输入换成境界段**（`上限 = 境界段 × shenshi_pool_factor`）⇒ **修炼段不撑池子**；③ §5.1 角色对象仍只给总和 `shenshiIntensity`（明细归面板包）；④ ★ `ADR-0029` ④ 与 `ADR-0036` 的改名**全部保留**，★ 未新增消息方向 · 未改既有字段语义。 |
+| **v0.9** | **2026-10-25** | ★ **神识字段改名 ＋ 余量池**（`DECISIONS.md` **ADR-0036**）—— ① §3.3.1 `character_attributes` 的 `shenshi` → **`shenshiIntensity`**，新增 **`shenshiPool` / `shenshiPoolMax`**；② §5.1 `character` 对象同步（强度单值 ＋ 余量池）；③ §3.4 `spell_effect` 增三个可选字段 **`shenshiPool` / `shenshiPoolMax` / `message`**，§6.1 `detect`（神识探查）由「占位」转**已实装**，消耗 = 余量上限的 5%；④ 口径：**强度是属性、余量是消耗池**；上限 = 强度 × 全局系数、**不落库**；⑤ ★ `ADR-0029` ④ **不变**：强度仍不得画成 `420/520`；顶栏那根条画的是余量。★ 未新增消息方向 · 未改既有字段语义。 |
 | **v0.8** | **2026-10-20** | ★ **M5 物品批：补两条业务拒绝回包**（`DECISIONS.md` **ADR-0034** · 卡 `X-0058` 追加 · 下游 `T-0115`）—— §3.5 加 **`inventory_fail`** ＋ **`storage_fail`**（各带 `reason` 枚举）。<br>**为什么补**：`ADR-0023` ③ 定了分工 —— 协议层错误回 `error`、**业务不成立回 `*_fail`**；而 §2.5 / §2.6 那九个物品与储物动作**只有成功下行**（`inventory` / `enhance_result` / `storage`），拒绝**无处可回**。★ 后果不是"少一条消息"，是**服务端只能把"境界不足"和"冷却中"都说成"操作失败"**，客户端无法区分（判据 2 要的就是这个区分）。<br>**三条口径**：① ★ **不改九个动作的请求体与成功回包**（只加拒绝侧）；② `reason` 是**机器码**、`message` 是**给人看的话**，两者**都要带** —— 只给文案，客户端就得靠中文字符串分支（本仓老坑同型）；③ ★ 物品侧**不新增下行成功包**（`use_item` 成功仍走 §3.5 `inventory` 刷新，不另立 `use_ok`）。<br>★ **§2.2~§2.8 一字未动 · 未新增消息方向 · 未改任何既有字段语义 · ADR 纯追加**。 |
 | **v0.7** | **2026-10-18** | ★ **角色页前置包**（`DECISIONS.md` **ADR-0030** · 卡 `X-0051`）——「继续把服务端和界面打通」推进到**角色页（属性面板）**时，撞上 §8 那条一直开着的待办：`character_attributes` **只列了分组、没有字段清单** ⇒ 双端各写一套键名只是时间问题。<br>**① 新增 §3.3.1 完整字段清单**：一级面板 18 项 ＋ `hp`/`mp` 当前值 ＋ 二级八系 ＋ `equipment`。★ **键名一律照抄 `data-contract.md` §7.2「词条键名」**（该表自述就是"跨配置表/协议/面板三方共用的标识符"）⇒ ★ 本清单不另立一名，发明键名 = 造第二真源。<br>**② 三条硬口径**：**分期只改"值从哪来"、不改"有哪些键"**（M1 有源的填裸值、无源填 `null`，★ 客户端不得造默认值、也不得因 M1 只有 16/18 就删键）· **M1 只发境界裸值**（§3.3 原注"已含装备词条与灵根增益"是**终态**描述 ⇒ 装备 M5 并入、灵根增益待裁并入，★ 都不改字段名）· **`armorBreak` 单位待裁**（配置 `def_break=0.30` 与 `crit_rate=5.50`（=5.50%）并列在同一张百分比表里 ⇒ 0.30% 还是 30% 差 100 倍，★ 契约不猜）。<br>**③ 销 §8 一条待办**，★ 同时**新登记两条**待裁（`armorBreak` 单位 · 寿元是否进一级面板）。<br>★ **未改**任何既有消息的方向与语义 · §2 请求表一字未动（`get_attributes` v0.2 就在） · 未新增里程碑。 |
 | **v0.6** | **2026-10-17** | ★ **M1 打通前置包**（`DECISIONS.md` **ADR-0029** · 卡 `X-0050`）——「把服务端和界面打通」开工前实测出的三处账实不符，**一次清完**：<br>**① §2.1 / §3.1 补 `resume` / `resume_ok` / `resume_fail`** —— 双端**早已实现并跑通**（服务端 `login/handler.go` 已登记、客户端登录屏在用），但契约全文 `resume` **0 命中** ⇒ ★ token 长期「签了没人验」。来源 dalu 建议书 `GUILD-PROPOSAL-X0029.md`（自留号 0029 从未入台账 ⇒ **正式号 X-0050**）。★ 并写清它与 §2.1「身份字段不得出现在请求体」**不冲突**：那条禁的是声明式身份，`token` 是服务端自发自验的凭据。<br>**② §5.1 补 `exp` / `expMax`** —— 修为值落库（`data-contract.md` §3.1 `Role.exp`）、上限**派生自境界配置 `exp_max`** 故不落库；此前协议视图没暴露 ⇒ 客户端 HUD 的「道」栏**无真值可接**。★ 顺带明记 **`exp` ≠ `mp`**（历史上合并过一次又拆开）。<br>**③ §5.1 明记 `shenshi` 是单值属性**（神识强度，非资源池）—— 下游画稿把它画成了 `420/520` 进度条 ⇒ 记一条防再错；界面须跟随契约，不是契约跟随画稿。<br>**④ 端口登记**（★ 不属本契约，但同一批账）：游戏服务端实占 **8080** 而唯一真源 `gbe-assets/catalog/ports.json` **从无此条**，且该文件把 8080 保留给了 `deferred` 的 unity-mcp ⇒ 登记 `qiuyuan-game-ws: 8080`，★ 并把**没人用的** unity 预留挪到 8090（挪预留，不动在听的生产端口）。<br>★ **未改**任何既有字段的语义 · **未新增消息方向** · §2.2~§2.8 一字未动。 |
