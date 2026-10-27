@@ -20,12 +20,13 @@
 | `protocol-contract` | **v0.12** | `contracts/protocol-contract.md` |
 | `data-contract` | **v0.13** | `contracts/data-contract.md` |
 | `asset-ref-contract` | **v0.2** | `contracts/asset-ref-contract.md` |
-| `gbe-studio` | **v0.9.5** | `../gbe-studio/VERSION` |
-| `gbe-assets` | **v0.9.5** | `../gbe-assets/VERSION` |
+| `gbe-studio` | **v0.9.7** | `../gbe-studio/VERSION` |
+| `gbe-assets` | **v0.9.6** | `../gbe-assets/VERSION` |
 | `qiuyuan-dalu` | **`98dd971`** | 该仓 git HEAD（★ **提交哈希，不是版本号** —— 见 §三） |
 
 ★ **登记时间**：2026-10-27　|　★ **登记人**：`review`（`X-0063` / `X-0064`：GBE 双仓版本钉落后 2~3 版，本轮按 `VERSION` 实测更正）
 ★ **就地更新**：2026-10-25 `X-0060`（神识改名 ＋ 余量池 · **ADR-0036**）→ 同日 `X-0061`（神识拆两段 · **ADR-0037**）再升一版 ⇒ `data-contract` v0.9 → v0.10 → **v0.11**、`protocol-contract` v0.8 → v0.9 → **v0.10**。★ 两份契约同批改的是**同一件事的两面**（数据侧字段 ＋ 协议侧下行），★ **只升一份会让 `check-version-pins` 红**（判据 A）。
+★ **兄弟仓版本钉**：2026-10-27 `X-0074` 尾随 GBE 发版更新 —— `gbe-assets` **v0.9.6** · `gbe-studio` **v0.9.7**（`check-version-pins` 的 P6 行按 `VERSION` 实读核对）。
 
 > ★★ **为什么表里只有 4 行，而生态是 6 仓**（★ 判据，别当成漏了）：
 > · **`虬渊大陆`（设定真源）与 `ue-ai-ops`（UE 经验仓）不登记** —— ★ 它们**没有"版本轴"**：

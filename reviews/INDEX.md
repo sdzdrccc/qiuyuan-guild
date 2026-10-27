@@ -3,7 +3,7 @@
 > ★ **本文件是视图，不是第二真源** —— 由 `scripts/gen-review-index.js` 生成，**不得手工编辑**。
 > 要改内容请改 `reviews/` 下的正文，然后重跑生成器（`node scripts/gen-review-index.js --write`）。
 >
-> 真源：审阅记录 `reviews/X-*.md`（71 篇） · 内部源材料 `reviews/work/`（23 份报告 / 5 个 agent 文件夹） · 外部源材料 `reviews/ext/`（0 份报告 / 0 个来源文件夹）
+> 真源：审阅记录 `reviews/X-*.md`（72 篇） · 内部源材料 `reviews/work/`（23 份报告 / 5 个 agent 文件夹） · 外部源材料 `reviews/ext/`（0 份报告 / 0 个来源文件夹）
 > 一行一事的台账仍在 `registry/cross-repo-ledger.md`（那边管**跨库交付**，这里管**目录视图**）。
 
 ## 一、审阅记录（`reviews/X-*.md`）
@@ -81,6 +81,7 @@
 | [`X-0071`](X-0071.md) | X-0071 审阅流程 v2.1 —— 覆盖方式三态 / 通过须复跑 / 数字须带命令 / 并行并列正本 | 已完成（★ 待大人复核） |
 | [`X-0072`](X-0072.md) | X-0072 协议 v0.11 —— sceneId 命名 A ＋ delete_character 登记 deferred | 已完成（★ 待大人复核） |
 | [`X-0073`](X-0073.md) | X-0073 契约 v0.12/v0.13 —— REST 错误码 ＋ 限流 ＋ 姓名 RE2 ＋ 六项玩法口径 | 已完成（★ 待大人复核） |
+| [`X-0074`](X-0074.md) | X-0074 审查遗留修复（第三批 · GBE 双仓 ＋ ue-ai-ops） | 已完成（待大人复核） |
 
 ## 二、内部源材料（一 agent 一文件夹 · `reviews/work/`）
 
