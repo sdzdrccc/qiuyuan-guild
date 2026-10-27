@@ -20,8 +20,8 @@
 | `protocol-contract` | **v0.10** | `contracts/protocol-contract.md` |
 | `data-contract` | **v0.12** | `contracts/data-contract.md` |
 | `asset-ref-contract` | **v0.1** | `contracts/asset-ref-contract.md` |
-| `gbe-studio` | **v0.9.2** | `../gbe-studio/VERSION` |
-| `gbe-assets` | **v0.9.1** | `../gbe-assets/VERSION` |
+| `gbe-studio` | **v0.9.3** | `../gbe-studio/VERSION` |
+| `gbe-assets` | **v0.9.2** | `../gbe-assets/VERSION` |
 | `qiuyuan-dalu` | **`0f9c1ca`** | 该仓 git HEAD（★ **提交哈希，不是版本号** —— 见 §三） |
 
 ★ **登记时间**：2026-10-27　|　★ **登记人**：`review`（`X-0063` / `X-0064`：GBE 双仓版本钉落后 2~3 版，本轮按 `VERSION` 实测更正）
