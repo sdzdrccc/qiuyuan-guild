@@ -1,6 +1,6 @@
 # 协议契约（Protocol Contract）
 
-> **层**：L3 游戏侧（本仓 `contracts/`）　|　**状态**：**v0.12**（2026-10-27 **技术面补全** —— `ADR-0043`：§4 补 **REST 错误码表**（0/4000/4004/4401/4403/4409/4410/4412/4503/5000）、§1 补**连接限流**（20 条/秒 · 突发 40 · 超限丢弃）、公告/版本 / HUD 布局 / 储物佩戴 / 货币余额**标 deferred**；上一版 v0.11 = **sceneId 命名规范 ＋ `delete_character` 登记为 deferred** —— `ADR-0041`：`sceneId` = **小写 snake_case** `^[a-z][a-z0-9_]*$`、缺省 **`beizhen_huaiyin`**（与实现一致；原 `main_1` 是旧默认）；`ADR-0042`：**批准做**删除角色动作，**本期标 `deferred`**（身份取会话、`confirm: true` 二次确认）；上一版 v0.10 = 神识拆两段 · ADR-0037）
+> **层**：L3 游戏侧（本仓 `contracts/`）　|　**状态**：**v0.13**（2026-10-27 **神识境界段来源订正** —— `ADR-0045`：§3.3.1 境界段的来源由「数据契约 §4.1 两列现算」改为「**§4.2 `RealmConfig.shenshi_step` 一列 · 按台阶累加**」；`shenshiPoolMax` 注明系数现值 **1** ⇒ 上限即境界段；余量结算列名订正为 `shenshi_pool_updated_ms`。★ **字段集合、消息方向、单位一律未动**；上一版 v0.12 = 2026-10-27 **技术面补全** —— `ADR-0043`：§4 补 **REST 错误码表**（0/4000/4004/4401/4403/4409/4410/4412/4503/5000）、§1 补**连接限流**（20 条/秒 · 突发 40 · 超限丢弃）、公告/版本 / HUD 布局 / 储物佩戴 / 货币余额**标 deferred**；上一版 v0.11 = **sceneId 命名规范 ＋ `delete_character` 登记为 deferred** —— `ADR-0041`：`sceneId` = **小写 snake_case** `^[a-z][a-z0-9_]*$`、缺省 **`beizhen_huaiyin`**（与实现一致；原 `main_1` 是旧默认）；`ADR-0042`：**批准做**删除角色动作，**本期标 `deferred`**（身份取会话、`confirm: true` 二次确认）；上一版 v0.10 = 神识拆两段 · ADR-0037）
 > **真源**：本文件。客户端与服务端**双向**只读消费。
 > **来源**：从 Codex 原型的 `MessageTypes` + `docs/03-protocol-and-api.md`（216 行）**提炼**，非新设计。
 > **战略地位**：服务端**重写 Go**（已定）时，**Java 侧最有价值的产出就是本契约**（协议 + 数据表）——那 22 个 Spring 服务会被丢弃，本契约不会。
@@ -213,8 +213,8 @@
 | `maxHp` / `maxMp` | 气血 / 灵力 上限 | 境界配置 `hp_max` / `mp_max` | 与 §5.1 角色对象同名同义 |
 | `physAttack` / `magAttack` | 物攻 / 法攻 | `phy_atk` / `mag_atk` | |
 | `physDefense` / `magDefense` | 物防 / 法防 | `phy_def` / `mag_def` | |
-| `shenshiIntensity` / `shenshiFromRealm` / `shenshiCultivation` | 神识强度 / **境界段** / **修炼段** | 境界段 = §4.1 两列现算；修炼段 = `Role.shenshi_cultivation`；强度 = 两者之和 | ★ 强度是**单值属性**，不画当前/上限；★ **两段都下发，客户端不许自己减**（那是把公式抄第二遍）。`ADR-0036` 改名 ＋ `ADR-0037` 拆段 |
-| `shenshiPool` / `shenshiPoolMax` | 神识余量 / 余量上限（**消耗池**） | `Role.shenshi_pool` ＋ `Role.shenshi_pool_updated_at`；上限 = **境界段** × 全局系数，不落库 | ★ 上限只看境界段 ⇒ 修炼不撑池子（`ADR-0037`）。顶栏那根条画的是这一对，★ 不是强度 |
+| `shenshiIntensity` / `shenshiFromRealm` / `shenshiCultivation` | 神识强度 / **境界段** / **修炼段** | 境界段 = §4.2 `RealmConfig.shenshi_step` **按台阶累加**现算（★ 2026-10-27 `ADR-0045`：原 §4.1 两列已删；渡劫圆满 511000）；修炼段 = `Role.shenshi_cultivation`；强度 = 两者之和 | ★ 强度是**单值属性**，不画当前/上限；★ **两段都下发，客户端不许自己减**（那是把公式抄第二遍）。`ADR-0036` 改名 ＋ `ADR-0037` 拆段 |
+| `shenshiPool` / `shenshiPoolMax` | 神识余量 / 余量上限（**消耗池**） | `Role.shenshi_pool` ＋ `Role.shenshi_pool_updated_ms`；上限 = **境界段** × 全局系数（★ `ADR-0045`：现值 **1** ⇒ 上限就是境界段本身），不落库 | ★ 上限只看境界段 ⇒ 修炼不撑池子（`ADR-0037`）。顶栏那根条画的是这一对，★ 不是强度 |
 | `hit` / `dodge` | 命中 / 闪避 | `hit_rate` / `dodge_rate` | 百分比，见下方单位口径 |
 | `crit` / `critDamage` / `critResist` | 暴击率 / 暴击伤害 / 暴击抗性 | `crit_rate` / `crit_dmg` / `crit_resist` | 术语已按裁定 F 统一（原「会心」） |
 | `armorBreak` | 破防 | `def_break` | ⚠️ **单位待裁**（见本节末） |
@@ -518,6 +518,7 @@ ID 格式 **`gong_<root>`**（`gong_jin` / `gong_mu` / `gong_shui` / `gong_huo` 
 
 | 版本 | 日期 | 变更 |
 |---|---|---|
+| **v0.13** | **2026-10-27** | ★ **神识境界段来源订正**（`DECISIONS.md` **ADR-0045** · 数据契约 **v0.14** 同批 · 下游卡 `T-0148`／`T-0149`）：① §3.3.1 `shenshiFromRealm` 的来源由「数据契约 §4.1 两列（起点＋增量）现算」改为「**§4.2 `RealmConfig.shenshi_step` 一列 · 从炼气一层按台阶累加**」（★ 层次表不再有神识列）；② `shenshiPoolMax` 的系数注明**现值 1** ⇒ **上限 = 境界段本身**（大人裁「余量上限 = 境界段」）；③ 余量结算列名订正 `shenshi_pool_updated_at` → **`shenshi_pool_updated_ms`**（随下游命名规范：epoch 毫秒 ⇒ `_ms`）。★ **未新增/删除字段 · 未改消息方向 · 未改单位**：`shenshiIntensity` / `shenshiFromRealm` / `shenshiCultivation` / `shenshiPool` / `shenshiPoolMax` 五个键原样，只是数出来的**量级**变了（建角 10 → 100、炼气三层 14 → 300、渡劫圆满 511000）。 |
 | **v0.12** | **2026-10-27** | ★ **技术面补全**（`ADR-0043` · 卡 `X-0073`）：① §4 新增 **§4.1 统一信封与错误码表**（10 个业务码，含 `4004` vs `4503` 的区分）；② §1 新增**连接限流**（单连接 20 条/秒 · 突发 40 · 超限静默丢弃）；③ §8 勾销 REST 错误码待办，登记 **公告/版本 · HUD 布局 · 储物佩戴 · 货币余额** 四项 `deferred`。★ 未改任何既有消息方向与字段语义。 |
 | **v0.11** | **2026-10-27** | ★ **sceneId 命名规范 ＋ `delete_character` 登记 deferred**（`ADR-0041` / `ADR-0042` · 卡 `X-0072`）：① §1 新增 `sceneId` 规则 —— **小写 snake_case** `^[a-z][a-z0-9_]*$`、缺省 **`beizhen_huaiyin`**（原 `main_1` 是旧默认）、上线不改名、资产侧同字符串；② §2.1 新增 **`delete_character {confirm:true}`**、§3.1 新增 `delete_ok` / `delete_fail`，★ **批准做但本期 `deferred`**（身份取会话、客户端按钮暂禁用）；③ §8 勾销 sceneId 待办、新增 delete_character 实现待办。★ 未改既有字段语义 · 未新增其它消息方向。 |
 | **v0.10** | **2026-10-25** | ★ **神识拆两段 ＋ 上限改挂境界段**（`DECISIONS.md` **ADR-0037** · 卡 `X-0061` · 数据侧 `data-contract.md` v0.11 同笔）：① §3.3.1 新增 **`shenshiFromRealm` / `shenshiCultivation`** —— 强度 = 境界段 ＋ 修炼段，★ 两段都下发，★ 客户端不得自己减（把公式抄第二遍是本仓老坑）；② **`shenshiPoolMax` 的输入换成境界段**（`上限 = 境界段 × shenshi_pool_factor`）⇒ **修炼段不撑池子**；③ §5.1 角色对象仍只给总和 `shenshiIntensity`（明细归面板包）；④ ★ `ADR-0029` ④ 与 `ADR-0036` 的改名**全部保留**，★ 未新增消息方向 · 未改既有字段语义。 |
