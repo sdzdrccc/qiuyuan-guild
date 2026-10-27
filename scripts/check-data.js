@@ -710,6 +710,57 @@ function computeGradeFormula(parsed, params) {
  *   ② 容量倍率 = 0 只允许给「上游未裁」那一档（现 = 地品）⇒ 别的档给 0 就是偷偷兜底；
  *   ③ 等级段轴末段仍是 54 —— ★ 这条把「四张表留六档」的已知分叉钉成看得见的：谁改成 63 就是替上游补了数 ⇒ 必红。
  */
+/**
+ * 纯函数：九境修为区间必须首尾相接（`ADR-0039`）。
+ * ★ 为什么必须机器判：启动期只校验「不重叠」，**不校验「相接」** ⇒ 4 处断档静默存在，
+ *   玩家会在不可达区间前卡住（`X-0063` 实测 9,999 / 9,999,999 / 99,999,999 / 999,999,999）。
+ */
+function realmRangeIssues(rows) {
+  const issues = [];
+  const by = {};
+  for (const r of rows || []) {
+    const id = Number(r.realm_id);
+    if (!Number.isFinite(id)) continue;
+    const lo = Number(r.exp_min);
+    const hi = Number(r.exp_max);
+    by[id] = { lo, hi };
+    if (!(hi > lo) || lo < 0) issues.push(`境界 ${id} 修为区间不成立：${r.exp_min}~${r.exp_max}`);
+  }
+  const ids = Object.keys(by).map(Number).sort((a, b) => a - b);
+  for (let i = 1; i < ids.length; i++) {
+    const prev = by[ids[i - 1]];
+    const cur = by[ids[i]];
+    if (cur.lo !== prev.hi + 1) {
+      issues.push(`境界 ${ids[i]} 与上一境不相接：下限 ${cur.lo}，上一境上限 ${prev.hi}（应差 1）`);
+    }
+  }
+  return issues;
+}
+
+/**
+ * 纯函数：神识两列 = 「未定哨兵」只允许 `0/0` 或两列皆正（`ADR-0039`）。
+ * ★ 半填（`0/2` / `10/0`）会被运行时代码当成合法值照算 ⇒ 假值冒充真值。
+ */
+function shenshiLadderIssues(rows) {
+  const issues = [];
+  const pairs = {};
+  for (const r of rows || []) {
+    const id = Number(r.realm_id);
+    if (!Number.isFinite(id)) continue;
+    const s = Number(r.shenshi_start);
+    const st = Number(r.shenshi_step);
+    if (!Number.isFinite(s) || !Number.isFinite(st)) continue;
+    if (s < 0 || st < 0) issues.push(`境界 ${id} 第 ${r.layer} 层神识为负：${s}/${st}`);
+    if ((s === 0) !== (st === 0)) {
+      issues.push(`境界 ${id} 第 ${r.layer} 层神识半填：${s}/${st}（未定必须两列同时为 0）`);
+    }
+    const pair = `${s}/${st}`;
+    if (pairs[id] && pairs[id] !== pair) issues.push(`境界 ${id} 神识各行不一致：${pairs[id]} vs ${pair}`);
+    pairs[id] = pair;
+  }
+  return issues;
+}
+
 function itemDomainIssues(parsedByTable) {
 	const out = [];
 
@@ -919,10 +970,18 @@ function itemDomainIssues(parsedByTable) {
   // ㈤ 物品域（M5）—— 判据已抽成纯函数，★ 反向测试在 --self-test 的 R10 段
   issues.push(...itemDomainIssues(parsedByTable));
 
+  // ㈥ 境界区间相接 ＋ 神识哨兵（ADR-0039）—— 同样是纯函数，反向测试在 R10 段
+  const rc = parsedByTable['qydl_realm_config'];
+  if (!rc) warn('R10', '找不到 `qydl_realm_config.csv` → 九境区间相接检查跳过（NOT a pass）');
+  else issues.push(...realmRangeIssues(rc.rows));
+  const rl = parsedByTable['qydl_realm_level_config'];
+  if (!rl) warn('R10', '找不到 `qydl_realm_level_config.csv` → 神识哨兵检查跳过（NOT a pass）');
+  else issues.push(...shenshiLadderIssues(rl.rows));
+
   if (issues.length) {
     issues.forEach(m => err('R10', m));
   } else {
-    ok('R10', `配置表内容断言通过（${csvs.length} 张表：字段数 / 概率合计 / 倍率单调 / 公式复现 / 物品域档位与两轴与强化）`);
+    ok('R10', `配置表内容断言通过（${csvs.length} 张表：字段数 / 概率合计 / 倍率单调 / 公式复现 / 物品域档位与两轴与强化 / 九境区间相接 / 神识哨兵）`);
   }
 })();
 
@@ -1042,6 +1101,12 @@ if (process.argv.includes('--self-test')) {
     ['R10', '倍率持平 → 视为单调（不减，非严格递增）', firstMonotonicBreak([1, 2, 2, 3]) === null, true],
     ['R10', '倍率单调 → 不得误报', firstMonotonicBreak([1, 2, 3]) === null, true],
     ['R10', '公式参数缺失 → 返回 null（不误判）', computeGradeFormula(parseLubanCsv('##var,quality,wuxing_min,wuxing_max,variant_min,variant_max,damage_mult_ppm,cultivation_mult_ppm\n,3,2,2,0,0,1000000,1000000\n'), { v: NaN, anchor: 2, p: 0.3 }) === null, true],
+    ['R10', '★ 九境区间首尾相接 → 不得误报', realmRangeIssues(parseLubanCsv('##var,realm_id,exp_min,exp_max\n,1,0,999\n,2,1000,9999\n').rows).length, 0],
+    ['R10', '★ 区间留断档 → 必抓（X-0063 的 4 处）', realmRangeIssues(parseLubanCsv('##var,realm_id,exp_min,exp_max\n,1,0,999\n,2,1001,9999\n').rows).length, 1],
+    ['R10', '★ 上界 ≤ 下界 → 必抓', realmRangeIssues(parseLubanCsv('##var,realm_id,exp_min,exp_max\n,1,0,0\n').rows).length, 1],
+    ['R10', '★ 神识 0/0 与 10/2 合法 → 不得误报', shenshiLadderIssues(parseLubanCsv('##var,realm_id,layer,shenshi_start,shenshi_step\n,1,1,10,2\n,1,2,10,2\n,4,1,0,0\n').rows).length, 0],
+    ['R10', '★ 神识半填 0/2 → 必抓', shenshiLadderIssues(parseLubanCsv('##var,realm_id,layer,shenshi_start,shenshi_step\n,1,1,0,2\n').rows).length, 1],
+    ['R10', '★ 同一境界各行不一致 → 必抓', shenshiLadderIssues(parseLubanCsv('##var,realm_id,layer,shenshi_start,shenshi_step\n,1,1,10,2\n,1,2,10,3\n').rows).length, 1],
     ['R10', '公式① 双灵根锚点 → 恰为 1000000', (() => {
       const p = parseLubanCsv('##var,quality,wuxing_min,wuxing_max,variant_min,variant_max,damage_mult_ppm,cultivation_mult_ppm\n,3,2,2,0,0,1000000,1000000\n');
       const r = computeGradeFormula(p, { v: 2, anchor: 2, p: 0.3 });
