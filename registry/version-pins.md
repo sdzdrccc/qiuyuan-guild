@@ -20,7 +20,7 @@
 | `protocol-contract` | **v0.10** | `contracts/protocol-contract.md` |
 | `data-contract` | **v0.12** | `contracts/data-contract.md` |
 | `asset-ref-contract` | **v0.1** | `contracts/asset-ref-contract.md` |
-| `gbe-studio` | **v0.9.3** | `../gbe-studio/VERSION` |
+| `gbe-studio` | **v0.9.4** | `../gbe-studio/VERSION` |
 | `gbe-assets` | **v0.9.4** | `../gbe-assets/VERSION` |
 | `qiuyuan-dalu` | **`2898c9b`** | 该仓 git HEAD（★ **提交哈希，不是版本号** —— 见 §三） |
 
