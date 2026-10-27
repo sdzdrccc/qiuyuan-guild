@@ -844,9 +844,13 @@ function receiptHighlights(text) {
   const sec = sectionByKeyword(text, '契约回执');
   if (sec === null) return [];
   return sec.split(/\r?\n/)
-    .map(l => l.trim())
+    // ★ 先去强调符：回执里「无」几乎都写成 `**无**`，不去掉会被当成缺口
+    //   （`X-0068` 实证：67 条要点里大部分其实是合格声明）。
+    .map(l => l.replace(/\*\*/g, '').trim())
     .filter(l => l && !/^[#|>]/.test(l))
     .filter(l => !/[：:]\s*(无|无。|none|已对齐|已一致|不涉及)\s*$/.test(l))   // ★ 合格声明不是缺口
+    // ★ 带解释的「无」也是合格声明（`：无 —— 契约不在本仓…`）；但「无对应灵根」是缺口，不能误杀
+    .filter(l => !/[：:]\s*[★\s]*无(?=[。；;，,（(\s—–-]|$)/.test(l))
     .filter(l => !/^[-*_`\s]*(?:读不通|缺定义|无对应|未定义|缺节|需变更|待补|未覆盖|不一致)[^，。；;]{0,24}[：:]\s*$/.test(l))  // ★ 小标题行不算要点
     .filter(l => /读不通|缺定义|无对应|未定义|缺节|需变更|待补|未覆盖|不一致/.test(l))
     .map(l => l.replace(/^[-*]\s*/, '').slice(0, 90));
@@ -1145,6 +1149,14 @@ if (process.argv.includes('--self-test')) {
       receiptHighlights('# t\n## 契约回执\n- 消费：§3.1\n- 读不通：`character_attributes` 无键名清单').length, 1],
     ['C6', '★ 回执写「无」→ **不得**进要点（合格声明不是缺口）',
       receiptHighlights('# t\n## 契约回执\n- 读不通：无').length, 0],
+    ['C6', '★ 加粗的「**无**」→ 也不得进要点（X-0068 实证）',
+      receiptHighlights('# t\n## 契约回执\n- 读不通 / 缺定义 / 需变更：**无**。').length, 0],
+    ['C6', '★ 带解释的「**无** —— …」→ 仍是合格声明',
+      receiptHighlights('# t\n## 契约回执\n- 读不通 / 缺定义 / 需变更：**无** —— 契约不在本仓属硬纪律').length, 0],
+    ['C6', '★ 「：无（…）」与「：★ 无（…）」→ 仍是合格声明',
+      receiptHighlights('# t\n## 契约回执\n- 读不通：无（本轮不涉及）\n- 缺定义：★ 无（同上）').length, 0],
+    ['C6', '★ 「无对应灵根…」是真缺口 → 必须捞（不许误杀）',
+      receiptHighlights('# t\n## 契约回执\n- 读不通：无对应灵根时该档池空，口径待裁').length, 1],
     ['C6', '★ 回执节外的「读不通」→ 不捞（防误报）',
       receiptHighlights('# t\n- 读不通：xx\n\n## 契约回执\n- 无').length, 0],
     ['C6', '★ 回执里的「缺定义 / 需变更」也捞',
