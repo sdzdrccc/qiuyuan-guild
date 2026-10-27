@@ -99,6 +99,7 @@ const RETIRED = {
   purity_damage_min_ppm: '裁定 L/N 第六轮：改由 `purity_damage_influence_ppm` 一个标量给出',
   purity_damage_max_ppm: '裁定 L/N 第六轮：同上',
   cultiv_mult_ppm: '裁定 I 后改名为 `cultivation_mult_ppm`（现行名）',
+  qydl_realm_life_config: 'T-0134：寿元并入总表，改为 `qydl_realm_config`（同日取代，旧表删除）',
 };
 
 /**
@@ -146,12 +147,13 @@ function fieldNamesFromCsv(text) {
   return header.slice(1).map(s => s.trim()).filter(Boolean);
 }
 
-/** 从键值表 CSV 提取键名（列名 `key`） */
+/** 从键值表 CSV 提取键名（列名 `key`；★ dalu `T-0139` 起为 `param_key`，两种都认） */
 function configKeysFromCsv(text) {
   const lines = String(text).replace(/^\uFEFF/, '').split(/\r?\n/).filter(l => l.trim() !== '');
   if (lines.length < 2) return [];
   const header = lines[0].split(',').map(s => s.trim());
-  const ki = header.indexOf('key');
+  let ki = header.indexOf('param_key');
+  if (ki < 0) ki = header.indexOf('key');
   if (ki < 0) return [];
   return lines.slice(1).map(l => (l.split(',')[ki] || '').trim()).filter(Boolean);
 }
@@ -211,6 +213,9 @@ function tokensInBackticks(line) {
  */
 function scanLine(line, known, retired) {
   const out = [];
+  // ★ 命名规则表里的**反例行**在示范「不该怎么写」—— 那些名字本就不该存在。
+  //   不豁免的话，门禁会禁止文档写反例（`DATA-LAYOUT` §四·补 第 2 条实测）。
+  if (/反例/.test(String(line))) return out;
   for (const id of tokensInBackticks(line)) {
     if (!isManagedNamespace(id)) continue;
     if (known.has(id)) continue;
@@ -298,8 +303,25 @@ function docFiles() {
     if (t === null) continue;
     scanned++;
     const rel = path.relative(ROOT, p).replace(/\\/g, '/');
+    // ★ 表格里的「反例」列在示范不该出现的名字 —— 按表头定位列，把该格从扫描里摘掉。
+    //   （只认**表头写着「反例」**的列；普通正文照扫 —— `DATA-LAYOUT` §四·补 第 2 条实测）
+    let header = null;
     t.split(/\r?\n/).forEach((l, i) => {
-      for (const v of scanLine(l, known, RETIRED)) {
+      let line = l;
+      if (/^\s*\|/.test(l)) {
+        const cells = l.split('|').slice(1, -1).map((s) => s.trim());
+        if (cells.includes('反例')) { header = cells; return; }
+        if (header && /^\s*\|[\s:|-]+\|\s*$/.test(l)) return;
+        if (header) {
+          const ci = header.indexOf('反例');
+          if (ci >= 0 && cells[ci] && cells[ci].includes('`')) {
+            line = cells.map((c, j) => (j === ci ? '' : c)).join(' | ');
+          }
+        }
+      } else {
+        header = null;
+      }
+      for (const v of scanLine(line, known, RETIRED)) {
         (v.reason === 'unknown' ? unknown : retired).push(`${rel}:${i + 1} \`${v.id}\``);
       }
     });
@@ -342,6 +364,7 @@ if (process.argv.includes('--self-test')) {
     ['I1', 'MySQL 表名（来自建表 SQL）→ 不得误报', scanLine('表 `qydl_role`', KNOWN, RETIRED).length === 0, true],
     ['I1', '去前缀表名也算存在 → 不得误报', scanLine('落 `game_config`', KNOWN, RETIRED).length === 0, true],
     ['I1', '旧名（已改名）未标退役 → 必拦下', scanLine('增 `cultiv_mult_ppm`', KNOWN, RETIRED).some(v => v.reason === 'retired-no-marker'), true],
+    ['I1', '★ 命名规则反例行 → 不误报（反例本就不该存在）', scanLine('| 2 | 列名不带前缀 | 反例 `qydl_role.qydl_role_name` |', KNOWN, RETIRED).length === 0, true],
     ['I1', '旧名 + 标了改名 → 放行', scanLine('原为 `cultiv_mult_ppm`，现行名见下', KNOWN, RETIRED).length === 0, true],
     ['I1', '退役名 + 标了退役 → 放行', scanLine('`purity_mult_config` 已整表删除', KNOWN, RETIRED).length === 0, true],
     ['I1', '退役名 + 未标退役 → 必拦下', scanLine('落 `purity_mult_config` 5 档', KNOWN, RETIRED).some(v => v.reason === 'retired-no-marker'), true],
@@ -365,6 +388,7 @@ if (process.argv.includes('--self-test')) {
     ['I1', 'CSV 字段名解析', fieldNamesFromCsv('##var,a,b\n,1,2\n').join(',') === 'a,b', true],
     ['I1', '非 ##var 表 → 字段为空（不误取）', fieldNamesFromCsv('x,y\n1,2\n').length === 0, true],
     ['I1', '键值表键名解析', configKeysFromCsv('##var,key,value\n,a,1\n,b,2\n').join(',') === 'a,b', true],
+    ['I1', '★ 列名改 param_key 仍认（dalu T-0139 实证）', configKeysFromCsv('##var,param_key,param_value\n,a,1\n,b,2\n').join(',') === 'a,b', true],
     ['I1', '无 key 列 → 不误取', configKeysFromCsv('##var,x,y\n,1,2\n').length === 0, true],
     // PEND 待实现规则登记位（机制③ · 来源 X-0016）
     ['PEND', '空名单 → 不告警（不打破现状）', pendingNotice([]) === null, true],

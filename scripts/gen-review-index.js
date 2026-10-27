@@ -10,8 +10,9 @@
  *
  * ── 真源 ────────────────────────────────────────────────────────
  * · 审阅记录正文（**判定正本**）：`reviews/X-*.md`（每篇的 H1 标题 + 头部「状态」行）
- * · 内部源材料：  `reviews/work/<名>/`（目录即一篇）—— ★ `ADR-0032` 第三档（2026-10-19）
- * · 外部源材料：  `reviews/ext/<名>/`（目录即一篇）
+ * · 内部源材料：  `reviews/work/<agent>/`（一个 agent 一个文件夹 · 里面的 .md 逐份列出）
+ *   —— ★ `ADR-0032` 三档 ＋ `ADR-0038` 一 agent 一文件夹（2026-10-27）
+ * · 外部源材料：  `reviews/ext/<来源>/`（同上）
  *
  * ★ 注意：本文件注释里**不能出现** `*` 紧跟 `/` 的写法（哪怕是举例路径）——
  *   它会**提前闭合块注释**，把后面的行当代码解析（本文件第一版就这么炸的）。
@@ -97,6 +98,11 @@ function selfTest() {
   eq('★ 分区只数目录、不数文件（README 不算一篇报告）', pickDirNames(ents).join(','), 'a-x,b-x');
   eq('★ 空分区 ⇒ 空数组（不编造）', pickDirNames([]).length, 0);
 
+  // ⑥ ★ 同目录多份报告：**全部列出**（X-0062 实证：原实现只取第一份，第二份静默消失）
+  eq('★ 多份报告 → 全列（按名排序）', tierNote(['b-2026-10-27.md', 'a-2026-10-19.md']), 'a-2026-10-19.md · b-2026-10-27.md');
+  eq('★ 单份报告 → 原样', tierNote(['only.md']), 'only.md');
+  eq('★ 空目录 / 无 md ⇒ —（不编）', tierNote(['README.txt']), '—');
+
   let bad = 0;
   console.log('[gen-review-index] 反向测试（--self-test）');
   console.log('─'.repeat(60));
@@ -123,6 +129,14 @@ function listTierDirs(name) {
   return fs.existsSync(d) ? pickDirNames(fs.readdirSync(d, { withFileTypes: true })) : [];
 }
 
+/** 纯函数：某分区目录的「说明」列 —— **同目录多份报告必须全部列出**（ADR-0032：报告按日期累积）。
+ *  ★ 原实现只取 `sort()[0]` ⇒ 第二份起在视图里**静默消失**（坑 9 的视图版）。
+ */
+function tierNote(files) {
+  const md = (files || []).filter((f) => String(f).endsWith('.md')).sort();
+  return md.length ? md.join(' · ') : '—';
+}
+
 function buildMarkdown() {
   const reviews = fs.readdirSync(REVIEWS)
     .filter((f) => /^X-\d{4}\.md$/.test(f))
@@ -131,6 +145,10 @@ function buildMarkdown() {
 
   const works = listTierDirs('work');
   const exts = listTierDirs('ext');
+  const countReports = (tier, dirs) => dirs.reduce(
+    (n, d) => n + (fs.readdirSync(path.join(REVIEWS, tier, d)) || []).filter((f) => String(f).endsWith('.md')).length, 0);
+  const workReports = countReports('work', works);
+  const extReports = countReports('ext', exts);
 
   const L = [];
   L.push('# reviews/INDEX.md —— 审阅文档总索引');
@@ -138,7 +156,7 @@ function buildMarkdown() {
   L.push('> ★ **本文件是视图，不是第二真源** —— 由 `scripts/gen-review-index.js` 生成，**不得手工编辑**。');
   L.push('> 要改内容请改 `reviews/` 下的正文，然后重跑生成器（`node scripts/gen-review-index.js --write`）。');
   L.push('>');
-  L.push(`> 真源：审阅记录 \`reviews/X-*.md\`（${reviews.length} 篇） · 内部源材料 \`reviews/work/\`（${works.length} 篇） · 外部源材料 \`reviews/ext/\`（${exts.length} 篇）`);
+  L.push(`> 真源：审阅记录 \`reviews/X-*.md\`（${reviews.length} 篇） · 内部源材料 \`reviews/work/\`（${workReports} 份报告 / ${works.length} 个 agent 文件夹） · 外部源材料 \`reviews/ext/\`（${extReports} 份报告 / ${exts.length} 个来源文件夹）`);
   L.push('> 一行一事的台账仍在 `registry/cross-repo-ledger.md`（那边管**跨库交付**，这里管**目录视图**）。');
   L.push('');
   L.push('## 一、审阅记录（`reviews/X-*.md`）');
@@ -150,8 +168,8 @@ function buildMarkdown() {
   }
   L.push('');
   const tiers = [
-    { n: '二', key: 'work', label: '内部源材料（本仓派出去的 agent 各一份 · `reviews/work/`）', list: works },
-    { n: '三', key: 'ext', label: '外部源材料（非本仓派出 · `reviews/ext/`）', list: exts },
+    { n: '二', key: 'work', label: '内部源材料（一 agent 一文件夹 · `reviews/work/`）', list: works },
+    { n: '三', key: 'ext', label: '外部源材料（一来源一文件夹 · `reviews/ext/`）', list: exts },
   ];
   for (const t of tiers) {
     L.push(`## ${t.n}、${t.label}`);
@@ -162,10 +180,8 @@ function buildMarkdown() {
       L.push('| 目录 | 说明 |');
       L.push('|---|---|');
       for (const e of t.list) {
-        // 目录名即「来源-对象」，原样列出；说明读目录里排序第一的 .md（有就写，没有就 —）
-        let note = '—';
-        const files = fs.readdirSync(path.join(REVIEWS, t.key, e)).filter((f) => f.endsWith('.md'));
-        if (files.length) note = files.sort()[0];
+        // 目录名即「来源-对象」；说明列出目录里**全部** .md（同目录多份 = 按日期累积）
+        const note = tierNote(fs.readdirSync(path.join(REVIEWS, t.key, e)));
         L.push(`| [\`${t.key}/${e}/\`](${t.key}/${e}/) | ${note} |`);
       }
     }

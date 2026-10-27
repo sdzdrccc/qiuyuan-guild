@@ -50,6 +50,8 @@ reviews/                    ★ 完成记录（guild 侧编号 **`X-*`**；dalu 
   INDEX.md                  总索引（**视图** · 由 `scripts/gen-review-index.js` 生成，禁止手改）
   X-*.md                    逐篇清单看 `INDEX.md`，**本页不列区间、不记篇数**
                             （手抄必腐：2026-10-19 实测本行原写「到 X-0040 为止」，当时已到 X-0053 —— 连区间一起废除）
+  work/<agent>/             内部源材料：**一个 agent 一个文件夹**，报告平铺在内（`ADR-0038` · 已发布只读）
+  ext/<来源>/               外部源材料：同上
 registry/                   ★ 跨库登记（第三条铁律的落点）—— **全部是视图，非真源**
   cross-repo-ledger.md         跨库需求 / 交付台账（**索引视图**）
   agent-log.md                 按 agent 的完成记录视图（**派生视图 · 由 `scripts/gen-agent-log.js` 生成，禁止手改**）
@@ -63,6 +65,7 @@ scripts/                    ★ 校验脚本（没有校验脚本的契约 = 装
   check-asset-ref.js          资产引用 + 跨层一致性（A1~A5）
   check-version-pins.js       版本配套表 ↔ 契约版本（P1~P6：契约硬判 ＋ 兄弟仓版本钉**软判**）
   check-docs-index.js         docs/ 顶层索引覆盖率（E1~E3：黑户 / 幽灵）
+  check-review-docs.js        审阅源材料存放纪律（V1~V3：一 agent 一文件夹 / 命名与自报 / **已发布报告只读**）
   gen-review-index.js         `reviews/INDEX.md` 视图**生成器**（默认只校验）
   run-all-checks.js           门禁**汇总入口**（依次跑全部；跳过 ≠ 通过，单列展示）
   install-hooks.js            装机：把 `core.hooksPath` 指向 `scripts/hooks/`（pre-push 门禁）
@@ -163,6 +166,7 @@ node scripts/check-doc-anchors.js      # 文档↔门禁锚定（D1~D5）
 node scripts/check-asset-ref.js        # 资产引用 + 跨层一致性（A1~A5）
 node scripts/check-version-pins.js     # 版本配套表 ↔ 契约版本（P1~P6）
 node scripts/check-docs-index.js       # docs/ 顶层索引覆盖率（E1~E3）
+node scripts/check-review-docs.js      # 审阅源材料：布局 / 命名与自报 / 已发布只读（V1~V3）
 node scripts/gen-agent-log.js          # `agent-log` 视图一致性（逐字节比对；`--write` 重生成）
 # 任一脚本加 --self-test = ★ 反向测试（注入坏样本，断言必失败）
 # 清单唯一真源 = docs/CONVENTIONS.md §7.1（本处为副本，由 D1 双向核对）

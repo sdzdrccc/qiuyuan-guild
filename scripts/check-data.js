@@ -641,6 +641,21 @@ function parseLubanCsv(text) {
   return { fields, rows };
 }
 
+/**
+ * 纯函数：键值表行 → `{键: 值}`。
+ * ★ dalu `T-0139` 起表头由 `key/value` 改为 `param_key/param_value` —— 两种都认，
+ *   否则 R10 公式复现会**静默跳过**（`X-0062` 实测：跳过长得像绿）。
+ */
+function configRowsToMap(rows) {
+  const out = {};
+  for (const r of rows || []) {
+    const k = r.param_key !== undefined ? r.param_key : r.key;
+    const v = r.param_value !== undefined ? r.param_value : r.value;
+    if (k !== undefined && k !== '') out[k] = v;
+  }
+  return out;
+}
+
 /** 纯函数：㈠ 字段数不齐的行（多出的格子 = 未转义逗号） */
 function csvWidthIssues(parsed) {
   if (!parsed) return [];
@@ -878,8 +893,7 @@ function itemDomainIssues(parsedByTable) {
     if (!gc) {
       warn('R10', '找不到 `qydl_game_config.csv` → 公式① 手算复现（子规则㈣）跳过');
     } else {
-      const key = {};
-      gc.rows.forEach(r => { key[r.key] = r.value; });
+      const key = configRowsToMap(gc.rows);
       const params = {
         v: Number(key.spirit_root_variant_value),
         anchor: Number(key.spirit_root_anchor),
@@ -1018,6 +1032,8 @@ if (process.argv.includes('--self-test')) {
     ['R10', 'A 列空、字段从 B 列起 → 字段值正确', (() => { const p = parseLubanCsv('##var,k,v\n,x,7\n'); return p.rows[0].k === 'x' && p.rows[0].v === '7'; })(), true],
     ['R10', '字段数多一格（未转义逗号）→ 必拦下', csvWidthIssues(parseLubanCsv('##var,a,b\n,1,2,3\n')).length === 1, true],
     ['R10', '字段数齐 → 不得误报', csvWidthIssues(parseLubanCsv('##var,a,b\n,1,2\n')).length === 0, true],
+    ['R10', '键值表 key/value 形态 → 映射正常', configRowsToMap(parseLubanCsv('##var,key,value\n,a,1\n').rows).a === '1', true],
+    ['R10', '★ param_key/param_value 形态（dalu T-0139）→ 同样映射', configRowsToMap(parseLubanCsv('##var,param_key,param_value\n,a,1\n').rows).a === '1', true],
     ['R10', '未转义逗号的额外格子被点名', csvWidthIssues(parseLubanCsv('##var,a,comment\n,1,"x, y"\n'))[0].extra.join(',') === ' y"', true],
     ['R10', 'prob_ppm 合计 ≠ 1000000 → 必拦下', probPpmSum(parseLubanCsv('##var,prob_ppm\n,900000\n')) === 900000, true],
     ['R10', 'prob_ppm 合计 = 1000000 → 通过', probPpmSum(parseLubanCsv('##var,prob_ppm\n,900000\n,100000\n')) === 1000000, true],

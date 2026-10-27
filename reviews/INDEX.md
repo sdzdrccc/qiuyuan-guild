@@ -3,7 +3,7 @@
 > ★ **本文件是视图，不是第二真源** —— 由 `scripts/gen-review-index.js` 生成，**不得手工编辑**。
 > 要改内容请改 `reviews/` 下的正文，然后重跑生成器（`node scripts/gen-review-index.js --write`）。
 >
-> 真源：审阅记录 `reviews/X-*.md`（59 篇） · 内部源材料 `reviews/work/`（4 篇） · 外部源材料 `reviews/ext/`（0 篇）
+> 真源：审阅记录 `reviews/X-*.md`（64 篇） · 内部源材料 `reviews/work/`（23 份报告 / 5 个 agent 文件夹） · 外部源材料 `reviews/ext/`（0 份报告 / 0 个来源文件夹）
 > 一行一事的台账仍在 `registry/cross-repo-ledger.md`（那边管**跨库交付**，这里管**目录视图**）。
 
 ## 一、审阅记录（`reviews/X-*.md`）
@@ -69,16 +69,22 @@
 | [`X-0059`](X-0059.md) | X-0059 —— 采纳下游提案：§4 增补只读「角色列表」`GET /api/characters` | 已完成（★ 待大人复核） |
 | [`X-0060`](X-0060.md) | X-0060 —— 神识字段改名 ＋ 余量池（两份契约同一笔同步） | 已完成（★ 待大人复核 · 未提交） |
 | [`X-0061`](X-0061.md) | X-0061 —— 神识拆两段：境界段 ＋ 修炼段（上限改挂境界段） | 已完成（★ 待大人复核 · 未提交） |
+| [`X-0062`](X-0062.md) | X-0062 项目群周期复审 —— 四仓（guild / dalu / GBE 双仓）· 销号复核 · 判据失效 | 已完成（只读复审 · 未改四仓业务代码；仅修 1 处视图脚本 `gen-revi… |
+| [`X-0063`](X-0063.md) | X-0063 项目群周期复审（六仓全量）—— 第二路执行 · 与 X-0062 并列正本 | 已完成（只读复审 · 待大人复核） |
+| [`X-0064`](X-0064.md) | X-0064 项目群周期复审（六仓全量 · TraeCode 路）—— 三路并行之第三路 · 二值判定 ＋ 判据差异对照 | 已完成（只读复审 · 未改任何被审对象 · 待大人复核） |
+| [`X-0065`](X-0065.md) | X-0065 项目群复审（六仓全量 · 第四路执行）—— 销号复核 · 数值独立复算 · 四路判定对照 | 已完成（只读复审 · 未改任何被审对象一个字节；待大人复核） |
+| [`X-0066`](X-0066.md) | X-0066 审阅流程 v2.0 —— 一 agent 一文件夹 · 报告只读 | 已完成（★ 待大人复核） |
 
-## 二、内部源材料（本仓派出去的 agent 各一份 · `reviews/work/`）
+## 二、内部源材料（一 agent 一文件夹 · `reviews/work/`）
 
 | 目录 | 说明 |
 |---|---|
-| [`work/mimo-all-repos/`](work/mimo-all-repos/) | PROJECT-REVIEW-MiMoDesktop-MiMo-2026-10-19.md |
-| [`work/mimo-qiuyuan-dalu/`](work/mimo-qiuyuan-dalu/) | PROJECT-REVIEW-MiMoDesktop-MiMo-2026-10-01.md |
-| [`work/traecode-all-repos/`](work/traecode-all-repos/) | PROJECT-REVIEW-TraeCode-DeepSeek-V4.1-Flash-2026-10-19.md |
-| [`work/workbuddy-all-repos/`](work/workbuddy-all-repos/) | PROJECT-REVIEW-WorkBuddy-DeepSeek-V4.1-Flash-2026-10-19.md |
+| [`work/mimo/`](work/mimo/) | PROJECT-REVIEW-MiMoDesktop-MiMo-2026-10-01-qiuyuan-dalu.md · PROJECT-REVIEW-MiMoDesktop-MiMo-2026-10-19-all-repos.md |
+| [`work/qoderdesktop/`](work/qoderdesktop/) | PROJECT-REVIEW-QoderDesktop-Qoder-2026-10-27-gbe-assets.md · PROJECT-REVIEW-QoderDesktop-Qoder-2026-10-27-gbe-studio.md · PROJECT-REVIEW-QoderDesktop-Qoder-2026-10-27-lore.md · PROJECT-REVIEW-QoderDesktop-Qoder-2026-10-27-qiuyuan-dalu.md · PROJECT-REVIEW-QoderDesktop-Qoder-2026-10-27-qiuyuan-guild.md · PROJECT-REVIEW-QoderDesktop-Qoder-2026-10-27-ue-ai-ops.md |
+| [`work/traecode/`](work/traecode/) | PROJECT-REVIEW-TraeCode-DeepSeek-V4.1-Flash-2026-10-19-all-repos.md · PROJECT-REVIEW-TraeCode-MiMo-V2.6-Flash-2026-10-27-gbe-assets.md · PROJECT-REVIEW-TraeCode-MiMo-V2.6-Flash-2026-10-27-gbe-studio.md · PROJECT-REVIEW-TraeCode-MiMo-V2.6-Flash-2026-10-27-qiuyuan-dalu.md · PROJECT-REVIEW-TraeCode-MiMo-V2.6-Flash-2026-10-27-qiuyuan-guild.md · PROJECT-REVIEW-TraeCode-MiMo-V2.6-Flash-2026-10-27-shezhiku.md · PROJECT-REVIEW-TraeCode-MiMo-V2.6-Flash-2026-10-27-ue-ai-ops.md |
+| [`work/workbuddy/`](work/workbuddy/) | PROJECT-REVIEW-WorkBuddy-DeepSeek-V4.1-Flash-2026-10-19-all-repos.md · PROJECT-REVIEW-WorkBuddy-DeepSeek-V4.1-Flash-2026-10-27-all-repos.md |
+| [`work/zcode/`](work/zcode/) | PROJECT-REVIEW-ZCode-GLM-5.3-Flash-2026-10-27-gbe-assets.md · PROJECT-REVIEW-ZCode-GLM-5.3-Flash-2026-10-27-gbe-studio.md · PROJECT-REVIEW-ZCode-GLM-5.3-Flash-2026-10-27-qiuyuan-dalu.md · PROJECT-REVIEW-ZCode-GLM-5.3-Flash-2026-10-27-qiuyuan-guild.md · PROJECT-REVIEW-ZCode-GLM-5.3-Flash-2026-10-27-shezhiku.md · PROJECT-REVIEW-ZCode-GLM-5.3-Flash-2026-10-27-ue-ai-ops.md |
 
-## 三、外部源材料（非本仓派出 · `reviews/ext/`）
+## 三、外部源材料（一来源一文件夹 · `reviews/ext/`）
 
 （暂无）

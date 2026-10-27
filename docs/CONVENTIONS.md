@@ -11,7 +11,9 @@
 >
 > **升版规则**：本文件的每条约定若要**推翻或放宽**，必须**先开一条 ADR**（`docs/DECISIONS.md`），不许直接改。
 >
-> **版本**：**v0.7**（2026-10-19 · `X-0054`）—— **§7.4 人工检查点加第 3 号「L2 会审是否触发」**（机制⑥ 此前无载体，L2 只在口头存在）；**§7.1** 两条判据扩面：`D5` 从「禁抄版本号」扩到**禁抄四类易腐事实**（记录号区间 / 脚本计数 / CI 断言 / 里程碑状态）· `check-version-pins` 增 **`P6`** 兄弟仓版本钉（**软判：不一致只 warn**，读不到显式「跳过 · NOT a pass」）；`PENDING_RULES` 新增 **`wontfix`** 形态（不做也要留条目 + 理由，不许注释掉）。
+> **版本**：**v0.8**（2026-10-27 · `ADR-0038`）—— §7.1 脚本清单增 **`check-review-docs.js`（V1~V3）**：审阅源材料**一 agent 一文件夹**、报告命名与自报、**已发布报告只读**；汇总入口 10 → **11 条**。
+>
+> **上一版 v0.7**（2026-10-19 · `X-0054`）—— **§7.4 人工检查点加第 3 号「L2 会审是否触发」**（机制⑥ 此前无载体，L2 只在口头存在）；**§7.1** 两条判据扩面：`D5` 从「禁抄版本号」扩到**禁抄四类易腐事实**（记录号区间 / 脚本计数 / CI 断言 / 里程碑状态）· `check-version-pins` 增 **`P6`** 兄弟仓版本钉（**软判：不一致只 warn**，读不到显式「跳过 · NOT a pass」）；`PENDING_RULES` 新增 **`wontfix`** 形态（不做也要留条目 + 理由，不许注释掉）。
 >
 > **上一版 v0.6**（2026-09-30）—— 销号 `X-0018` 遗留：**§5.5** 四计数**分工**（可派生两项归生成器，不可派生两项**不填 0 冒充**）；**§5.6** 增「生成器」与「诚实边界」两行（`agent-log` 不再手工维护）；**§7.1** 脚本清单 `gen-agent-log.js` **去「待建」**。
 >
@@ -421,6 +423,7 @@ node scripts/check-data.js            # 契约 ↔ 配置表**内容** + 文档�
 node scripts/check-contract-gate.js   # 契约完备性：ROADMAP 声明「新增展开」的实体，contracts/ 须真有展开节（G1）
 node scripts/check-identifiers.js     # 跨文档标识符：文档引用的配置表 / DB 表须存在；退役名须同行标明（I1）
 node scripts/check-records.js         # 记录与台账齐备：必备节 / 双向核对 / 二值 / **分级** / 同批记录 / **契约回执** / **纪元自洽** / **未覆盖声明** / **坑登记**（C1~C9）
+node scripts/check-review-docs.js     # 审阅源材料：一 agent 一文件夹 / 报告命名与自报 / **已发布报告只读**（V1~V3）
 node scripts/check-doc-anchors.js     # 文档 ↔ 门禁锚定：脚本清单 / 规则 ID / skill 版本 / README **禁抄版本号与四类易腐事实**（D1~D5）
 node scripts/check-asset-ref.js       # 场景引用 ↔ 资源清单 ↔ 实际资产（A1~A5）
 node scripts/check-version-pins.js    # ★ 版本配套表 ↔ 契约版本（`registry/version-pins.md` ↔ `contracts/*.md`）＋ 兄弟仓版本钉**软判**（P1~P6）
@@ -429,7 +432,7 @@ node scripts/check-interfaces.js      # 跨模块接口 ↔ 契约（**待建**�
 node scripts/gen-agent-log.js         # `agent-log` 视图**生成器**（默认**只校验**：与仓库内文件逐字节比对；`--write` 重生成）
 node scripts/gen-review-index.js      # `reviews/INDEX.md` 审阅总索引视图**生成器**（同构：默认只校验 · `--write` 重生成 · 带 `--self-test`）
 
-node scripts/run-all-checks.js         # ★★ **汇总入口**（2026-10-13 · `X-0036` 追加）—— 依次跑上面**全部 8 个**，任一红即退出码 1
+node scripts/run-all-checks.js         # ★★ **汇总入口**（2026-10-13 · `X-0036` 追加）—— 依次跑上面**全部 11 个**，任一红即退出码 1
                                        #   ★ **故意不叫 `check-*`** ⇒ `D1` 不管它 —— 它**不是第 9 条判据，是入口**
                                        #   ★ 缺下游仓时**逐条列出「跳过 / 不可读 / 未执行」** —— ★ **跳过 ≠ 通过**
                                        #   ★ 已由 `scripts/hooks/pre-push` 在**每次 push 时自动跑**（`node scripts/install-hooks.js` 启用）

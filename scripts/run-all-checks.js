@@ -16,7 +16,8 @@
  *   · **CI 已有**：`.github/workflows/ci.yml`（`X-0044`）—— 上面那两条「无 CI / 配不了」已过期；
  *   · **覆盖点已有**：`check-data` / `check-identifiers` / `check-asset-ref` / `check-records`
  *     与本脚本共 5 处读 `process.env`（`GBE_ASSETS_REPO` / `QYD_DALU_REPO`）；
- *   · **汇总口径**：本文件跑 **10 条** = 8 条 `check-*` 判据 ＋ 2 条 `gen-*` 视图一致性。
+ *   · **汇总口径**：本文件跑 **11 条** = 9 条 `check-*` 判据 ＋ 2 条 `gen-*` 视图一致性
+ *     （2026-10-27 起加 `check-review-docs.js` —— `ADR-0038`）。
  *     ★ 文档写「N 个脚本」时以本文件的 `STEPS.length` 为准（`D5` 会核）。
  *   · ★ **历史陈述不改写**（上面那段保留原样），只在此追加现状 —— 改历史会让"为什么这么做"失传。
  *
@@ -62,6 +63,7 @@ const STEPS = [
     { file: 'check-version-pins.js', label: '版本配套表 ↔ 契约版本 ＋ 兄弟仓版本钉（软）' },
     { file: 'check-docs-index.js', label: 'docs/ 顶层索引覆盖率（黑户 / 幽灵）' },
     { file: 'check-records.js', label: '记录与台账齐备（C1~C9）' },
+    { file: 'check-review-docs.js', label: '审阅源材料：一 agent 一文件夹 / 命名与自报 / 已发布只读（V1~V3）' },
     { file: 'gen-agent-log.js', label: 'agent-log 视图一致性（默认只校验）' },
     { file: 'gen-review-index.js', label: 'reviews/INDEX 视图一致性（默认只校验）' },
 ];

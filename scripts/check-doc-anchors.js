@@ -440,7 +440,7 @@ function runAllEntryCount(scriptText) {
       if (runAll === null) { warn('D5', `${label}：写了脚本计数 ${n}，但读不出 \`run-all-checks.js\` 的 \`STEPS\` → 无法核对`); continue; }
       if (n !== runAll) {
         hit++;
-        err('D5', `${label}：写「跑 ${n} 个脚本」而 \`run-all-checks.js\` 实跑 **${runAll}** 条 —— 计数只住脚本（8 条判据 ＋ 2 条视图一致性），文档不复写`);
+        err('D5', `${label}：写「跑 ${n} 个脚本」而 \`run-all-checks.js\` 实跑 **${runAll}** 条 —— 计数只住脚本（9 条判据 ＋ 2 条视图一致性），文档不复写`);
       }
     }
     if (ci) for (const s of ciDenialClaims(t)) {

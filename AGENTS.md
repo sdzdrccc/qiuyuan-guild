@@ -263,12 +263,12 @@
 > ★ 来源：`X-0036` §追加「处理盲区问题」。★ **这一节治的是本仓最要命的一条** ——
 > ★★ **8 条 `check-*` 判据此前没有任何自动执行机制** ⇒ `check-records.js` 长期报 **35 错**、**而无人看见**。
 > ★ 2026-10-19 订正三处已过期说法（`X-0054` · G-1/G-6）：**CI 已有**（`.github/workflows/ci.yml` · `X-0044`）·
-> **脚本计数**要说口径（`run-all-checks` 跑 10 条 = 8 条判据 ＋ 2 条视图一致性）· **`process.env` 覆盖点**已有 5 处。
+> **脚本计数**要说口径（`run-all-checks` 跑 11 条 = 9 条判据 ＋ 2 条视图一致性）· **`process.env` 覆盖点**已有 5 处。
 
 ### 10.1 ★★ 一个命令跑全部
 
 ```bash
-node scripts/run-all-checks.js            # 依次跑 10 个脚本；任一红 → 退出码 1
+node scripts/run-all-checks.js            # 依次跑 11 个脚本；任一红 → 退出码 1
 node scripts/run-all-checks.js --quiet    # 只出汇总
 ```
 
