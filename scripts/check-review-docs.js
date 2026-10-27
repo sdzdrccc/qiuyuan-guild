@@ -113,7 +113,9 @@ function tierRootViolations(entries) {
 
 function git(args, { allowFail = false } = {}) {
   try {
-    return execFileSync('git', args, { cwd: ROOT, encoding: 'utf8' }).trim();
+    // ★ 末尾两个 'pipe'：默认 stderr 会继承到终端，探测型调用（cat-file -e）会把
+    //   「fatal: path ... does not exist」直接打到读者眼前 —— 那不是错误，是本规则的正常分支。
+    return execFileSync('git', args, { cwd: ROOT, encoding: 'utf8', stdio: ['ignore', 'pipe', 'pipe'] }).trim();
   } catch (e) {
     if (allowFail) return null;
     throw e;
