@@ -17,12 +17,12 @@
 
 | 项 | 值 | 真源 |
 |---|---|---|
-| `protocol-contract` | **v0.11** | `contracts/protocol-contract.md` |
-| `data-contract` | **v0.12** | `contracts/data-contract.md` |
+| `protocol-contract` | **v0.12** | `contracts/protocol-contract.md` |
+| `data-contract` | **v0.13** | `contracts/data-contract.md` |
 | `asset-ref-contract` | **v0.2** | `contracts/asset-ref-contract.md` |
 | `gbe-studio` | **v0.9.5** | `../gbe-studio/VERSION` |
 | `gbe-assets` | **v0.9.5** | `../gbe-assets/VERSION` |
-| `qiuyuan-dalu` | **`80b05af`** | 该仓 git HEAD（★ **提交哈希，不是版本号** —— 见 §三） |
+| `qiuyuan-dalu` | **`98dd971`** | 该仓 git HEAD（★ **提交哈希，不是版本号** —— 见 §三） |
 
 ★ **登记时间**：2026-10-27　|　★ **登记人**：`review`（`X-0063` / `X-0064`：GBE 双仓版本钉落后 2~3 版，本轮按 `VERSION` 实测更正）
 ★ **就地更新**：2026-10-25 `X-0060`（神识改名 ＋ 余量池 · **ADR-0036**）→ 同日 `X-0061`（神识拆两段 · **ADR-0037**）再升一版 ⇒ `data-contract` v0.9 → v0.10 → **v0.11**、`protocol-contract` v0.8 → v0.9 → **v0.10**。★ 两份契约同批改的是**同一件事的两面**（数据侧字段 ＋ 协议侧下行），★ **只升一份会让 `check-version-pins` 红**（判据 A）。

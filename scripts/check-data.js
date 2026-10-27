@@ -708,7 +708,7 @@ function computeGradeFormula(parsed, params) {
  * ★ 最要紧的三条：
  *   ① quality 上界**由档表算出**，越界必须拦（契约禁止写死 54 / 63）；
  *   ② 容量倍率 = 0 只允许给「上游未裁」那一档（现 = 地品）⇒ 别的档给 0 就是偷偷兜底；
- *   ③ 等级段轴末段仍是 54 —— ★ 这条把「四张表留六档」的已知分叉钉成看得见的：谁改成 63 就是替上游补了数 ⇒ 必红。
+ *   ③ 等级段轴末段 = 63（七档 × 九级，ADR-0044）—— 54 / 64 / 其它值都必红；55–63 的倍率是占位（沿用 +50%）。
  */
 /**
  * 纯函数：九境修为区间必须首尾相接（`ADR-0039`）。
@@ -832,7 +832,7 @@ function itemDomainIssues(parsedByTable) {
 	  }
 	}
 
-	// ㈤-4 等级段轴：区间连续不重叠，且**末段仍写 54**（★ 这条把"四张表留六档"的分叉钉成可见事实）
+	// ㈤-4 等级段轴：区间连续不重叠，且**末段 = 63**（七档 × 九级，ADR-0044）
 	if (axisTbl) {
 	  const rows = [...axisTbl.rows].sort((a, b) => Number(a.level_min) - Number(b.level_min));
 	  let next = 1;
@@ -843,11 +843,8 @@ function itemDomainIssues(parsedByTable) {
 	    next = Number(r.level_max) + 1;
 	  }
 	  const tail = Math.max(...rows.map(r => Number(r.level_max)));
-	  if (tail === 63) {
-	    out.push('storage_level_axis 末段被改到了 63 —— ★ 上游那张表只给到 54，地品行是**待裁**不是已配（X-0058 遗留 1）');
-	  }
-	  if (tail !== 54) {
-	    out.push(`storage_level_axis 末段 = ${tail}，期望 54（上游原文只给到 46–54 段）`);
+	  if (tail !== 63) {
+	    out.push(`storage_level_axis 末段 = ${tail}，期望 63（七档 × 九级，ADR-0044）`);
 	  }
 	}
 
@@ -1009,7 +1006,7 @@ function itemFixture(mut) {
   const mult = mk("qydl_storage_quality_mult_config",
     "##var,grade_idx,grade_name,mult_ppm\n,1,凡品,1000000\n,2,灵品,1500000\n,3,地品,0\n,4,天品,2500000\n");
   const axis = mk("qydl_storage_level_axis_config",
-    "##var,level_min,level_max,per_level_ppm\n,1,9,100000\n,10,18,150000\n,19,27,200000\n,28,36,250000\n,37,45,300000\n,46,54,500000\n");
+    "##var,level_min,level_max,per_level_ppm\n,1,9,100000\n,10,18,150000\n,19,27,200000\n,28,36,250000\n,37,45,300000\n,46,54,500000\n,55,63,500000\n");
   const enh = mk("qydl_enhance_rule_config",
     "##var,rank_idx,rank_name,level_min,level_max,rate_start_ppm,rate_end_ppm,fail_penalty,pity_max\n" +
     ",1,法器,1,9,1000000,800000,0,0\n,2,灵器,10,18,700000,400000,1,10\n,3,宝器,19,27,350000,200000,2,20\n,4,仙器,28,36,150000,50000,3,50\n,5,神器,28,36,150000,50000,3,50\n,6,先天至宝,0,0,0,0,0,0\n,7,混沌至宝,0,0,0,0,0,0\n,8,造化至宝,0,0,0,0,0,0\n");
@@ -1128,10 +1125,12 @@ if (process.argv.includes('--self-test')) {
         b["qydl_storage_quality_mult_config"].rows[1].grade_name = "灵品";
         b["qydl_storage_quality_mult_config"].rows[1].mult_ppm = "0";
       })).length > 0, true],
-    ['R10', '★ 等级段轴末段被改成 63 → 必拦下（那是替上游补数，大人裁的是「只改物品」）',
-      itemDomainIssues(itemFixture((b) => {
-        b["qydl_storage_level_axis_config"].rows[5].level_max = "63";
-      })).length > 0, true],
+    ['R10', '等级段轴末段 63 → 合法（七档 × 九级 · ADR-0044）',
+      itemDomainIssues(itemFixture()).length, 0],
+    ['R10', '等级段轴末段退到 54 → 必拦下（七档少了一段）',
+      itemDomainIssues(itemFixture((b) => { b["qydl_storage_level_axis_config"].rows.pop(); })).length > 0, true],
+    ['R10', '等级段轴末段 64 → 必拦下',
+      itemDomainIssues(itemFixture((b) => { b["qydl_storage_level_axis_config"].rows[6].level_max = "64"; })).length > 0, true],
     ['R10', '至宝档给了强化上限 → 必拦下（需求层：不分阶、不参与强化）',
       itemDomainIssues(itemFixture((b) => { b["qydl_enhance_rule_config"].rows[5].level_max = "9"; })).length > 0, true],
     ['R10', '储物规格指向不存在的物品 → 必拦下',
