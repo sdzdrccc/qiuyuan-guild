@@ -1,6 +1,6 @@
 # 资产引用契约（Asset Reference Contract）
 
-> **层**：L3 游戏侧（本仓 `contracts/`）　|　**状态**：v0.1 首版（Phase 0）
+> **层**：L3 游戏侧（本仓 `contracts/`）　|　**状态**：**v0.2**（2026-10-27 · `ADR-0041`：`scene` 必须符合协议 `sceneId` 规则 —— **小写 snake_case** `^[a-z][a-z0-9_]*$`、缺省 **`beizhen_huaiyin`**；示例同步）
 > **真源**：本文件负责**「游戏侧怎么引用资产」**。
 > **它定义引用，不定义资产本体。** 资产本体的契约在 **L2**：`gbe-assets/packages/schema/`（`@gbe/schema`）+ `catalog/schema/*.json`。
 
@@ -142,7 +142,7 @@
 
 ```yaml
 schema_version: "1"
-scene: main_city                 # 场景 ID
+scene: beizhen_huaiyin          # 场景 ID（小写 snake_case · 与协议 sceneId 同一字符串）
 description: 主城（万安城）
 
 # 环境设定
@@ -173,7 +173,7 @@ budget:
 | 字段 | 必填 | 规则 |
 |---|---|---|
 | `schema_version` | ✅ | 首版 `"1"` |
-| `scene` | ✅ | 场景 ID（**须与协议 `sceneId` 一致**，见 `protocol-contract.md`） |
+| `scene` | ✅ | 场景 ID：**小写 snake_case**，规则 **`^[a-z][a-z0-9_]*$`**（**v0.2 · `ADR-0041`**）；**须与协议 `sceneId` 为同一字符串**；不是文件路径、不带 kit 前缀、不用大写/点号；★ 上线后不改名 |
 | `env.up_axis` / `forward_axis` / `unit` | ✅ | **必须**与 §2 交付基准一致；不一致即报错 |
 | `references[].ref` | ✅ | 必须是 §1.1 的完整形式（**含 `@version`**） |
 | `references[].instances[].rotation` | ✅ | **弧度** |
@@ -206,7 +206,8 @@ budget:
 - [ ] 从 `gbe-assets/catalog/schema/asset.v2.schema.json` **抄录** `geometry` / `files` / `sockets` / `engines` 四个子对象的**字段清单**（本轮只取了顶层键，未展开子对象）
 - [ ] 补 `resource-manifest.yaml` 的**完整 JSON Schema**（当前仅 yaml 示意 + 规约表）
 - [ ] 与 L2 的 `kit.json` `budgets` 对齐，填 `budget.polycount_max` 等默认值
-- [ ] 确认 `sceneId` 命名规范（与协议契约联动）
+- [x] ✅ **确认 `sceneId` 命名规范** —— **已办（2026-10-27 · `ADR-0041`）**：小写 snake_case `^[a-z][a-z0-9_]*$`；
+      缺省 **`beizhen_huaiyin`**；与协议契约同一字符串（见 §5.2）
 - [ ] 确认「储物法宝 / 道具」这类**非建筑资产**是否也走本契约（当前只覆盖建筑与场景）
 
 ---

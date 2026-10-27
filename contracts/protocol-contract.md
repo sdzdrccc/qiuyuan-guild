@@ -1,6 +1,6 @@
 # 协议契约（Protocol Contract）
 
-> **层**：L3 游戏侧（本仓 `contracts/`）　|　**状态**：**v0.10**（2026-10-25 **神识拆两段 ＋ 上限改挂境界段** —— `DECISIONS.md` **ADR-0037**：`character_attributes` 新增 `shenshiFromRealm` / `shenshiCultivation`（★ 两段都下发，客户端不许自己减）；`shenshiPoolMax` 的输入由总强度改为**境界段**（修炼不撑池子）；★ 强度仍是单值、`ADR-0029` ④ 不变；上一版 v0.9 = 神识改名 ＋ 余量池 · ADR-0036）
+> **层**：L3 游戏侧（本仓 `contracts/`）　|　**状态**：**v0.11**（2026-10-27 **sceneId 命名规范 ＋ `delete_character` 登记为 deferred** —— `ADR-0041`：`sceneId` = **小写 snake_case** `^[a-z][a-z0-9_]*$`、缺省 **`beizhen_huaiyin`**（与实现一致；原 `main_1` 是旧默认）；`ADR-0042`：**批准做**删除角色动作，**本期标 `deferred`**（身份取会话、`confirm: true` 二次确认）；上一版 v0.10 = 神识拆两段 · ADR-0037）
 > **真源**：本文件。客户端与服务端**双向**只读消费。
 > **来源**：从 Codex 原型的 `MessageTypes` + `docs/03-protocol-and-api.md`（216 行）**提炼**，非新设计。
 > **战略地位**：服务端**重写 Go**（已定）时，**Java 侧最有价值的产出就是本契约**（协议 + 数据表）——那 22 个 Spring 服务会被丢弃，本契约不会。
@@ -29,6 +29,7 @@
 | `type` | **snake_case**，请求与响应不共用词表（见 §2 / §3） |
 | `data` | 对象；无参数时传 `{}`（**不省略 `data`**） |
 | `data` 内的字段 | ★ **一律 camelCase**（如 `accountId` / `hasCharacter` / `rootType`）—— **v0.4 新增（`ADR-0023` ⑥）**。此前只规定了 `type` 的风格，按它类推会写成 snake_case，**而写错了看不出来** |
+| `sceneId` | ★ **场景/分线的逻辑 ID**：**小写 snake_case**，规则 **`^[a-z][a-z0-9_]*$`**（**v0.11 · `ADR-0041`**）。缺省 **`beizhen_huaiyin`**。★ **不是文件路径、不带 kit 前缀、不用大写/点号**；★ 一旦上线**不改名**（改名 = 一次数据迁移）；资产侧 `scene` 必须用**同一个字符串** |
 
 **★★ 身份字段不得出现在请求体里**（**v0.4 新增 · `ADR-0023` ①**）：
 
@@ -62,6 +63,7 @@
 | `list_characters` | `{}` | 列出**本会话账号**的角色（**单角色制：长度 0 或 1** —— 裁定 B）。★ **`accountId` 已删**（v0.4 · `ADR-0023` ①）—— **身份取自会话** |
 | `create_character` | `{name, gender}` | 建角（★ **`accountId` 已删** · 同上）；`gender 0=男/1=女`；**随机灵根/资质/体质/纯度**；**重名须拒**（裁定 C）。★ 其中**体质**按**灵根准入**抽 —— **有对应灵根才有概率觉醒**（**ADR-0021**）；**无对应灵根时该档池空 ⇒ 回落 = 落凡体**（**`ADR-0022`** · 见 `data-contract.md` §10.1b） |
 | `logout` | `{}` | 离开世界（广播 `player_left`）并返回登录态；**会话保留**，可重新登录 |
+| `delete_character` | `{confirm: true}` | ★ **批准做 · 本期 `deferred`**（**v0.11 · `ADR-0042`**）：删除**本会话当前角色**（单角色制）；`confirm` 必须是 `true`（客户端二次弹窗）；身份取会话，**不带 `accountId` / `characterId`**。★ 实现前客户端按钮保持禁用；从属数据清理范围在实现时按 `data-contract` 定 |
 
 > ★ **v0.2 改动（ADR-0019 ①④）**：`username` / `email` → **`phone`**；`playerId` → **`accountId`**
 > （与 `data-contract.md` §3.0 的 `account_id` 对齐）。
@@ -72,7 +74,7 @@
 
 | `type` | `data` | 说明 |
 |---|---|---|
-| `enter_world` | `{characterId, token, sceneId, x, y, z, rotY}` | 进世界；`sceneId` 缺省 `main_1`；名字/性别**以存档为权威** |
+| `enter_world` | `{characterId, token, sceneId, x, y, z, rotY}` | 进世界；`sceneId` 缺省 **`beizhen_huaiyin`**（**v0.11 · `ADR-0041`**；原 `main_1` 是旧默认）；`sceneId` 须符合 §1 命名规则；名字/性别**以存档为权威** |
 | `player_move` | `{x, y, z, rotY}` | 位置上报，**客户端 10Hz 节流** |
 
 ### 2.3 成长
@@ -171,6 +173,8 @@
 | `create_ok` | `{character:{...}}` | 建角成功 |
 | `create_fail` | `{message}` | 建角失败 |
 | `logout_ok` | `{}` | 退出确认（客户端据此回登录界面） |
+| `delete_ok` | `{}` | ★ **`deferred`**（**v0.11 · `ADR-0042`**）：删除角色成功；客户端回建角屏 |
+| `delete_fail` | `{message}` | ★ **`deferred`**：删除失败（未确认 / 角色不存在 / 服务端拒绝） |
 
 ### 3.2 世界与移动
 
@@ -472,7 +476,10 @@ ID 格式 **`gong_<root>`**（`gong_jin` / `gong_mu` / `gong_shui` / `gong_huo` 
       见 **§3.3.1**（键名全部取 `data-contract.md` §7.2「词条键名」，★ 不另立一名）。
       ★ 连带留下两条**新的**待裁口径（不在本条范围内）：`armorBreak` 的百分比单位 ·
       寿元是否进一级面板（现按"不进"处理，§3.3.1 未列 `life`）。
-- [ ] 确认 `sceneId` 命名规范（与 `asset-ref-contract.md` §5.2 联动）
+- [x] ✅ **确认 `sceneId` 命名规范** —— **已办（2026-10-27 · `ADR-0041`）**：小写 snake_case `^[a-z][a-z0-9_]*$`，
+      缺省 **`beizhen_huaiyin`**；与 `asset-ref-contract.md` §5.2 联动（同一字符串）。见 §1 表 / §2.2
+- [ ] **实现 `delete_character`** —— ★ **已批准做，本期 `deferred`**（`ADR-0042`）：契约登记请求/回包，
+      客户端按钮**保持禁用**；实现时定从属数据清理范围（不阻塞当前里程碑）
 - [ ] 核对剩余「占位」法术（`control` / `stealth` / `fasting`）在正式工程是否保留（`detect` 已随 `ADR-0036` 实装）
 - [ ] 评估 WebSocket 是否需**消息版本协商**（旧客户端兼容靠「未带 token 放行」，不是长久之计）
 - [ ] **客户端段协议的分层差**（**M2 前须裁**）—— 本契约 §1 定 **WS + JSON**；上游《技术架构》**§3.2** 定客户端走 **TCP + UDP/KCP + Protobuf**（商业化期双通道）。
@@ -488,6 +495,7 @@ ID 格式 **`gong_<root>`**（`gong_jin` / `gong_mu` / `gong_shui` / `gong_huo` 
 
 | 版本 | 日期 | 变更 |
 |---|---|---|
+| **v0.11** | **2026-10-27** | ★ **sceneId 命名规范 ＋ `delete_character` 登记 deferred**（`ADR-0041` / `ADR-0042` · 卡 `X-0072`）：① §1 新增 `sceneId` 规则 —— **小写 snake_case** `^[a-z][a-z0-9_]*$`、缺省 **`beizhen_huaiyin`**（原 `main_1` 是旧默认）、上线不改名、资产侧同字符串；② §2.1 新增 **`delete_character {confirm:true}`**、§3.1 新增 `delete_ok` / `delete_fail`，★ **批准做但本期 `deferred`**（身份取会话、客户端按钮暂禁用）；③ §8 勾销 sceneId 待办、新增 delete_character 实现待办。★ 未改既有字段语义 · 未新增其它消息方向。 |
 | **v0.10** | **2026-10-25** | ★ **神识拆两段 ＋ 上限改挂境界段**（`DECISIONS.md` **ADR-0037** · 卡 `X-0061` · 数据侧 `data-contract.md` v0.11 同笔）：① §3.3.1 新增 **`shenshiFromRealm` / `shenshiCultivation`** —— 强度 = 境界段 ＋ 修炼段，★ 两段都下发，★ 客户端不得自己减（把公式抄第二遍是本仓老坑）；② **`shenshiPoolMax` 的输入换成境界段**（`上限 = 境界段 × shenshi_pool_factor`）⇒ **修炼段不撑池子**；③ §5.1 角色对象仍只给总和 `shenshiIntensity`（明细归面板包）；④ ★ `ADR-0029` ④ 与 `ADR-0036` 的改名**全部保留**，★ 未新增消息方向 · 未改既有字段语义。 |
 | **v0.9** | **2026-10-25** | ★ **神识字段改名 ＋ 余量池**（`DECISIONS.md` **ADR-0036**）—— ① §3.3.1 `character_attributes` 的 `shenshi` → **`shenshiIntensity`**，新增 **`shenshiPool` / `shenshiPoolMax`**；② §5.1 `character` 对象同步（强度单值 ＋ 余量池）；③ §3.4 `spell_effect` 增三个可选字段 **`shenshiPool` / `shenshiPoolMax` / `message`**，§6.1 `detect`（神识探查）由「占位」转**已实装**，消耗 = 余量上限的 5%；④ 口径：**强度是属性、余量是消耗池**；上限 = 强度 × 全局系数、**不落库**；⑤ ★ `ADR-0029` ④ **不变**：强度仍不得画成 `420/520`；顶栏那根条画的是余量。★ 未新增消息方向 · 未改既有字段语义。 |
 | **v0.8** | **2026-10-20** | ★ **M5 物品批：补两条业务拒绝回包**（`DECISIONS.md` **ADR-0034** · 卡 `X-0058` 追加 · 下游 `T-0115`）—— §3.5 加 **`inventory_fail`** ＋ **`storage_fail`**（各带 `reason` 枚举）。<br>**为什么补**：`ADR-0023` ③ 定了分工 —— 协议层错误回 `error`、**业务不成立回 `*_fail`**；而 §2.5 / §2.6 那九个物品与储物动作**只有成功下行**（`inventory` / `enhance_result` / `storage`），拒绝**无处可回**。★ 后果不是"少一条消息"，是**服务端只能把"境界不足"和"冷却中"都说成"操作失败"**，客户端无法区分（判据 2 要的就是这个区分）。<br>**三条口径**：① ★ **不改九个动作的请求体与成功回包**（只加拒绝侧）；② `reason` 是**机器码**、`message` 是**给人看的话**，两者**都要带** —— 只给文案，客户端就得靠中文字符串分支（本仓老坑同型）；③ ★ 物品侧**不新增下行成功包**（`use_item` 成功仍走 §3.5 `inventory` 刷新，不另立 `use_ok`）。<br>★ **§2.2~§2.8 一字未动 · 未新增消息方向 · 未改任何既有字段语义 · ADR 纯追加**。 |
