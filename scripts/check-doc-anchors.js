@@ -376,7 +376,12 @@ function recordSpanClaims(text) {
   const out = [];
   for (const line of String(text).split(/\r?\n/)) {
     const m = line.match(/\bX-(\d{4})(?:\.md)?\s*(?:…|\.\.\.|~|–|—|-)\s*X-(\d{4})/);
-    if (m) out.push(`X-${m[1]}…X-${m[2]}`);
+    if (!m) continue;
+    // ★ 历史叙述里的**固定过去区间**不会腐（「当时 X-0003~X-0006 漏登」）——
+    //   与 README 的「当前清单」不是一回事；带历史标记的行放行。
+    //   `X-0063` G-4：D5 扩到 CONVENTIONS 后，§5.1 那段补登叙述即属此类。
+    if (/历史|补登|此前|当时|原先|旧记/.test(line)) continue;
+    out.push(`X-${m[1]}…X-${m[2]}`);
   }
   return out;
 }
@@ -424,6 +429,9 @@ function runAllEntryCount(scriptText) {
   const targets = [
     { file: 'README.md', label: 'README 门面' },
     { file: 'AGENTS.md', label: 'AGENTS 纪律' },
+    // ★ 2026-10-27（X-0063 G-4）：`CONVENTIONS.md` 也声明了脚本清单与计数，
+    //   此前 D5 不扫它 ⇒ 「8 个脚本」写错 3 轮没人管。补进扫描面（扩域必补覆盖用例）。
+    { file: 'docs/CONVENTIONS.md', label: '工程约定' },
   ];
   let checked = 0;
   for (const { file, label } of targets) {
@@ -544,6 +552,10 @@ if (process.argv.includes('--self-test')) {
     // D5 扩面 · 门面禁写易腐事实（X-0054 · G-1）
     ['D5', '★ 抄了记录号区间 → 必抓（G-1 的实证形态）', recordSpanClaims('  X-0001.md … X-0040.md     一篇不落').join(','), 'X-0001…X-0040'],
     ['D5', '★ 单个记录号不算区间（不许误报）', recordSpanClaims('见 `reviews/X-0053.md`').length, 0],
+    ['D5', '★ 历史叙述里的固定过去区间 → 放行（补登说明不是当前清单）',
+      recordSpanClaims('补登：`reviews/X-0003 ~ X-0006` 四篇正文一直没进 ledger 索引').length, 0],
+    ['D5', '★ 无历史标记的区间 → 仍必抓（不许借历史口子放行当前清单）',
+      recordSpanClaims('当前清单：X-0001 … X-0040').length, 1],
     ['D5', '★「本仓没有 CI」→ 必抓', ciDenialClaims('## 10. 门禁怎么跑（★ **本仓没有 CI** · 2026-10-13 新增）').length, 1],
     ['D5', '★ 历史叙述「此前无 hook」→ 不得误报成 CI 断言', ciDenialClaims('★ 当时无 CI、无 git hook（这是历史）').length, 0],
     ['D5', '★ 里程碑行带 ⏭ → 必抓', milestoneStatusRows('| **M1** | 建号 | ⏭ **下一步** |').length, 1],

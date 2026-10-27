@@ -87,6 +87,14 @@ function skipLines(text) {
     return String(text).split(/\r?\n/).filter(l => SKIP_PAT.test(l)).map(l => l.trim());
 }
 
+/** 纯函数：从一段失败输出里挑出失败行。
+ *  ★ 不截断 —— `X-0063` 实证：`slice(0,8)` 把 42 条错显示成 8 条，两路会话据此报出 41/42 两个数。
+ *    「只显示一部分」在汇总里**没有提示**，读者会当成全部。
+ */
+function failureLines(text) {
+    return String(text).split(/\r?\n/).filter(l => /✗|FAIL|不通过/.test(l)).map(l => l.trim());
+}
+
 function selfTest() {
     const cases = [];
     const t = (id, name, got, want) => cases.push({ id, name, ok: got === want, got, want });
@@ -95,6 +103,8 @@ function selfTest() {
     t('S', '含 SKIPPED → 抓得到', skipLines('-- T4 SKIPPED - no editor').length, 1);
     t('S', '★ 正常输出 → 不得误报', skipLines('✓ C2 台账 ↔ 正文 双向核对通过').length, 0);
     t('S', '空输出 → 不得误报', skipLines('').length, 0);
+    t('F', '★ 12 条失败 → 全列（不截断；X-0063 实证 42 显示成 8）',
+        failureLines(Array.from({ length: 12 }, (_, i) => '✗ 错 ' + i).join('\n')).length, 12);
     const failed = cases.filter(c => !c.ok);
     console.log('  [run-all-checks] 反向测试（--self-test）\n');
     cases.forEach(c => console.log('  ' + (c.ok ? '✓' : '✗') + ' ' + c.id + '  ' + c.name +
@@ -106,7 +116,7 @@ function selfTest() {
 
 function main() {
     console.log('============================================================');
-    console.log(' [guild] run-all-checks —— 本仓 8 个校验脚本（汇总入口）');
+    console.log(' [guild] run-all-checks —— 本仓 11 个脚本（9 条判据 ＋ 2 条视图一致性）');
     console.log(' root: ' + ROOT);
     console.log('============================================================\n');
 
@@ -120,8 +130,9 @@ function main() {
             r.out.trim().split(/\r?\n/).slice(-4).forEach(l => console.log('    ' + l));
         }
         if (!r.ok && !r.missing) {
-            r.out.trim().split(/\r?\n/).filter(l => /✗|FAIL|不通过/.test(l)).slice(0, 8)
-                .forEach(l => console.log('    ' + l.trim()));
+            const lines = failureLines(r.out);
+            console.log('    ✗ 失败 ' + lines.length + ' 行（全列）：');
+            lines.forEach(l => console.log('    ' + l));
         }
         console.log('');
     }
