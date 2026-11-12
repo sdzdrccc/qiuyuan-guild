@@ -769,50 +769,103 @@ function itemDomainIssues(parsedByTable) {
 	const itemDef = parsedByTable['qydl_item_def_config'];
 	const itemCat = parsedByTable['qydl_item_category_config'];
 	const gradeTbl = parsedByTable['qydl_quality_grade_config'];
+	const catGradeTbl = parsedByTable['qydl_category_grade_config'];
 	const treasureTbl = parsedByTable['qydl_storage_treasure_def_config'];
 	const multTbl = parsedByTable['qydl_storage_quality_mult_config'];
 	const axisTbl = parsedByTable['qydl_storage_level_axis_config'];
 	const enhanceTbl = parsedByTable['qydl_enhance_rule_config'];
 
 	if (gradeTbl && itemDef) {
-	  // ㈤-1 每轨的阶区间必须**从 1 起、连续、无缝**（缝里掉的 quality 会显示成空品质名）
-	  const byTrack = new Map();
-	  for (const r of gradeTbl.rows) {
-	    const tk = String(r.track);
-	    if (!byTrack.has(tk)) byTrack.set(tk, []);
-	    byTrack.get(tk).push(r);
+	  // ㈤-1 表 A（`qydl_quality_grade_config`）= **一把尺**：grade_idx 与 tier 都从 1 起、连续、无缝。
+	  //   ★ 2026-11-12（X-0079）：品阶已拆成 A（尺）/ B（品类→档）两表，旧模型「单表 + track 列」作废。
+	  const aRows = [...gradeTbl.rows].sort((a, b) => Number(a.grade_idx) - Number(b.grade_idx));
+	  const aTier = new Map();                       // grade_idx -> {min,max}
+	  let nextIdx = 1;
+	  let nextTier = 1;
+	  for (const g of aRows) {
+	    if (Number(g.grade_idx) !== nextIdx) {
+	      out.push(`quality_grade 的 grade_idx 不连续：期望 ${nextIdx}，实为 ${g.grade_idx}`);
+	    }
+	    if (Number(g.tier_min) !== nextTier) {
+	      out.push(`quality_grade 档「${g.grade_name}」阶区间不连续：期望从 ${nextTier} 起，实为 ${g.tier_min}`);
+	    }
+	    if (Number(g.tier_max) < Number(g.tier_min)) {
+	      out.push(`quality_grade 档「${g.grade_name}」区间倒挂 ${g.tier_min}–${g.tier_max}`);
+	    }
+	    aTier.set(String(g.grade_idx), { min: Number(g.tier_min), max: Number(g.tier_max) });
+	    nextIdx = Number(g.grade_idx) + 1;
+	    nextTier = Number(g.tier_max) + 1;
 	  }
-	  for (const [tk, list] of byTrack) {
-	    list.sort((a, b) => Number(a.tier_min) - Number(b.tier_min));
+
+	  // ㈤-2 表 B（`qydl_category_grade_config`）= 品类 → 档：base_grade_idx 必须指向表 A；
+	  //   tier 0/0 = 继承表 A 那一档的区间；★ 每个品类的合法档区间必须从 1 起、连续。
+	  const bByCat = new Map();                      // category_id -> [{min,max}]
+	  for (const b of (catGradeTbl ? catGradeTbl.rows : [])) {
+	    const cid = String(b.category_id);
+	    const lo = Number(b.tier_min) || 0;
+	    const hi = Number(b.tier_max) || 0;
+	    let range = null;
+	    if (lo === 0 && hi === 0) {
+	      range = aTier.get(String(b.base_grade_idx)) || null;
+	      if (!range) {
+	        out.push(`category_grade 品类 ${cid} 的 base_grade_idx=${b.base_grade_idx} 在表 A 里没有`);
+	      }
+	    } else {
+	      range = { min: lo, max: hi };
+	      if (hi < lo) out.push(`category_grade 品类 ${cid} 档「${b.grade_name}」区间倒挂 ${lo}–${hi}`);
+	    }
+	    if (!range) continue;
+	    if (!bByCat.has(cid)) bByCat.set(cid, []);
+	    bByCat.get(cid).push(range);
+	  }
+	  for (const [cid, list] of bByCat) {
+	    list.sort((a, b) => a.min - b.min);
 	    let next = 1;
-	    for (const g of list) {
-	      if (Number(g.tier_min) !== next) {
-	        out.push(`quality_grade 轨 ${tk} 档「${g.grade_name}」阶区间不连续：期望从 ${next} 起，实为 ${g.tier_min}`);
+	    for (const r of list) {
+	      if (r.min !== next) {
+	        out.push(`category_grade 品类 ${cid} 的档区间不连续：期望从 ${next} 起，实为 ${r.min}`);
 	      }
-	      if (Number(g.tier_max) < Number(g.tier_min)) {
-	        out.push(`quality_grade 轨 ${tk} 档「${g.grade_name}」区间倒挂 ${g.tier_min}–${g.tier_max}`);
-	      }
-	      next = Number(g.tier_max) + 1;
+	      if (r.max < r.min) out.push(`category_grade 品类 ${cid} 的档区间倒挂 ${r.min}–${r.max}`);
+	      next = r.max + 1;
 	    }
 	  }
-	  if (byTrack.size !== 4) {
-	    out.push(`quality_grade 应有**四轨**（品阶 / 器道八档 / 符阵三阶九级 / 灵植三品十级），实得 ${byTrack.size}`);
-	  }
-	  // ㈤-2 每个物品的 quality 必须落在所属轨道的算出来的域内（★ 上界由档表给，不写死）
-	  const maxOf = new Map();
-	  for (const [tk, list] of byTrack) {
-	    maxOf.set(tk, Math.max(...list.map(g => Number(g.tier_max))));
-	  }
-	  const cats = new Set(itemCat ? itemCat.rows.map(r => String(r.category_id)) : []);
+
+	  // ㈤-3 每个物品：分类链上**优先**用表 B 的品类档；★ 不配行的品类（材料 / 灵石等）直接落表 A 的整把尺
+	  //   （M5 / DATA-LAYOUT：表 A 是尺，表 B 只给「要自己的叫法」的品类）。
+	  //   `track` 必须等于品类链根声明的 `grade_track`，`quality` 必须落在合法区间内。
+	  const catById = new Map((itemCat ? itemCat.rows : []).map(r => [String(r.category_id), r]));
+	  const aMax = aTier.size ? Math.max(...[...aTier.values()].map(x => x.max)) : 0;
 	  for (const r of itemDef.rows) {
-	    const mx = maxOf.get(String(r.track));
-	    if (mx === undefined) {
-	      out.push(`item_def 物品 ${r.item_id}(${r.name}) 的轨道 ${r.track} 在档表里没有行`);
-	    } else if (Number(r.quality) < 1 || Number(r.quality) > mx) {
-	      out.push(`item_def 物品 ${r.item_id}(${r.name}) quality=${r.quality} 越界（轨 ${r.track} 合法域 1–${mx}）`);
-	    }
-	    if (itemCat && !cats.has(String(r.category_id))) {
+	    const leaf = String(r.category_id);
+	    if (itemCat && !catById.has(leaf)) {
 	      out.push(`item_def 物品 ${r.item_id}(${r.name}) 的分类 ${r.category_id} 不存在`);
+	    } else {
+	      // 沿 parent 走到根：记根品类（读 grade_track）与最近一个在表 B 里声明过档的品类
+	      let cid = leaf;
+	      let root = null;
+	      let bCatId = null;
+	      let guard = 0;
+	      while (cid && cid !== '0' && guard++ < 32) {
+	        const c = catById.get(cid);
+	        if (!c) break;
+	        root = c;
+	        if (!bCatId && bByCat.has(cid)) bCatId = cid;
+	        cid = String(c.parent_id || '0');
+	      }
+	      if (!root) {
+	        out.push(`item_def 物品 ${r.item_id}(${r.name}) 的分类链为空（category 表里找不到）`);
+	      } else {
+	        if (String(root.grade_track) !== String(r.track)) {
+	          out.push(`item_def 物品 ${r.item_id}(${r.name}) 的 track=${r.track} 与分类 ${root.category_id} 的 grade_track=${root.grade_track} 不一致`);
+	        }
+	        const ranges = bCatId ? bByCat.get(bCatId) : [{ min: 1, max: aMax }];
+	        const q = Number(r.quality);
+	        const ok = q >= 1 && ranges.some(x => q >= x.min && q <= x.max);
+	        if (!ok) {
+	          const desc = ranges.map(x => (x.min === x.max ? `${x.min}` : `${x.min}–${x.max}`)).join(' / ');
+	          out.push(`item_def 物品 ${r.item_id}(${r.name}) quality=${r.quality} 越界（${bCatId ? `分类 ${bCatId}` : '表 A'} 合法域 ${desc}）`);
+	        }
+	      }
 	    }
 	    if (Number(r.stack_max) < 1) {
 	      out.push(`item_def 物品 ${r.item_id}(${r.name}) stack_max=${r.stack_max}，必须 ≥ 1`);
@@ -848,25 +901,32 @@ function itemDomainIssues(parsedByTable) {
 	  }
 	}
 
-	// ㈤-5 强化规则：档 1–5 的 level_max 单调不减；档 6–8（三档至宝）必须为 0（不分阶、不参与强化）
+	// ㈤-5 强化规则：非至宝档按 rank_idx 排序，level_max 单调不减、成功率区间方向正确；
+	//   ★ 至宝档（`rank_name` 含「至宝」）必须 `level_max=0`（不分阶、不参与强化）。
+	//   ★ 2026-11-12（X-0079）：改**按名字判**，不再写死 6–8 —— 器道九档后至宝在 7–9，
+	//     旧判据会把「神器」误当至宝（实测 1 条假红）。
 	if (enhanceTbl) {
-	  const by = new Map(enhanceTbl.rows.map(r => [String(r.rank_idx), r]));
+	  const rowsE = [...enhanceTbl.rows];
+	  const isZb = (r) => /至宝/.test(String(r.rank_name || ''));
+	  const zbs = rowsE.filter(isZb);
+	  if (zbs.length !== 3) {
+	    out.push(`enhance_rule 应有 3 个至宝档（先天 / 混沌 / 造化），实得 ${zbs.length}`);
+	  }
+	  for (const r of zbs) {
+	    if (Number(r.level_max) !== 0) {
+	      out.push(`enhance_rule 档 ${r.rank_idx}(${r.rank_name}) 是至宝档，需求层明写"不分阶、不参与强化"，上限却 = ${r.level_max}`);
+	    }
+	  }
+	  const normal = rowsE.filter((r) => !isZb(r))
+	    .sort((a, b) => Number(a.rank_idx) - Number(b.rank_idx));
 	  let prev = 0;
-	  for (const rank of ['1', '2', '3', '4', '5']) {
-	    const r = by.get(rank);
-	    if (!r) { out.push(`enhance_rule 缺档 ${rank}`); continue; }
+	  for (const r of normal) {
 	    if (Number(r.level_max) < prev) {
-	      out.push(`enhance_rule 档 ${rank}(${r.rank_name}) 上限 ${r.level_max} 低于上一档 ${prev} ⇒ 不单调`);
+	      out.push(`enhance_rule 档 ${r.rank_idx}(${r.rank_name}) 上限 ${r.level_max} 低于上一档 ${prev} ⇒ 不单调`);
 	    }
 	    prev = Number(r.level_max);
 	    if (Number(r.rate_start_ppm) < Number(r.rate_end_ppm)) {
-	      out.push(`enhance_rule 档 ${rank} 成功率区间方向反了（${r.rate_start_ppm} → ${r.rate_end_ppm}）`);
-	    }
-	  }
-	  for (const rank of ['6', '7', '8']) {
-	    const r = by.get(rank);
-	    if (r && Number(r.level_max) !== 0) {
-	      out.push(`enhance_rule 档 ${rank}(${r.rank_name}) 是至宝档，需求层明写"不分阶、不参与强化"，上限却 = ${r.level_max}`);
+	      out.push(`enhance_rule 档 ${r.rank_idx} 成功率区间方向反了（${r.rate_start_ppm} → ${r.rate_end_ppm}）`);
 	    }
 	  }
 	}
@@ -996,13 +1056,17 @@ function itemDomainIssues(parsedByTable) {
 function itemFixture(mut) {
   const mk = (name, text) => [name, parseLubanCsv(text)];
   const grade = mk("qydl_quality_grade_config",
-    "##var,track,grade_idx,grade_name,tier_min,tier_max,color_key,note\n" +
-    ",1,1,凡品,1,9,white,\n,1,2,灵品,10,18,green,\n,1,3,地品,19,27,blue,\n,1,4,天品,28,36,purple,\n" +
-    ",1,5,仙品,37,45,gold,\n,1,6,神品,46,54,red,\n,1,7,圣品,55,63,rainbow,\n" +
-    ",2,1,法器,1,1,,\n,3,1,灵,1,9,,\n,4,1,灵草,1,10,,\n");
+    "##var,grade_idx,grade_name,tier_min,tier_max,color_key,note\n" +
+    ",1,凡品,1,9,white,\n,2,灵品,10,18,green,\n,3,地品,19,27,blue,\n,4,天品,28,36,purple,\n" +
+    ",5,仙品,37,45,gold,\n,6,神品,46,54,red,\n,7,圣品,55,63,rainbow,\n");
+  const catGrade = mk("qydl_category_grade_config",
+    "##var,category_id,grade_idx,grade_name,base_grade_idx,tier_min,tier_max,note\n" +
+    ",1,1,凡丹,1,0,0,\n,1,2,灵丹,2,0,0,\n,1,3,地丹,3,0,0,\n,1,4,天丹,4,0,0,\n" +
+    ",1,5,仙丹,5,0,0,\n,1,6,神丹,6,0,0,\n,1,7,圣丹,7,0,0,\n" +
+    ",2,1,法器,1,1,1,\n");
   const item = mk("qydl_item_def_config",
     "##var,item_id,name,category_id,track,quality,enhance_rank,realm_req,stack_max\n,1001,补气丹,1,1,1,0,0,99\n");
-  const cat = mk("qydl_item_category_config", "##var,category_id,name,is_currency\n,1,丹药,0\n");
+  const cat = mk("qydl_item_category_config", "##var,category_id,name,parent_id,grade_track,is_currency\n,1,丹药,0,1,0\n");
   const mult = mk("qydl_storage_quality_mult_config",
     "##var,grade_idx,grade_name,mult_ppm\n,1,凡品,1000000\n,2,灵品,1500000\n,3,地品,0\n,4,天品,2500000\n");
   const axis = mk("qydl_storage_level_axis_config",
@@ -1012,7 +1076,7 @@ function itemFixture(mut) {
     ",1,法器,1,9,1000000,800000,0,0\n,2,灵器,10,18,700000,400000,1,10\n,3,宝器,19,27,350000,200000,2,20\n,4,仙器,28,36,150000,50000,3,50\n,5,神器,28,36,150000,50000,3,50\n,6,先天至宝,0,0,0,0,0,0\n,7,混沌至宝,0,0,0,0,0,0\n,8,造化至宝,0,0,0,0,0,0\n");
   const tre = mk("qydl_storage_treasure_def_config", "##var,item_id,storage_type,base_capacity\n,1001,袋,10\n");
   const base = {};
-  for (const [k, v] of [grade, item, cat, mult, axis, enh, tre]) base[k] = v;
+  for (const [k, v] of [grade, catGrade, item, cat, mult, axis, enh, tre]) base[k] = v;
   if (mut) mut(base);
   return base;
 }
@@ -1118,6 +1182,10 @@ if (process.argv.includes('--self-test')) {
     ['R10', '物品域合法样本 → 一条都不许报', itemDomainIssues(itemFixture()).length, 0],
     ['R10', 'quality 越出档表算出的上界 → 必拦下',
       itemDomainIssues(itemFixture((b) => { b["qydl_item_def_config"].rows[0].quality = "999"; })).length > 0, true],
+    ['R10', '品类档指向不存在的表 A 档 → 必拦下',
+      itemDomainIssues(itemFixture((b) => { b["qydl_category_grade_config"].rows[0].base_grade_idx = "99"; })).length > 0, true],
+    ['R10', '物品 track 与品类 grade_track 不一致 → 必拦下',
+      itemDomainIssues(itemFixture((b) => { b["qydl_item_def_config"].rows[0].track = "2"; })).length > 0, true],
     ['R10', '档区间留缝（地品从 20 起）→ 必拦下',
       itemDomainIssues(itemFixture((b) => { b["qydl_quality_grade_config"].rows[2].tier_min = "20"; })).length > 0, true],
     ['R10', '倍率 0 给到**非地品**那一档 → 必拦下（偷偷兜底的红线）',

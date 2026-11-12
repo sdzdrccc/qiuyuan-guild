@@ -84,7 +84,7 @@ ue-client/                                    ← 唯一的 UE 工程
 **PC 的「安装包」怎么来**：UE 只出「可运行目录」（`.exe` + 资源），**安装包要再套一层**——
 `Inno Setup` / `NSIS`（免费、脚本化）打成 `.exe` 安装器；或直接**走 Steam / Epic 平台**（它们自带分发）。
 
-**命令骨架**（`<ENGINE>` = `F:/zxc/UE_5.8`）：
+**命令骨架**（`<ENGINE>` = `F:/zxc/Epic Games/UE_5.9`）：
 
 ```bat
 :: Windows Shipping 包
@@ -105,7 +105,7 @@ ue-client/                                    ← 唯一的 UE 工程
 
 | 链路 | 前置 | 实测 | 阻塞 M1？ |
 |---|---|---|---|
-| **Windows** | UE + MSVC | ⚠️ **MSVC `14.44.35207` 被 UE 5.8 禁用**（`14.44.0-14.44.35210`） | 🔴 是 |
+| **Windows** | UE + MSVC | ✅ **合规**（`cl.exe` 的 `ProductVersion` = `14.44.35228`；目录名 `14.44.35207` 不是版本号；5.9 的禁用区间是 `14.44.0-35210` —— 判据见 `ENVIRONMENT.md` §2.1.1） | ❌ 否 |
 | **Android** | Android Studio（SDK / NDK / JDK 17） | ❌ **未配**（`ANDROID_HOME` 为空） | ❌ 否（M1 不打包） |
 | **iOS** | **macOS + Xcode** | ❌ **本机是 Windows，物理上不可出包** | ❌ 否 |
 

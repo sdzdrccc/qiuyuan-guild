@@ -1,6 +1,7 @@
 # PROJECT-STRUCTURE.md —— 工程结构详案
 
-> **层**：L4 规范层（本仓 `docs/`）　|　**状态**：v2.0（草案 · **M1 施工图**）
+> **层**：L4 规范层（本仓 `docs/`）　|　**状态**：v2.1（草案 · **M1 施工图**）
+> **v2.1 变更**：**引擎锁定 5.8.1 → 5.9.0**（**ADR-0047**；迁移实测见 dalu `records/T-0186.md`）—— §3.1 锁定段与 §3.2「引擎与启动」的路径同步；后者原重复的「Launcher / VersionSelector / 注册」三行**收成指针**（真源 `ENVIRONMENT.md` §2.1.2，且其中前两项的「未装」已被实测推翻）。★ §3.2 里「按 UE 5.8 实测」的创建向导记录**保留**（历史事实；5.9 向导未重测）。
 > **v2.0 变更**：**§5「M1 需要的 C++ 骨架」第 2 条更正** —— 原写「**HTTP 客户端**封装（登录 / 建角走 **REST**，用引擎自带 `FHttpModule`）」**与契约矛盾**：契约 **§1** 定客户端 ↔ 服务端 = **WebSocket + JSON**（`/ws`），**REST 是 §4「GM 后台 ↔ 服务端」那条线**。★ **同源残留（`ROADMAP.md` §2 M1 第 1 项）已于 2026-09-28 更正（ADR-0018），本处当时漏改** —— 现补齐，并补 `Build.cs` 模块依赖说明（**不加 `WebSockets` 客户端连不上**）。闭合 `qiuyuan-dalu/records/T-0011.md` §六-2 遗留。
 > **v1.9 变更**：**§3.2「路线 B（套模板）」更正为「非向导等价物」** —— 原写「`TemplateDefs.ini` 给出的、**与向导等价**的创建规则」**有误**。实测 UE 5.8 源码 `GameProjectUtils::CreateProjectFromTemplate`：向导在「复制模板」之外另有 **6 件事**（写八组 ini 默认值 / 写 `ProjectID` / 建 `Content/` / `.uproject` 反序列化重存 / 跑 `GenerateProjectFiles` / 两遍占位符替换）。套模板脚本只复刻复制规则（已补 `Content/`）→ 产物**可编译可开图，但 ini 与向导不同**。§3.2 加**覆盖范围说明**；另将「**先清空目标目录**」措辞精确化 —— **路线 A 的「改名」亦须先腾位**（目标名已存在则失败），闭环 `qiuyuan-dalu/records/T-0003.md` 遗留③。
 > **v1.8 变更**：**§3.2 创建向导选项 → 按 UE 5.8 引擎源码实测重写**（**ADR-0017**）—— 原「六选项」中**三项与 5.8 实际不符**：① 「Target Platform 勾 Desktop + Mobile」**无法照做**（`EHardwareClass` 只有 Desktop / Mobile **单选**，且其性质是**默认画质档**而非平台开关）；② ③ Starter Content / Ray Tracing **UE 5.6 起已从向导移除**。§3.2 另补 **「目录名 ≠ 工程名」的实操路径**与**本机引擎启动方式**（无 Launcher / 无 VersionSelector / 引擎未注册）。§3.4 §7.2 §9 同步。
@@ -89,8 +90,8 @@ ue-client/                         ← 这就是 UE 工程根（不是子目录�
 2. **UE 生成的四个目录一律不提交**：`Binaries/`（可执行）、`Intermediate/`、`Saved/`（日志 / 自动保存）、`DerivedDataCache/`。**提交它们 = 仓库被二进制污染**。
 3. **monorepo 里放 UE 工程是官方支持的** —— UE 用 `Default.uprojectdirs` 机制在子目录中发现工程。无需额外配置。
 
-> **UE 版本必须全队锁定同一小版本** —— 本项目锁定 **UE 5.8.1**（锁定值与查法见 `ENVIRONMENT.md` §2.1），纪律见 `CONVENTIONS.md` §9。
-> **理由**：UE 的**小版本之间不保证资产兼容** —— 5.8.1 存的 `.uasset`，被更高补丁版打开会升级且**不可回退**。
+> **UE 版本必须全队锁定同一小版本** —— 本项目锁定 **UE 5.9.0**（锁定值与查法见 `ENVIRONMENT.md` §2.1），纪律见 `CONVENTIONS.md` §9。
+> **理由**：UE 的**小版本之间不保证资产兼容** —— 5.9.0 存的 `.uasset`，被更高补丁版打开会升级且**不可回退**。
 > 多工具 / 云电脑协作下，版本漂移会直接损坏资产。**这是硬约束，不是建议。**
 
 ---
@@ -209,18 +210,14 @@ DefaultGraphicsPerformance=Scalable     ; 或 Maximum
 
 #### 引擎与启动（**本机实测**）
 
-引擎在 **`F:/zxc/UE_5.8/`**（**非** `C:` 默认位）。**本机三处与常规安装不同**（真源见 `ENVIRONMENT.md` §2.1.2）：
-
-| 项 | 本机实况 | 影响 |
-|---|---|---|
-| **Epic Launcher** | ❌ **未装** | 不能从 Launcher 启动 |
-| **`UnrealVersionSelector.exe`** | ❌ **不存在** | 右键 `.uproject` 的「切换引擎版本 / 生成工程文件」**不可用** |
-| **引擎注册** | `HKLM\SOFTWARE\EpicGames\Unreal Engine\` 下**只有 `4.0`**；`HKCU\...\Unreal Engine\Builds` **为空** | `.uproject` 的 `EngineAssociation` **不能填 `"5.8"`**（无注册项可解析） |
+引擎在 **`F:/zxc/Epic Games/UE_5.9/`**（**非** `C:` 默认位）。
+本机的 Launcher / `UnrealVersionSelector` / 注册现状**以 `ENVIRONMENT.md` §2.1.2 为真源**，此处不复制 ——
+一句话：**有 Launcher、右键关联可用；`HKLM` 无 5.9 版本项，所以工程里填 `"5.9"` 不参与解析**。
 
 → **推荐启动方式：直接指定编辑器**（最稳、可复现、可写进记录）
 
 ```
-"F:/zxc/UE_5.8/Engine/Binaries/Win64/UnrealEditor.exe" "<工程根>/QiuyuanDalu.uproject"
+"F:/zxc/Epic Games/UE_5.9/Engine/Binaries/Win64/UnrealEditor.exe" "<工程根>/QiuyuanDalu.uproject"
 ```
 
 首次打开时工程内**无 `Binaries/`** → 编辑器会提示「模块缺失，是否重新编译？」→ **选「是」**（编译 `QiuyuanDalu` 模块）。
