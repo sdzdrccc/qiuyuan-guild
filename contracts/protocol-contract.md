@@ -194,7 +194,7 @@
 | `breakthrough_result` | `{success, chance, consumed, required, realmId, layer, mp}` | 突破结果（服务端权威） |
 | `character_attributes` | 属性面板 + `equipment` 摘要 | 数值**已含装备词条与灵根增益**（`data-contract.md` §6.2）。★ **完整字段清单见 §3.3.1**（v0.7 补）；★ 面板字段**直接摊在 `data` 顶层**，不再套一层 `attributes` |
 | `character_attributes_fail` | `{message}` | 属性查询被拒（未登录 / 尚无角色 / 服务端读库失败）。★ **v0.7 随 §3.3.1 一并补** —— 有了请求动作与成功包，就必须有配对的失败包，否则只能退回 §3.0 的通用 `error`，★ 而那是**协议层**（发错了）的出口，会把"业务拒绝"演成"客户端 bug" |
-| `meditation_result` | `{characterId, gained, mp, maxMp, meditating}` | 打坐结算 |
+| `meditation_result` | `{characterId, gained, mp, mpMax, meditating}` | 打坐结算 |
 
 > `character_attributes` 内容：气血 / 物攻 / 法攻 / 物防 / 法防 / 神识 / 命中 / 闪避 / **暴击率 / 暴击伤害 / 暴击抗性** / 格挡 / 破防 **+ 8 系元素攻抗** + `equipment`（已穿戴摘要）。
 > **字段语义与公式见 `data-contract.md` §6**（本契约不重复）。
@@ -210,20 +210,20 @@
 
 | 键（= §7.2 原文） | 面板名 | M1 来源 | 说明 |
 |---|---|---|---|
-| `maxHp` / `maxMp` | 气血 / 灵力 上限 | 境界配置 `hp_max` / `mp_max` | 与 §5.1 角色对象同名同义 |
-| `physAttack` / `magAttack` | 物攻 / 法攻 | `phy_atk` / `mag_atk` | |
-| `physDefense` / `magDefense` | 物防 / 法防 | `phy_def` / `mag_def` | |
+| `hpMax` / `mpMax` | 气血 / 灵力 上限 | 境界配置 `hp_max` / `mp_max` | 与 §5.1 角色对象同名同义 |
+| `physAtk` / `magAtk` | 物攻 / 法攻 | `phys_atk` / `mag_atk` | |
+| `physDef` / `magDef` | 物防 / 法防 | `phys_def` / `mag_def` | |
 | `shenshiIntensity` / `shenshiFromRealm` / `shenshiCultivation` | 神识强度 / **境界段** / **修炼段** | 境界段 = §4.2 `RealmConfig.shenshi_step` **按台阶累加**现算（★ 2026-10-27 `ADR-0045`：原 §4.1 两列已删；渡劫圆满 511000）；修炼段 = `Role.shenshi_cultivation`；强度 = 两者之和 | ★ 强度是**单值属性**，不画当前/上限；★ **两段都下发，客户端不许自己减**（那是把公式抄第二遍）。`ADR-0036` 改名 ＋ `ADR-0037` 拆段 |
 | `shenshiPool` / `shenshiPoolMax` | 神识余量 / 余量上限（**消耗池**） | `Role.shenshi_pool` ＋ `Role.shenshi_pool_updated_ms`；上限 = **境界段** × 全局系数（★ `ADR-0045`：现值 **1** ⇒ 上限就是境界段本身），不落库 | ★ 上限只看境界段 ⇒ 修炼不撑池子（`ADR-0037`）。顶栏那根条画的是这一对，★ 不是强度 |
-| `hit` / `dodge` | 命中 / 闪避 | `hit_rate` / `dodge_rate` | 百分比，见下方单位口径 |
-| `crit` / `critDamage` / `critResist` | 暴击率 / 暴击伤害 / 暴击抗性 | `crit_rate` / `crit_dmg` / `crit_resist` | 术语已按裁定 F 统一（原「会心」） |
-| `armorBreak` | 破防 | `def_break` | ⚠️ **单位待裁**（见本节末） |
-| `block` / `blockDamage` | 格挡 / 格挡减伤 | `block_rate` / `block_reduce` | |
+| `hitRate` / `dodgeRate` | 命中 / 闪避 | `hit_rate` / `dodge_rate` | 百分比，见下方单位口径 |
+| `critRate` / `critDmg` / `critResist` | 暴击率 / 暴击伤害 / 暴击抗性 | `crit_rate` / `crit_dmg` / `crit_resist` | 术语已按裁定 F 统一（原「会心」） |
+| `defBreak` | 破防 | `def_break` | ⚠️ **单位待裁**（见本节末） |
+| `blockRate` / `blockReduce` | 格挡 / 格挡减伤 | `block_rate` / `block_reduce` | |
 | `moveSpeed` | 移速 | `speed` | |
 | `attackSpeed` / `castSpeed` | 攻速 / 施法速度 | ★ **基准 1.00**（v0.14 `ADR-0046`：语义 = **系数**，不是速度值） | 加成来源 = **功法（M6）／法宝（M5）**，两条线都未落地 ⇒ M1 恒发 **`1.00`**；★ 客户端见 1.00 就显示 1.00，**不许**当"没有这个数"去显「暂无来源」。★ 与 `moveSpeed`（境界裸值 100）**不是同一把尺**，不许互相顶替 |
 | `life` / `lifeMax` | 寿元**剩余 / 上限**（年） | `Role.life_current` ＋ §4.2 `RealmConfig.life_max_years` | ★ v0.14 `ADR-0046` 新增（销 §8「寿元是否进一级面板」待办）。★ 显示形态「剩余 / 上限」，**不画进度条**（寿元不是战斗中来回跳的资源）；★ 上限按**大境界**取（九境 120→6000 年），不按层 |
 | `hp` / `mp` | 当前气血 / 灵力 | `Role.hp` / `Role.mp` | 面板要显示「当前 / 上限」，故一并给 |
-| `elemAtk` / `elemRes`（**下标数组，各 8 项**）/ `elementPenetration` | 二级 · 八系攻防与元素穿透 | ★ **M1 无来源** | ★ 词根仍取 §7.2 的 `elemAtk0~7` / `elemRes0~7`，★ 但**传输形状是下标数组**（§7.2 自己写的「下标即灵根枚举」就是这个意思）⇒ 数组比 16 个平铺键少一半噪声，且下标语义不变。配置表无加成列，且双灵根取 `+20%/+10%` 还是 `+25%` **未裁** ⇒ 八个元素全 `null` |
+| `elemAtk` / `elemRes`（**下标数组，各 8 项**）/ `elemPen` | 二级 · 八系攻防与元素穿透 | ★ **M1 无来源** | ★ 词根仍取 §7.2 的 `elemAtk0~7` / `elemRes0~7`，★ 但**传输形状是下标数组**（§7.2 自己写的「下标即灵根枚举」就是这个意思）⇒ 数组比 16 个平铺键少一半噪声，且下标语义不变。配置表无加成列，且双灵根取 `+20%/+10%` 还是 `+25%` **未裁** ⇒ 八个元素全 `null` |
 | `equipment` | 已穿戴摘要 | ★ **M5** | M1 固定回**空数组**（★ 不是 `null` —— "没穿装备"与"没有装备系统"要能区分） |
 
 **三条硬口径**：
@@ -235,7 +235,7 @@
    §3.3 原注「数值**已含装备词条与灵根增益**」是**终态**描述 ⇒ 装备词条 **M5** 并入、
    灵根增益**待数值裁定**并入，★ 两者都**不改字段名**，只改服务端算法。
    ★ 所以 M1 的角色页**不许**写成"已含增益"（那是把没做的说成做了）。
-3. ⚠️ **`armorBreak` 单位待裁**：配置里 `def_break` 第 3 层 = `0.30`，
+3. ⚠️ **`defBreak` 单位待裁**：配置里 `def_break` 第 3 层 = `0.30`，
    而 §7.1 把它和 `crit_rate`（`5.50` 表示 5.50%）并列在同一张百分比属性表里 ——
    ⇒ 到底是 **0.30%** 还是 **30%**，两种读法差 100 倍。★ 契约**不猜**：本字段先按配置原值下发，
    单位由 `data-contract.md` §8.2 那条裁定补，★ 已登记（`X-0051` §三）。
@@ -245,10 +245,10 @@
 
 | `type` | `data` | 说明 |
 |---|---|---|
-| `combat_hit` | `{attackerId, attackerName, targetId, targetName, skill, damage, miss, isCrit, isBlock, multiplier, targetHp, targetMaxHp, attackerXinmo, attackerKuangzao, attackerDanDu}` | 战斗命中（**全员广播**） |
+| `combat_hit` | `{attackerId, attackerName, targetId, targetName, skill, damage, miss, isCrit, isBlock, multiplier, targetHp, targetHpMax, attackerXinmo, attackerKuangzao, attackerDandu}` | 战斗命中（**全员广播**） |
 | `combat_death` | `{targetId, killerId}` | 目标陨落（广播） |
-| `combat_resurrect` | `{id, hp, maxHp}` | 复活回满（广播） |
-| `spell_effect` | `{spell, casterId, casterName, shield/heal/hp/maxHp?, shenshiPool/shenshiPoolMax/message?}` | 法术效果广播（护盾 / 治疗 / buff ／神识探查） |
+| `combat_resurrect` | `{id, hp, hpMax}` | 复活回满（广播） |
+| `spell_effect` | `{spell, casterId, casterName, shield/heal/hp/hpMax?, shenshiPool/shenshiPoolMax/message?}` | 法术效果广播（护盾 / 治疗 / buff ／神识探查） |
 | `spell_fail` | `{message}` | 施法失败（灵力不足 / 神识余量不足 / 目标不存在…） |
 | `chat_private` | `{fromId, fromName, text}` | 传音术私聊（**仅目标收到**） |
 | `chat_private_sent` | `{toId, fromName, text}` | 传音回执（施法者） |
@@ -346,7 +346,7 @@
 {
   "id": 1, "accountId": 1, "name": "云中子", "gender": 0,
   "realmId": 1, "layer": 3,
-  "mp": 320.0, "maxMp": 320.0,
+  "mp": 320.0, "mpMax": 320.0,
   "exp": 7320.0, "expMax": 9000.0,
   "roots": [
     { "rootType": 4, "purity": 88.0, "sortOrder": 0 },
@@ -355,16 +355,16 @@
   "spiritualRootQuality": 3,
   "bodyTier": 1, "bodyName": "风雷冰灵体",
   "origin": "Origin.NorthZhen.Huaiyin",
-  "xinmo": 12.5, "kuangzao": 8.0, "danDu": 0.0,
+  "xinmo": 12.5, "kuangzao": 8.0, "dandu": 0.0,
   "shenshiIntensity": 19.0,
   "shenshiPool": 190.0, "shenshiPoolMax": 190.0,
-  "hp": 100.0, "maxHp": 100.0
+  "hp": 100.0, "hpMax": 100.0
 }
 ```
 
 > ★ **`exp` / `expMax` 是 v0.6 补登记（`ADR-0029` ②）** —— 修为值与其上限。
 > **`exp` 落库**（`data-contract.md` §3.1 `Role.exp`，「突破用」），**`expMax` 不落库** —— 它 = **当前境界配置的 `exp_max`**，
-> ★ 与 `origin` / `maxHp` / `maxMp` 同属「**由配置派生、只出现在协议视图**」那一类（理由见下方 `origin` 那条：
+> ★ 与 `origin` / `hpMax` / `mpMax` 同属「**由配置派生、只出现在协议视图**」那一类（理由见下方 `origin` 那条：
 > ★ 把派生字段塞进 `Role` 会造出双真源）。
 > ★★ **`exp` ≠ `mp`** —— 修为（突破）与灵力（施法）是两个独立资源（`data-contract.md` §3.1 注），
 > ★ 历史上合并过一次又拆开 ⇒ 客户端**不得**拿 `mp` 当 `exp` 显示。
@@ -379,7 +379,7 @@
 > | `data-contract.md` §3.1 `Role` | **落库存哪些字段** |
 > | **本节（`protocol-contract.md` §5.1）** | **客户端看到哪些字段** |
 >
-> ⇒ **派生而不落库的字段（`origin`、`maxHp` / `maxMp` …）只属于后者。**
+> ⇒ **派生而不落库的字段（`origin`、`hpMax` / `mpMax` …）只属于后者。**
 > ★ 把派生字段塞进 `Role` 会**造出双真源**（存一份、配置一份，迟早不一致）。
 
 **枚举**：全部**引用 `data-contract.md`**，本契约不重复定义。
@@ -421,7 +421,7 @@
   "instanceId": 12, "itemId": "wp_qingfengjian", "name": "清风剑",
   "type": 0, "slot": 0, "defSlot": 1, "quantity": 1, "requiredRealm": 0,
   "desc": "以玄铁铸就的轻盈长剑，剑身清鸣如风。",
-  "affixes": { "physAttack": 15, "attackSpeed": 5, "hit": 5 },
+  "affixes": { "physAtk": 15, "attackSpeed": 5, "hitRate": 5 },
   "use": {}, "bound": false
 }
 ```

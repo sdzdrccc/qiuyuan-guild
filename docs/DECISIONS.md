@@ -70,6 +70,7 @@
 | ADR-0045 | **神识境界段收成单字段并搬进大境界总表**：`RealmConfig.shenshi_step`（一境一个数）按台阶**累加** ⇒ 层次表不再有神识列 · 逐档翻倍**九境填满**（100→25600 ⇒ 建角 100、渡劫圆满 511000）· **突破不额外大涨** · 未定哨兵 `0/0` → **-1** · `shenshi_pool_factor` 现值 **10 → 1**（⇒ 余量上限 = 境界段）· **部分推翻 ADR-0037 的境界段来源 ＋ supersede ADR-0039 的 `0/0` 哨兵** | `accepted` | 2026-10-27 | 大人「初始神识强度太低了，改成十倍」→「神识余量上限 = 境界段」→「逐档翻倍，只用一个字段」→「不要大涨，把字段改到大境界配置表」→「直接按翻倍填入数据，再补回上游」 |
 | ADR-0046 | **寿元进一级面板**：协议 §3.3.1 新增 `life` / `lifeMax`（年 · 剩余与上限，上限取 §4.2 `RealmConfig.life_max_years`）· **销 §8「寿元是否进一级面板」待办** · `attackSpeed` / `castSpeed` 语义从「M1 无来源 ⇒ null」改「**系数，基准 1.00**」，加成来源 = 功法 / 法宝（两条线都未落地 ⇒ M1 恒 1.00） | `accepted` | 2026-10-27 | 大人「寿元进一级面板，攻速／施法速度按 1.00 开始算，功法和法宝加成」 |
 | ADR-0047 | **引擎锁定 5.8.1 → 5.9.0**：全队锁 **UE 5.9.0**（`F:/zxc/Epic Games/UE_5.9`）· MSVC **≥ 14.44.35211**（本机 14.44.35228 合规）· Windows SDK **≥ 10.0.22621**；**supersede ADR-0010 §六** 的版本锁 | `accepted` | 2026-11-12 | 大人「ue安装了5.9.0我们项目怎么跟进到这个版本」→「直接全量迁到 5.9」 |
+| ADR-0048 | **属性键名以 DB 列为根**：DB/配置列 `snake_case`，协议与词条键 = 同词机械 `camelCase`（`hp_max`→`hpMax`），一次改齐 17 个键 | `accepted` | 2026-11-13 | 大人「按方案 A 执行」「dandu 做为一整个单词不要中间大写了，报文语境字段一起改」 |
 
 > ★ **索引补记（2026-09-30）**：ADR-0019 / 0020 / 0021 上线时**漏登索引**（本表此前止于 ADR-0018）。
 > 本轮补三行 + 新增 ADR-0022 行 —— 表是**导航**，漏登 = 后人翻不到。
@@ -2846,3 +2847,31 @@ UE **5.9.0** 已装（`F:/zxc/Epic Games/UE_5.9` · `Build.version` = 5.9.0 / ch
 
 本次追加索引行时发现既有损坏：**ADR-0041 行被截断**，整份文件头（含状态定义与索引表头）被误贴进该行，导致 `## 索引` 出现两次、ADR-0001~0039 重复两遍。
 已按 ADR-0041 正文**重建该索引行**并合并为**单份索引**（0001~0047）；★ **ADR 正文一字未改**（只追加本 ADR）。
+
+## ADR-0048 —— 属性键名以 **DB 列为根**：DB/配置列 snake_case，协议与词条键 = 同词机械 camelCase
+
+- **状态**：`accepted`（2026-11-13）
+- **来源**：**大人裁决** —— 「按方案 A 执行」＋「`dandu` 做为一整个单词不要中间大写了，报文语境字段一起改」。
+- **下游实现与完整键位表**：`qiuyuan-dalu/docs/ATTRIBUTE-NAMING.md`（61 项 · `T-0199`）。
+
+### 裁决
+
+1. 属性名只有**一组词根**：DB 列 / 配置表列用 `snake_case`（主体_限定，如 `hp_max`、`phys_atk`、`move_speed`）；
+   协议 JSON 键 / 配置名单键 / 功法词条键用**同一组词的机械 `camelCase`**（`hpMax`、`physAtk`、`moveSpeed`）；
+   Go / C++ 字段再用 `PascalCase`（`HpMax`、`PhysAtk`、`MoveSpeed`）。★ 六层名字可机械互推，**不另设映射表**。
+2. 本次一次改齐 **17 个协议键**：
+   `maxHp→hpMax`、`maxMp→mpMax`、`physAttack→physAtk`、`magAttack→magAtk`、`physDefense→physDef`、
+   `magDefense→magDef`、`hit→hitRate`、`dodge→dodgeRate`、`crit→critRate`、`critDamage→critDmg`、
+   `armorBreak→defBreak`、`block→blockRate`、`blockDamage→blockReduce`、`elementPenetration→elemPen`、
+   `danDu→dandu`。
+3. 报文语境字段同批统一：`combat_resurrect.maxHp→hpMax`、`spell_effect.maxHp→hpMax`、
+   `meditation_result.maxMp→mpMax`、`combat_hit.targetMaxHp→targetHpMax`、`combat_hit.attackerDanDu→attackerDandu`。
+4. `dandu` 是**一个整词**（拼音全拼不加词界），任何层都不写 `danDu`。
+5. 词根白名单与判据由下游门禁 `tools/check-attr-naming.js`（T18）执法；新增词根必须先改白名单与文档。
+
+### 影响 / 边界
+
+- 影响三份契约：`data-contract.md` §7.2 词条键名、`protocol-contract.md` §3.3.1 / §5.1 / §3.4。
+- **不改**逻辑语义、不改数值、不改业务字段的归属；只是**同一概念换一种写法**。
+- 历史条目（v0.2 的 `spiritPower→mp` 等）**一字不改** —— 那是历史事实。
+- 物理落点仍归下游（`ADR-0001`）：DB 列是否叫 `phys_atk` 由 dalu 决定，契约只约束**逻辑键名**。

@@ -722,13 +722,13 @@ c = 1 + influence × ( purity − 50.5 ) / 50.5        →  0.80 ~ 1.20
 > 此处是**逻辑键名**（跨「配置表 / 协议 / 面板」三方共用的标识符），与物理存储无关。
 
 ```
-physAttack / magAttack / physDefense / magDefense
-maxHp / maxMp / shenshiIntensity / shenshiFromRealm / shenshiCultivation / shenshiPool / shenshiPoolMax
-hit / dodge / crit / critDamage / critResist
-armorBreak / block / blockDamage
+physAtk / magAtk / physDef / magDef
+hpMax / mpMax / shenshiIntensity / shenshiFromRealm / shenshiCultivation / shenshiPool / shenshiPoolMax
+hitRate / dodgeRate / critRate / critDmg / critResist
+defBreak / blockRate / blockReduce
 moveSpeed / attackSpeed / castSpeed
 life / lifeMax        ← 寿元：剩余 / 上限（年；上限按大境界取 §4.2 `life_max_years`）· v0.15 `ADR-0046`
-elementPenetration
+elemPen
 
 元素攻 / 抗：elemAtk0~7 / elemRes0~7   ← 下标即灵根枚举（见 §0 勘误一）
 ```
