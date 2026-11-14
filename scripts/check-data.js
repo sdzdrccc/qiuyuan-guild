@@ -833,9 +833,14 @@ function itemDomainIssues(parsedByTable) {
 	  // ㈤-3 每个物品：分类链上**优先**用表 B 的品类档；★ 不配行的品类（材料 / 灵石等）直接落表 A 的整把尺
 	  //   （M5 / DATA-LAYOUT：表 A 是尺，表 B 只给「要自己的叫法」的品类）。
 	  //   `track` 必须等于品类链根声明的 `grade_track`，`quality` 必须落在合法区间内。
-	  const catById = new Map((itemCat ? itemCat.rows : []).map(r => [String(r.category_id), r]));
-	  const aMax = aTier.size ? Math.max(...[...aTier.values()].map(x => x.max)) : 0;
-	  for (const r of itemDef.rows) {
+  const catById = new Map((itemCat ? itemCat.rows : []).map(r => [String(r.category_id), r]));
+  const aMax = aTier.size ? Math.max(...[...aTier.values()].map(x => x.max)) : 0;
+  // ★ 2026-11-14（X-0082）：`item_def.track` 已按 dalu `T-0202` **删列** —— 物品的档轨改由**分类**派生。
+  //   列在 ⇒ 走原来那条「track 必须等于品类链根的 grade_track」（老夹具与旧数据仍受管）；
+  //   列不在 ⇒ 改判「品类链根的 `grade_track` 必须指向表 A 里**真实存在的一档**」。
+  //   ★ 不是「跳过」：跳过等于这条子规则作废，而它原本防的是「物品档轨与品类对不上」。
+  const hasTrackCol = (itemDef.fields || []).includes('track');
+  for (const r of itemDef.rows) {
 	    const leaf = String(r.category_id);
 	    if (itemCat && !catById.has(leaf)) {
 	      out.push(`item_def 物品 ${r.item_id}(${r.name}) 的分类 ${r.category_id} 不存在`);
@@ -855,9 +860,13 @@ function itemDomainIssues(parsedByTable) {
 	      if (!root) {
 	        out.push(`item_def 物品 ${r.item_id}(${r.name}) 的分类链为空（category 表里找不到）`);
 	      } else {
-	        if (String(root.grade_track) !== String(r.track)) {
-	          out.push(`item_def 物品 ${r.item_id}(${r.name}) 的 track=${r.track} 与分类 ${root.category_id} 的 grade_track=${root.grade_track} 不一致`);
-	        }
+        if (hasTrackCol) {
+          if (String(root.grade_track) !== String(r.track)) {
+            out.push(`item_def 物品 ${r.item_id}(${r.name}) 的 track=${r.track} 与分类 ${root.category_id} 的 grade_track=${root.grade_track} 不一致`);
+          }
+        } else if (aTier.size && !aTier.has(String(root.grade_track))) {
+          out.push(`item_def 物品 ${r.item_id}(${r.name}) 的档轨由分类 ${root.category_id} 的 grade_track=${root.grade_track} 派生，但表 A 里没有这一档`);
+        }
 	        const ranges = bCatId ? bByCat.get(bCatId) : [{ min: 1, max: aMax }];
 	        const q = Number(r.quality);
 	        const ok = q >= 1 && ranges.some(x => q >= x.min && q <= x.max);
@@ -1180,6 +1189,25 @@ if (process.argv.includes('--self-test')) {
     })(), true],
     // R10 · 物品域内容断言（X-0058 / ADR-0033 —— ★ 合法形态不得死 + 五种坏样本必拦）
     ['R10', '物品域合法样本 → 一条都不许报', itemDomainIssues(itemFixture()).length, 0],
+    // ★ 2026-11-14（X-0082）：`item_def.track` 已删（dalu T-0202）⇒ 判据改判「分类的 grade_track 必须指向表 A 的档」。
+    //   两个方向都要测：列不在时**不得漏**（指向不存在的档要拦），也**不得误报**（指向有效档要静默）。
+    ['R10', '★ 无 track 列 ＋ 分类 grade_track 指向表 A 不存在的档 → 必拦下', (() => {
+      const b = itemFixture((x) => {
+        const t = x['qydl_item_def_config'];
+        t.fields = t.fields.filter((f) => f !== 'track');       // 模拟 T-0202 删列
+        for (const r of t.rows) delete r.track;
+        x['qydl_item_category_config'].rows[0].grade_track = '99';
+      });
+      return itemDomainIssues(b).some((m) => /grade_track=99/.test(m));
+    })(), true],
+    ['R10', '★ 无 track 列 ＋ 分类 grade_track 有效 → 不得误报', (() => {
+      const b = itemFixture((x) => {
+        const t = x['qydl_item_def_config'];
+        t.fields = t.fields.filter((f) => f !== 'track');
+        for (const r of t.rows) delete r.track;
+      });
+      return itemDomainIssues(b).filter((m) => /grade_track/.test(m)).length === 0;
+    })(), true],
     ['R10', 'quality 越出档表算出的上界 → 必拦下',
       itemDomainIssues(itemFixture((b) => { b["qydl_item_def_config"].rows[0].quality = "999"; })).length > 0, true],
     ['R10', '品类档指向不存在的表 A 档 → 必拦下',

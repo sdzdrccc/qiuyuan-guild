@@ -100,6 +100,31 @@ const RETIRED = {
   purity_damage_max_ppm: '裁定 L/N 第六轮：同上',
   cultiv_mult_ppm: '裁定 I 后改名为 `cultivation_mult_ppm`（现行名）',
   qydl_realm_life_config: 'T-0134：寿元并入总表，改为 `qydl_realm_config`（同日取代，旧表删除）',
+  storage_treasure_def_config: '2026-11-14 改名 `storage_space_def`（dalu `T-0202`：容器与装备储物饰共用「储物空间规格」语义）',
+  qydl_storage_treasure_def_config: '2026-11-14 改名 `qydl_storage_space_def`（dalu `T-0202`）',
+};
+
+/**
+ * 计划中、**尚未建**的表（设计稿里点名，但 `db/migrations/` 里还没有 `CREATE TABLE`）。
+ *
+ * ★ 为什么要这张表：设计文档（如 `EQUIPMENT-ARTIFACT-SYSTEM`）会**先把表设计出来**再实现，
+ *   若不认这类名字，文档只能写「某某表」而不能写准确表名 —— 反而更难对账。
+ * ★ 但它**必须是一份可清的花名册**，不能变成放过任何人的后门：
+ *   · 只认这里逐条登记过的名；没登记的一律照旧报「凭空引用」；
+ *   · 每条必须写清**出处与状态**；
+ *   · ★ **一旦该表被 `CREATE TABLE` 建出来（进了受管集合），本条目必须删除**
+ *     —— 留着会让「计划」二字长期挂在已建成的表上（过期豁免 = 谎言），脚本会报 warn 提醒。
+ */
+const PLANNED = {
+  qydl_equip_set_config: '套装（散件 ＋ 2/4/6 件效果）· 设计稿 `EQUIPMENT-ARTIFACT-SYSTEM` · 未建',
+  qydl_socket_config: '孔型（防御 / 抗性 / 特殊 / 攻击）· 同上 · 未建',
+  qydl_equip_enhance_config: '装备强化（与法宝强化分开）· 同上 · 未建',
+  qydl_artifact_subgrade_config: '法宝成色档 · 同上（XML 头写了要建，CSV / 表还没建）· 未建',
+  qydl_artifact_material_config: '法宝主材 / 辅材 · 同上 · 未建',
+  qydl_artifact_pattern_config: '法宝阵纹 · 同上 · 未建',
+  qydl_artifact_forge_recipe_config: '法宝器方 · 同上 · 未建',
+  qydl_artifact_spirit_config: '法宝器灵 · 同上 · 未建',
+  qydl_artifact_skill_config: '法宝技能 · 同上 · 未建',
 };
 
 /**
@@ -130,11 +155,22 @@ function tableNamesFromXml(text) {
   return out;
 }
 
-/** 从建表 SQL 提取 MySQL 表名（`CREATE TABLE ... \`name\``） */
+/** 从建表 SQL 提取 MySQL 表名（`CREATE TABLE ... \`name\`` ＋ `RENAME TABLE a TO b` 的目标名） */
 function tableNamesFromSql(text) {
   const out = [];
   for (const m of String(text).matchAll(/CREATE\s+TABLE\s+(?:IF\s+NOT\s+EXISTS\s+)?`?([A-Za-z][A-Za-z0-9_]*)`?/gi)) {
     out.push(m[1]);
+  }
+  // ★ 2026-11-14（X-0082）：`RENAME TABLE a TO b` 的**目标名也是真实存在的表**。
+  //   只收 `CREATE TABLE` 会把「旧表留底」那批（dalu 0016 的 `*_old_20261114`）判成「凭空引用」。
+  //   ★ 只收 **TO 右边**（改名后的新名）；左边的源名在迁移后已不存在，不该进受管集合。
+  for (const m of String(text).matchAll(/RENAME\s+TABLE\s+([\s\S]*?);/gi)) {
+    for (const pair of m[1].split(',')) {
+      const right = pair.split(/\s+TO\s+/i)[1];
+      if (!right) continue;
+      const name = (right.replace(/`/g, '').trim().split(/\s+/)[0] || '');
+      if (/^[A-Za-z][A-Za-z0-9_]*$/.test(name)) out.push(name);
+    }
   }
   return out;
 }
@@ -297,6 +333,7 @@ function docFiles() {
 
   const unknown = [];
   const retired = [];
+  const plannedHit = new Set();       // 计划中（PLANNED 在册）的引用 —— 可见，但不报红
   let scanned = 0;
   for (const p of files) {
     const t = read(p);
@@ -322,7 +359,17 @@ function docFiles() {
         header = null;
       }
       for (const v of scanLine(line, known, RETIRED)) {
-        (v.reason === 'unknown' ? unknown : retired).push(`${rel}:${i + 1} \`${v.id}\``);
+        if (v.reason === 'unknown') {
+          // ★ 2026-11-14（X-0082）：设计稿里**计划中未建**的表 —— 花名册在册的放行并留痕；
+          //   没登记的一律照旧报「凭空引用」（花名册不是后门）。
+          if (Object.prototype.hasOwnProperty.call(PLANNED, v.id)) {
+            plannedHit.add(`${rel}:${i + 1} \`${v.id}\``);
+            continue;
+          }
+          unknown.push(`${rel}:${i + 1} \`${v.id}\``);
+        } else {
+          retired.push(`${rel}:${i + 1} \`${v.id}\``);
+        }
       }
     });
   }
@@ -333,6 +380,15 @@ function docFiles() {
   for (const r of retired) {
     const id = r.split('`')[1];
     warn('I1', `${r} —— 该名**已退役**（${RETIRED[id] || ''}），本行未标退役`);
+  }
+  // ★ 过期花名册 = 谎言：PLANNED 里的名一旦被建出来（进了受管集合），这条豁免就该消失。
+  for (const id of Object.keys(PLANNED)) {
+    if (known.has(id)) {
+      warn('I1', `\`${id}\` **已进受管集合（表已建）** —— 请从脚本的 \`PLANNED\` 花名册删掉这一行（过期豁免 = 谎言）`);
+    }
+  }
+  if (plannedHit.size > 0) {
+    ok('I1', `计划中未建表：${plannedHit.size} 处引用（花名册在册，非引入）—— ${[...plannedHit].slice(0, 3).join(' · ')}${plannedHit.size > 3 ? ' …' : ''}`);
   }
   if (unknown.length === 0 && retired.length === 0) {
     ok('I1', `标识符一致性通过（受管集合 ${known.size} 个 · 扫描 ${scanned} 篇文档 · 0 处凭空引用）`);
@@ -385,6 +441,12 @@ if (process.argv.includes('--self-test')) {
     ['I1', '建表 SQL 反引号表名 → 收到', tableNamesFromSql('CREATE TABLE IF NOT EXISTS `qydl_role` (').join(',') === 'qydl_role', true],
     ['I1', '建表 SQL 裸表名 → 收到', tableNamesFromSql('create table qydl_x (a int)').join(',') === 'qydl_x', true],
     ['I1', 'INSERT INTO 不得误当建表', tableNamesFromSql('INSERT INTO `qydl_role` VALUES (1)').length === 0, true],
+    // ★ 2026-11-14（X-0082）：RENAME 的目标名也是真实表（「旧表留底」那批）
+    ['I1', 'RENAME 目标名 → 收到', tableNamesFromSql('RENAME TABLE `a` TO `b_old`;').join(',') === 'b_old', true],
+    ['I1', 'RENAME 源名不进集合（迁移后已不存在）', !tableNamesFromSql('RENAME TABLE `a` TO `b`;').includes('a'), true],
+    ['I1', '多行 RENAME 逐对收', tableNamesFromSql('RENAME TABLE\n  `a` TO `b`,\n  `c` TO `d`;').join(',') === 'b,d', true],
+    ['I1', '计划花名册外的不存在名 → 仍必拦下（花名册不是后门）', scanLine('表 `qydl_not_built_anywhere`', KNOWN, RETIRED).some(v => v.reason === 'unknown'), true],
+    ['I1', '花名册在册的计划表 → 纯函数仍报 unknown（放行只由主流程做）', scanLine('表 `qydl_equip_set_config`', KNOWN, RETIRED).some(v => v.reason === 'unknown'), true],
     ['I1', 'CSV 字段名解析', fieldNamesFromCsv('##var,a,b\n,1,2\n').join(',') === 'a,b', true],
     ['I1', '非 ##var 表 → 字段为空（不误取）', fieldNamesFromCsv('x,y\n1,2\n').length === 0, true],
     ['I1', '键值表键名解析', configKeysFromCsv('##var,key,value\n,a,1\n,b,2\n').join(',') === 'a,b', true],
