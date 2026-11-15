@@ -102,6 +102,8 @@ const RETIRED = {
   qydl_realm_life_config: 'T-0134：寿元并入总表，改为 `qydl_realm_config`（同日取代，旧表删除）',
   storage_treasure_def_config: '2026-11-14 改名 `storage_space_def`（dalu `T-0202`：容器与装备储物饰共用「储物空间规格」语义）',
   qydl_storage_treasure_def_config: '2026-11-14 改名 `qydl_storage_space_def`（dalu `T-0202`）',
+  qydl_equip_slot_config: '2026-11-15 大人「穿戴位不应该按分类来吗」：分类树已拆 12 个部位子类（80~91），「物品 → 穿戴位」12 行全可推导 ⇒ 整表删除（dalu `T-0214` §5.6）；`slot_type` 由 `category_id` 派生，仍作 DB / 存档编码',
+  qydl_equip_affix_config: '2026-11-15 大人「词条池合并进属性键攻防池」：原 20 行只剩「哪 10 个键能 roll」是真信息，其余全可派生（pool / 适用部位 / 系数 / 权重 / attr_index / 双形态 / 行号），且实例表 qydl_role_equip_affix 不存 affix_id ⇒ 整表删除并合并进 qydl_equip_attr_pool_config.is_affix（dalu `T-0214` §13）；候选由服务端按「每键两形态」规则生成',
 };
 
 /**
