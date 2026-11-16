@@ -1,6 +1,6 @@
 # 数据契约（Data Contract）
 
-> **层**：L3 游戏侧（本仓 `contracts/`）　|　**状态**：**v0.15**（2026-10-27 **寿元与速度口径批** —— `ADR-0046`：§7.2 词条键名加 **`life` / `lifeMax`**（剩余／上限，单位**年** · 上限取 §4.2 `RealmConfig.life_max_years`）；`attackSpeed` / `castSpeed` 语义从「M1 无来源 ⇒ `null`」改成「**系数，基准 1.00**，加成来源 = 功法 / 法宝」⇒ M1 恒 **1.00**（★ 与 `moveSpeed` 的 100 不是同一把尺）。★ 协议侧字段集合的变化见 `protocol-contract.md` §3.3.1；上一版 v0.14 = 2026-10-27 **神识单字段批** —— `ADR-0045`：① 境界段真源从 §4.1 层次表两列改成 **§4.2 `RealmConfig.shenshi_step` 一列 · 按台阶累加**（★ 层次表不再有神识列）；② 逐档翻倍**九境填满** 100→25600 ⇒ 建角 100、渡劫圆满 511000；③ **突破不额外大涨**（曲线连续）；④ 未定哨兵 `0/0` → **`-1`**；⑤ `shenshi_pool_factor` 现值 **10 → 1** ⇒ **余量上限 = 境界段**；★ 协议字段一字未动；上一版 v0.13 = 2026-10-27 **玩法口径批** —— `ADR-0044`：暴击 **75% / 300%**、生克上限 **×1.25**、储物等级段 **1–63**、神识**引气即有**；`ADR-0043`：§3.3 补姓名正则 **RE2**；上一版 v0.12 = 境界与寿元一揽子收口 —— `DECISIONS.md` **ADR-0039**：① 九境 × **10 层 = 90 台阶**（supersede `ADR-0004` 的 82）；② 倍率改 **×1.0772 / 跨境 ×3.0 / 无 1.13 例外**；③ 寿元改 **世界观 A 案**；④ 新增 **`RealmConfig` 大境界总表**、层次表**删 `exp_max`** 改派生；⑤ 补**天劫两实体**；⑥ 神识 **`0/0 = 未定`** 哨兵；上一版 v0.11 = 2026-10-25 **神识拆两段：境界段 ＋ 修炼段** —— `DECISIONS.md` **ADR-0037**：① §3.1 新增 `shenshi_cultivation`（永久修炼段），`shenshi_intensity` 改定义为**境界段 ＋ 修炼段**的和（派生缓存）· ② §4.1 一列绝对值 → **两列阶梯**（`shenshi_start` ＋ `shenshi_step`，境界段 = 起点 + (层-1)×增量）· ③ 余量上限改挂**境界段**（★ 修炼段不撑池子）· ④ §7.2 词条键加 `shenshiFromRealm` / `shenshiCultivation`；上一版 v0.10 = 改名 ＋ 余量池 · ADR-0036 —— `DECISIONS.md` **ADR-0036**：① §3.1 `Role` 的 `shenshi` → `shenshi_intensity`，新增 `shenshi_pool` / `shenshi_pool_updated_at` · ② §4.1 配置列 → `shenshi_intensity_base` · ③ §7.2 词条键 `shenshiIntensity` ＋ 新增 `shenshiPool` / `shenshiPoolMax` · ④ §3.3 `GameConfig` 追加两个余量系数；★ 强度仍是单值属性，余量才是消耗池；上一版 v0.9 = M5 物品域展开 · ADR-0033）
+> **层**：L3 游戏侧（本仓 `contracts/`）　|　**状态**：**v0.16**（2026-11-17 **神识属性改造批** —— `ADR-0049`：① §3.1 `Role` 神识族列改名 `spirit_focus` / `spirit_focus_cultivation` / `sp` / `sp_updated_ms`，**新增** `divine_soul`（神魂底子，本期只落字段）；② §4.1 层次表**新增 `psi_atk` 列**（神念攻击独立基准 · 现与法攻同档）；③ §4.2 列 `shenshi_step` → **`spirit_focus_step`**；④ §3.3 键 `shenshi_pool_factor`/`shenshi_pool_regen_ppm` → **`sp_factor`/`sp_regen_ppm`**；⑤ §7.2 词条键改名＋新增 `psiAtk` / `divineSoulDef` / `divineSoulDmg` / `spiritFocus`；⑥ 补登记 `elemPen`→**`magPen`**。上一版 v0.15 = 2026-10-27 寿元与速度口径批 —— `ADR-0046`：§7.2 词条键名加 **`life` / `lifeMax`**（剩余／上限，单位**年** · 上限取 §4.2 `RealmConfig.life_max_years`）；`attackSpeed` / `castSpeed` 语义从「M1 无来源 ⇒ `null`」改成「**系数，基准 1.00**，加成来源 = 功法 / 法宝」⇒ M1 恒 **1.00**（★ 与 `moveSpeed` 的 100 不是同一把尺）。★ 协议侧字段集合的变化见 `protocol-contract.md` §3.3.1；上一版 v0.14 = 2026-10-27 **神识单字段批** —— `ADR-0045`：① 境界段真源从 §4.1 层次表两列改成 **§4.2 `RealmConfig.shenshi_step` 一列 · 按台阶累加**（★ 层次表不再有神识列）；② 逐档翻倍**九境填满** 100→25600 ⇒ 建角 100、渡劫圆满 511000；③ **突破不额外大涨**（曲线连续）；④ 未定哨兵 `0/0` → **`-1`**；⑤ `shenshi_pool_factor` 现值 **10 → 1** ⇒ **余量上限 = 境界段**；★ 协议字段一字未动；上一版 v0.13 = 2026-10-27 **玩法口径批** —— `ADR-0044`：暴击 **75% / 300%**、生克上限 **×1.25**、储物等级段 **1–63**、神识**引气即有**；`ADR-0043`：§3.3 补姓名正则 **RE2**；上一版 v0.12 = 境界与寿元一揽子收口 —— `DECISIONS.md` **ADR-0039**：① 九境 × **10 层 = 90 台阶**（supersede `ADR-0004` 的 82）；② 倍率改 **×1.0772 / 跨境 ×3.0 / 无 1.13 例外**；③ 寿元改 **世界观 A 案**；④ 新增 **`RealmConfig` 大境界总表**、层次表**删 `exp_max`** 改派生；⑤ 补**天劫两实体**；⑥ 神识 **`0/0 = 未定`** 哨兵；上一版 v0.11 = 2026-10-25 **神识拆两段：境界段 ＋ 修炼段** —— `DECISIONS.md` **ADR-0037**：① §3.1 新增 `shenshi_cultivation`（永久修炼段），`shenshi_intensity` 改定义为**境界段 ＋ 修炼段**的和（派生缓存）· ② §4.1 一列绝对值 → **两列阶梯**（`shenshi_start` ＋ `shenshi_step`，境界段 = 起点 + (层-1)×增量）· ③ 余量上限改挂**境界段**（★ 修炼段不撑池子）· ④ §7.2 词条键加 `shenshiFromRealm` / `shenshiCultivation`；上一版 v0.10 = 改名 ＋ 余量池 · ADR-0036 —— `DECISIONS.md` **ADR-0036**：① §3.1 `Role` 的 `shenshi` → `shenshi_intensity`，新增 `shenshi_pool` / `shenshi_pool_updated_at` · ② §4.1 配置列 → `shenshi_intensity_base` · ③ §7.2 词条键 `shenshiIntensity` ＋ 新增 `shenshiPool` / `shenshiPoolMax` · ④ §3.3 `GameConfig` 追加两个余量系数；★ 强度仍是单值属性，余量才是消耗池；上一版 v0.9 = M5 物品域展开 · ADR-0033）
 > **真源**：本文件。`qiuyuan-dalu` 与原型**只读消费，不得建副本**。
 > **来源（v0.2 修正）**：**需求层 `10-MMO化` 为主，原型为参考实作**。首版曾按「从原型提炼」书写，方向反了 —— 详见 `DECISIONS.md` **ADR-0002**。
 > **作用范围（v0.2 收窄）**：定义**实体、字段、类型、约束、语义**。
@@ -184,10 +184,11 @@
 | `xinmo` | DOUBLE | 心魔值 | `0~100` |
 | `kuangzao` | DOUBLE | 狂躁值 | `0~100` |
 | `dan_du` | DOUBLE | 丹毒值（炼艺反噬堆积） | `0~100` |
-| `shenshi_intensity` | DOUBLE | 神识强度 = **境界段 ＋ 修炼段** | 影响术法 / 施法速度 / 突破小加成 / 炼艺成功率。★ 是**派生缓存**：权威来源是 §4.1 的阶梯 ＋ 下一行，★ 读侧现算不抄它（ADR-0037） |
-| `shenshi_cultivation` | DOUBLE | 神识**修炼提升值**（永久累加、突破不掉） | 建角恒 0；★ 只加进强度，**不参与余量上限**（上限按境界固定，ADR-0037） |
-| `shenshi_pool` | DOUBLE | 当前神识余量（消耗池） | 上限 = **境界段** × 全局余量系数；★ 上限不落库 |
-| `shenshi_pool_updated_ms` | BIGINT | 余量最后结算时间 | epoch ms；0 = 尚未结算（按满值处理）· ★ 原名 `shenshi_pool_updated_at`，2026-10-27 随下游命名规范（**epoch 毫秒 ⇒ `_ms`**）订正，`ADR-0045` 同批登记 |
+| `spirit_focus` | DOUBLE | 神识凝练 = **境界段 ＋ 修炼段** | 门槛属性：炼丹 / 炼器 / 阵法 / 高级技能的门槛；**装备可加、不消耗、不画条**（`ADR-0049`）。★ 是**派生缓存**：权威来源是 §4.2 阶梯 ＋ 下一行，★ 读侧现算不抄它 |
+| `spirit_focus_cultivation` | DOUBLE | 神识凝练·**修炼段**（永久累加、突破不掉） | 建角恒 0；★ 只加进凝练，**不参与 SP 上限**（上限按境界固定） |
+| `sp` | DOUBLE | 当前神识 SP（施法消耗池） | 上限 = **境界段** × `sp_factor`；★ 上限不落库；★ **神念技能消耗它**、**神念伤害与 SP 上限不挂钩**（`ADR-0049`） |
+| `sp_updated_ms` | BIGINT | SP 最后结算时间 | epoch ms；0 = 尚未结算（按满值处理） |
+| `divine_soul` | DOUBLE | **神魂底子** | ★ `ADR-0049`：本期**只落字段**，生死 / 转世玩法不在本期；战斗露面的只有 `divineSoulDef` / `divineSoulDmg` 两键 |
 | `hp` | DOUBLE | 当前生命 | 上限 = 境界配置 `hp_max` |
 | `shield` | DOUBLE | 灵力护盾（法术效果） | 受击先扣盾 |
 | `life_current` | DOUBLE | 剩余寿元（年） | 上限见 §4 寿元表 |
@@ -253,8 +254,8 @@
 | `spirit_root_p_cultivation_ppm` | INT | 公式① 修炼侧**幂指数 `p`** | 现 `300000`（= `0.30`） |
 | `purity_damage_influence_ppm` | INT | 公式② 伤害侧**纯度影响幅度 `influence`** | 现 `200000`（= `±20%`） |
 | `purity_cultivation_influence_ppm` | INT | 公式② 修炼侧**纯度影响幅度 `influence`** | 现 `200000`（= `±20%`） |
-| `shenshi_pool_factor` | FLOAT | **神识余量上限系数**：上限 = **境界段** × 该系数 | 现 **`1`**（★ `ADR-0045`：大人裁「余量上限 = 境界段」⇒ 由 10 改 1；键保留当倍数旋钮，想放大只改表不改码）。★ 输入不是总强度（`ADR-0037`：修炼段不撑池子） |
-| `shenshi_pool_regen_ppm` | INT | **神识余量每秒回复**（ppm） | 现 `20000`（= `2%/s`，P1 占位；战斗内分档待 P2） |
+| `sp_factor` | FLOAT | **神识 SP 上限系数**：上限 = **境界段** × 该系数 | 现 **`1`**（大人裁「余量上限 = 境界段」；键保留当倍数旋钮）。★ 输入不是总凝练（修炼段不撑池子） |
+| `sp_regen_ppm` | INT | **神识 SP 每秒回复**（ppm） | 现 `20000`（= `2%/s`，P1 占位；战斗内分档待 P2） |
 | `character_name_pattern` | STRING | 姓名白名单正则 | `^[\x{4e00}-\x{9fa5}A-Za-z0-9]+$`；★ **RE2 语法**（服务端 Go 编译；客户端/工具按 RE2 解释） |
 
 **两条约定**：
@@ -263,7 +264,7 @@
    与全表整数口径统一，**避免浮点误差**。**无后缀者是整数本身**（如 `anchor = 2` 是**根数**）。
 2. ★ **前 6 个键就是 §6 双因子公式的全部参数**（裁定 **P**「四组数值全配置表化」+ 第六轮 **⑩⑫⑬**）——
    GM 改任意一个**即生效**：**不改代码、不改表结构**。
-   ★ 后 2 个键只服务 `shenshi_pool` 的派生/回复，**不参与 §6 双因子公式**。
+   ★ 后 2 个键只服务 `sp` 的派生/回复，**不参与 §6 双因子公式**。
 
 > ⚠️ **曾用键（已废 · 留痕）**：`purity_threshold_*`（两键，旧「主根纯度 `<30` → 废体 / `>80` → 极品」的两个阈值）
 > —— **裁定 M 已删**：档位改由**品级**决定（§3.2 `grade_rank`），**纯度不再触发任何档位**。
@@ -349,11 +350,11 @@
 | `def_break` / `block_rate` / `block_reduce` | 破防 / 格挡率 / 格挡减伤 |
 | `speed` | 移动速度 |
 
-> ★★ **本表不再有神识列**（2026-10-27 `ADR-0045`）：原 `shenshi_start` ＋ `shenshi_step` 两列已删 ——
-> 它们是"一境一个数"，在按层表里要十行抄同一对（= 两处真源）。境界段的真源改在 **§4.2 `RealmConfig.shenshi_step`**，
+> ★★ **本表没有神识凝练列**：凝练境界段的真源在 **§4.2 `RealmConfig.spirit_focus_step`**，
 > 算法 = **从炼气一层起按台阶累加**（`境界段(realm, layer) = Σ 每层加值`），★ 曲线连续、突破不额外大涨。
-> 旧的「境界段 = 起点 + (层-1) × 增量」写法（`ADR-0037`）与「`0/0` = 未定」哨兵（`ADR-0039`）**一并作废**。
 > ★ **神识从引气入体起就有**（炼气一层即可用）；化神解锁的是战斗系统/质变，不是「从无到有」（`ADR-0044`）。
+> ★★ **`psi_atk` 列**（2026-11-17 `ADR-0049`）：**神念攻击独立基准列**——第三路攻击不复用物攻/法攻、不由 SP 派生；
+> 现值逐格取法攻同档（先给一条能跑的曲线），后续按数值裁调只改本列。
 
 **唯一键**：`(realm_id, layer)`
 
@@ -361,12 +362,10 @@
 > 需求层 §10.1 用 `level_index`；本契约用 `layer`，两者是同义换名（需求层脚注自陈「`level_index` = `layer`」）。
 > 需求层的 `exp_required` 已由 `ADR-0039` 的「修为区间按层派生」取代（不落层次表），属过时字段，向上游提订正。
 >
-> 神识这条线（原 `shenshi_base` → `shenshi_intensity_base` → `shenshi_start`/`shenshi_step` 两列 → ★ 现**总表单字段 `shenshi_step`**）需求层未列 —— 属原型扩展，**按 ADR-0002 应标 `unknown`**，待上游并入。
+> 神识凝练这条线需求层未列 —— 属原型扩展，**按 ADR-0002 应标 `unknown`**，待上游并入。
 >
-> ★ **ADR-0036 改名词表**：`shenshi` → `shenshi_intensity`；★ 强度仍是单值属性。
-> ★ **ADR-0037 拆两段**：新增 `shenshi_cultivation`；★ **强度 = 境界段 ＋ 修炼段** 这一条**至今有效**；
-> 境界段的**来源**已被 `ADR-0045` 再改一次（一列绝对值 → 两列阶梯 → **总表一列按台阶累加**）；
-> **余量上限 = 境界段 × `shenshi_pool_factor`（现值 1 ⇒ 就是境界段），不落库**，只出现在协议视图（★ 上一版这里写的是 × 强度，已由 ADR-0037 更正）。
+> ★ **凝练 = 境界段 ＋ 修炼段**（境界段见 §4.2，修炼段落 `spirit_focus_cultivation`）；
+> **神识 SP 上限 = 境界段 × `sp_factor`（现值 1 ⇒ 就是境界段），不落库**，只出现在协议视图。
 
 ### 4.2 大境界总表 `RealmConfig`　·　**M3**
 
@@ -381,11 +380,11 @@
 | `aging_per_year` | 每现实日（= 1 游戏年）消耗的年数 |
 | `exp_min` / `exp_max` | 本境修为区间（★ 渡劫到百亿级，用 64 位整数） |
 | `speed_mult` | 修炼速度倍率 = **`1.5^(realm_id-1)`**（炼气 = 1） |
-| `shenshi_step` | 神识**境界段每层加值**（★ `ADR-0045` 新增，取代原层次表两列）：本境**每一层**加这个数，`境界段 = Σ 从炼气一层累加到本台阶的每层加值`；★ **逐档翻倍** ⇒ 渡劫圆满境界段 **511000**；要退回未拍填 **`-1`**（★ **不是 0** —— 累加口径下 0 是"这一境不再涨"的合法语义） |
+| `spirit_focus_step` | 神识凝练**境界段每层加值**：本境**每一层**加这个数，`境界段 = Σ 从炼气一层累加到本台阶的每层加值`；★ **逐档翻倍** ⇒ 渡劫圆满境界段 **511000**；要退回未拍填 **`-1`**（★ **不是 0** —— 累加口径下 0 是"这一境不再涨"的合法语义） |
 
 **神识每层加值（`ADR-0045` · ★ 逐档翻倍是**按翻倍推的第一版可跑数**，非世界观给定值，正式数值仍待裁定）**：
 
-| realm | 境界 | `shenshi_step` | 该境第一层 | 该境圆满（第十层） |
+| realm | 境界 | `spirit_focus_step` | 该境第一层 | 该境圆满（第十层） |
 |---|---|---|---|---|
 | 1 | 炼气 | 100 | **100**（= 建角值） | 1 000 |
 | 2 | 筑基 | 200 | 1 200 | 3 000 |
@@ -399,7 +398,7 @@
 
 > ★ 曲线**连续** ⇒ **突破那一刻不额外大涨**（炼气圆满 1 000 的下一档就是筑基一层 1 200）。
 > ★ 下游启动期三条判据（`ADR-0045`）：只许正数或 `-1` · `-1` 必须是后缀 · 已定各境**严格递增**（「更高境界加的值更多」的机器化）。
-> ★ **神识余量上限 = 境界段**（`shenshi_pool_factor` 现值 **1**；★ 系数键保留当倍数旋钮）⇒ 上限数字与境界段同数。
+> ★ **神识 SP 上限 = 境界段**（`sp_factor` 现值 **1**；★ 系数键保留当倍数旋钮）⇒ 上限数字与境界段同数。
 
 **修为区间（`ADR-0039` · 九境首尾相接）**：
 
@@ -723,12 +722,13 @@ c = 1 + influence × ( purity − 50.5 ) / 50.5        →  0.80 ~ 1.20
 
 ```
 physAtk / magAtk / physDef / magDef
-hpMax / mpMax / shenshiIntensity / shenshiFromRealm / shenshiCultivation / shenshiPool / shenshiPoolMax
+hpMax / mpMax / spiritFocus / spiritFocusFromRealm / spiritFocusCultivation / sp / spMax
+psiAtk / divineSoulDef / divineSoulDmg    <- 神念路攻 / 防 / 伤害加成（2026-11-17 ADR-0049）
 hitRate / dodgeRate / critRate / critDmg / critResist
 defBreak / blockRate / blockReduce
 moveSpeed / attackSpeed / castSpeed
 life / lifeMax        ← 寿元：剩余 / 上限（年；上限按大境界取 §4.2 `life_max_years`）· v0.15 `ADR-0046`
-elemPen
+magPen    <- 法术穿透（2026-11-16 大人裁「元素穿透」改名）
 
 元素攻 / 抗：elemAtk0~7 / elemRes0~7   ← 下标即灵根枚举（见 §0 勘误一）
 ```
@@ -1108,6 +1108,7 @@ elemPen
 
 | 版本 | 日期 | 变更 |
 |---|---|---|
+| **v0.16** | **2026-11-17** | ★ **神识属性改造批**（`DECISIONS.md` **ADR-0049** · 协议契约 **v0.15** 同批）：① §3.1 `Role` 神识族列改名（`spirit_focus` / `spirit_focus_cultivation` / `sp` / `sp_updated_ms`）＋ 新增 `divine_soul`；② §4.1 层次表新增 `psi_atk` 独立基准列；③ §4.2 列名 `spirit_focus_step`；④ §3.3 全局键 `sp_factor` / `sp_regen_ppm`；⑤ §7.2 词条键改名＋新增 `psiAtk` / `divineSoulDef` / `divineSoulDmg` / `spiritFocus`；⑥ 补登记 `magPen`。★ 逻辑语义未动（除改名）；数值现值未动。 |
 | v0.1 | 2026-09-27 | 首版（Phase 0）—— 21 张 `xx_` 表 |
 | v0.2 | 2026-09-28 | **去物理化改造**：① 表名 → 实体名（ADR-0001）；② 命名对齐需求层，主键 `role_id`（ADR-0002）；③ 加「当前覆盖里程碑」与实体里程碑标记（ADR-0003）；④ 登记 ADR-0004/0005/0006 三处冲突；⑤ 新增 §0.2 物理映射声明、§10.3 上游订正清单 |
 | **v0.3** | **2026-09-28** | **境界口径裁定 + 属性落库裁定**：① §0 三处冲突 → 已裁定（**ADR-0004** 境内 **9 层** / **ADR-0006** `realm_id` **1~9**）；② §4 粒度由「双口径待裁」改为 **82 台阶单一口径**，原型 42 阶段作废；③ §4 数值公式改「每层」，境内倍率**待标定**；④ §6 新增 **6.0 与需求层的已知差异**（**ADR-0005** 上限不落库）；⑤ §10.1 → 已裁定，新增 §10.1b 里程碑级待裁项 |

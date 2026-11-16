@@ -193,6 +193,8 @@
 | 登录失败文案取舍（封禁具名） | 上游确认 | 否 |
 | 姓名 pattern 的正则方言 | 配置注释写明；各端确认 | 否 |
 
+| **X-0084** | ★ **神识属性改造批：两契约升版**（2026-11-17 · 大人 2026-11-16 术语表＋六裁定＋「神识属性开始落实」）。dalu 四层落实（Luban 配置 / DB 迁移 `0024` / 服务端 / UE 客户端），契约侧同批升版：`protocol-contract` v0.14→**v0.15**（§3.3.1 神识族改名＋新增 `psiAtk`/`divineSoulDef`/`divineSoulDmg`/`divineSoul` 四键、§5.1/§3.4/§6.1/§6.3 同步、补登记 `elemPen`→`magPen`）、`data-contract` v0.15→**v0.16**（§3.1 列改名＋`divine_soul`、§4.1 加 `psi_atk`、§4.2 `spirit_focus_step`、§3.3 两键、§7.2 词条键）。新增 **ADR-0049**；`check-identifiers.js` 判据两修（`RETIRED` 补神识族旧名七条 ＋ `CREATE OR REPLACE VIEW` 视图名进受管集合）。 | 大人 | `qiuyuan-guild`（两契约 ＋ DECISIONS ＋ 门禁脚本）／`qiuyuan-dalu`（实现真源 · `docs/SHENSHI-ATTRIBUTES.md`） | 契约升版（ADR-0049 前置）＋ 判据修正（I1 视图与退役名） | `已完成`（待大人复核） | [reviews/X-0084.md](../reviews/X-0084.md) |
+
 ---
 
 ## 附：本表的维护纪律

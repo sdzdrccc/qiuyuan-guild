@@ -71,6 +71,7 @@
 | ADR-0046 | **寿元进一级面板**：协议 §3.3.1 新增 `life` / `lifeMax`（年 · 剩余与上限，上限取 §4.2 `RealmConfig.life_max_years`）· **销 §8「寿元是否进一级面板」待办** · `attackSpeed` / `castSpeed` 语义从「M1 无来源 ⇒ null」改「**系数，基准 1.00**」，加成来源 = 功法 / 法宝（两条线都未落地 ⇒ M1 恒 1.00） | `accepted` | 2026-10-27 | 大人「寿元进一级面板，攻速／施法速度按 1.00 开始算，功法和法宝加成」 |
 | ADR-0047 | **引擎锁定 5.8.1 → 5.9.0**：全队锁 **UE 5.9.0**（`F:/zxc/Epic Games/UE_5.9`）· MSVC **≥ 14.44.35211**（本机 14.44.35228 合规）· Windows SDK **≥ 10.0.22621**；**supersede ADR-0010 §六** 的版本锁 | `accepted` | 2026-11-12 | 大人「ue安装了5.9.0我们项目怎么跟进到这个版本」→「直接全量迁到 5.9」 |
 | ADR-0048 | **属性键名以 DB 列为根**：DB/配置列 `snake_case`，协议与词条键 = 同词机械 `camelCase`（`hp_max`→`hpMax`），一次改齐 17 个键 | `accepted` | 2026-11-13 | 大人「按方案 A 执行」「dandu 做为一整个单词不要中间大写了，报文语境字段一起改」 |
+| ADR-0049 | **神识属性改造批**：三路攻击（物/法/神念 · 法术表 `attack_kind` 三值）＋ 神念独立基准列 `psi_atk` ＋ 神魂族（`divineSoulDef`/`divineSoulDmg`/`divineSoul` 只落字段）＋ 神识族键全量改名（`spiritFocus`/`sp`/`spMax`，英文词根＋通用缩写 · psi = psychic 通用缩写）＋ SP 与神念伤害不挂钩 ＋ 补登记 `elemPen`→`magPen` | `accepted` | 2026-11-17 | 大人 2026-11-16 术语表＋六裁定＋「psychic 为什么不缩写」（下游 `docs/SHENSHI-ATTRIBUTES.md` · 卡 `X-0084`） |
 
 > ★ **索引补记（2026-09-30）**：ADR-0019 / 0020 / 0021 上线时**漏登索引**（本表此前止于 ADR-0018）。
 > 本轮补三行 + 新增 ADR-0022 行 —— 表是**导航**，漏登 = 后人翻不到。
@@ -2875,3 +2876,32 @@ UE **5.9.0** 已装（`F:/zxc/Epic Games/UE_5.9` · `Build.version` = 5.9.0 / ch
 - **不改**逻辑语义、不改数值、不改业务字段的归属；只是**同一概念换一种写法**。
 - 历史条目（v0.2 的 `spiritPower→mp` 等）**一字不改** —— 那是历史事实。
 - 物理落点仍归下游（`ADR-0001`）：DB 列是否叫 `phys_atk` 由 dalu 决定，契约只约束**逻辑键名**。
+
+## ADR-0049 —— 神识属性改造批：三路攻击 ＋ 神魂族 ＋ 神识族键改名
+
+- **状态**：`accepted`（2026-11-17）
+- **来源**：**大人 2026-11-16 术语表＋六裁定**（「神识强度和余量进属性与池；攻击统一物／法／神念三路；气血／灵力／神识三条；加神魂防御、神魂伤害」＋「不要拼音混搭词」「旧键全部改名」「神念伤害与 SP 不挂钩」「神念攻击独立列」「神识凝练装备可加」「神魂只落字段」）＋ 2026-11-17「psychic 为什么不缩写」。
+- **下游实现**：`qiuyuan-dalu/docs/SHENSHI-ATTRIBUTES.md`（2026-11-17 落实 · 配置/DB/服务端/客户端四层全改）。
+
+### 裁决
+
+1. **三路攻击**：物理（`physAtk`/`physDef`，无资源）/ 法术（`magAtk`/`magDef`，耗 MP）/ **神念**（`psiAtk`/`divineSoulDef`，耗 SP，加成吃 `divineSoulDmg`）。法术表加 **`attack_kind`** 三值列 `physical/magical/psychic`；判定层（命中/闪避/暴击/格挡）三路共用。
+2. **神念攻击走独立基准列**：境界层次表新增 **`psi_atk`**（现值逐格取法攻同档，待数值裁调）；不复用物攻、不由 SP 派生。
+3. **神念伤害与 SP 上限不挂钩**：SP 只做施法资源；`divineSoulDmg` 是神念路伤害加成（final × (1 ＋ 值/100)）。
+4. **神魂族两键都要**：`divineSoulDef`（神念路防御方）＋ `divineSoulDmg`（神念路伤害加成）；`divineSoul`（神魂底子）**本期只落字段**（DB 列 `divine_soul`），生死/转世玩法不在本期。
+5. **神识族键全量改名**（英文词根＋通用缩写，与 `physAtk`/`magAtk` 同一把尺）：
+   `shenshiIntensity`→**`spiritFocus`**（DB `spirit_focus`）、`shenshiFromRealm`→**`spiritFocusFromRealm`**、
+   `shenshiCultivation`→**`spiritFocusCultivation`**（DB `spirit_focus_cultivation`）、
+   `shenshiPool`/`shenshiPoolMax`→**`sp`/`spMax`**（DB `sp`/`sp_updated_ms`）、
+   `shenshiAtk`→**`psiAtk`**（DB `psi_atk`；**psi = psychic 的通用缩写**，源自希腊字母 ψ）、
+   `shenshi_step`→**`spirit_focus_step`**（§4.2）、`shenshi_pool_factor`/`shenshi_pool_regen_ppm`→**`sp_factor`/`sp_regen_ppm`**（§3.3）。
+   ★ `spiritFocus` 的 `Focus` 无通用缩写，保留全拼——同一条尺的合法特例。
+6. **神识凝练装备可加**：进属性名单与装备池/法宝池；不消耗、不画条、不参与伤害。
+7. **补登记**：`elemPen`→**`magPen`**（2026-11-16 大人裁「元素穿透」改名「法术穿透」，当时契约未同步）。
+8. **废弃命名不留备注**（2026-11-17 大人裁定通例）：文档/契约的**现行段**不许出现「不是 xxx」「（旧 xxx）」类旧名备注；改名表只写新名；历史 changelog 行一字不改（历史事实）。
+
+### 影响 / 边界
+
+- 影响两份契约：`data-contract.md`（→ **v0.16**：§3.1 列改名＋`divine_soul`、§4.1 加 `psi_atk`、§4.2 列名、§3.3 两键、§7.2 词条键）、`protocol-contract.md`（→ **v0.15**：§3.3.1 改名＋新增四键、§5.1、§3.4、§6.1、§6.3）。
+- 既有存档：DB 列改名用 `CHANGE COLUMN`（数据原样保留）；协议键**不留旧键兼容期**（M1 单端同批发布，客户端同批改齐）。
+- 物理落点仍归下游（`ADR-0001`）：列名/键名实现细节见 `qiuyuan-dalu/docs/SHENSHI-ATTRIBUTES.md` §7/§8。

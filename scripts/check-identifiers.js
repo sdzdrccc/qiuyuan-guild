@@ -104,6 +104,14 @@ const RETIRED = {
   qydl_storage_treasure_def_config: '2026-11-14 改名 `qydl_storage_space_def`（dalu `T-0202`）',
   qydl_equip_slot_config: '2026-11-15 大人「穿戴位不应该按分类来吗」：分类树已拆 12 个部位子类（80~91），「物品 → 穿戴位」12 行全可推导 ⇒ 整表删除（dalu `T-0214` §5.6）；`slot_type` 由 `category_id` 派生，仍作 DB / 存档编码',
   qydl_equip_affix_config: '2026-11-15 大人「词条池合并进属性键攻防池」：原 20 行只剩「哪 10 个键能 roll」是真信息，其余全可派生（pool / 适用部位 / 系数 / 权重 / attr_index / 双形态 / 行号），且实例表 qydl_role_equip_affix 不存 affix_id ⇒ 整表删除并合并进 qydl_equip_attr_pool_config.is_affix（dalu `T-0214` §13）；候选由服务端按「每键两形态」规则生成',
+  shenshi_intensity: '2026-11-17 ADR-0049 神识属性改造：改名 `spirit_focus`（dalu X-0084 同批）',
+  shenshi_cultivation: '2026-11-17 ADR-0049：改名 `spirit_focus_cultivation`',
+  shenshi_pool: '2026-11-17 ADR-0049：改名 `sp`（神识 SP 施法消耗池）',
+  shenshi_pool_updated_ms: '2026-11-17 ADR-0049：改名 `sp_updated_ms`',
+  shenshi_pool_factor: '2026-11-17 ADR-0049：改名 `sp_factor`',
+  shenshi_pool_regen_ppm: '2026-11-17 ADR-0049：改名 `sp_regen_ppm`',
+  shenshi_step: '2026-11-17 ADR-0049：改名 `spirit_focus_step`',
+  elemPen: '2026-11-16 大人裁「元素穿透」改名「法术穿透」→ magPen（ADR-0049 补登记）',
 };
 
 /**
@@ -157,9 +165,14 @@ function tableNamesFromXml(text) {
   return out;
 }
 
-/** 从建表 SQL 提取 MySQL 表名（`CREATE TABLE ... \`name\`` ＋ `RENAME TABLE a TO b` 的目标名） */
+/** 从建表 SQL 提取 MySQL 表名（`CREATE TABLE ... \`name\`` ＋ `RENAME TABLE a TO b` 的目标名 ＋ `CREATE OR REPLACE VIEW` 的视图名） */
 function tableNamesFromSql(text) {
   const out = [];
+  // ★ 2026-11-17（X-0084）：视图（`CREATE OR REPLACE VIEW`）与表一样**真实存在**，
+  //   只认 CREATE TABLE 会把 dalu 0019 的 `qydl_item_location` 视图判成「凭空引用」（判据修正：视图名收进来）。
+  for (const m of String(text).matchAll(/CREATE\s+(?:OR\s+REPLACE\s+)?VIEW\s+`?([A-Za-z][A-Za-z0-9_]*)`?/gi)) {
+    out.push(m[1]);
+  }
   for (const m of String(text).matchAll(/CREATE\s+TABLE\s+(?:IF\s+NOT\s+EXISTS\s+)?`?([A-Za-z][A-Za-z0-9_]*)`?/gi)) {
     out.push(m[1]);
   }

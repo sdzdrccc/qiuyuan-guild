@@ -1,6 +1,6 @@
 # 协议契约（Protocol Contract）
 
-> **层**：L3 游戏侧（本仓 `contracts/`）　|　**状态**：**v0.14**（2026-10-27 **寿元与速度口径批** —— `ADR-0046`：§3.3.1 **新增两键** `life` / `lifeMax`（剩余／上限，单位**年**；上限取数据契约 §4.2 `RealmConfig.life_max_years`），★ 并**销掉 §8 那条「寿元是否进一级面板」待办**；`attackSpeed` / `castSpeed` 从「M1 无来源 ⇒ `null`」改成「**系数，基准 1.00**，加成来源 = 功法 / 法宝（两条线都未落地 ⇒ M1 恒 **1.00**）」；★ 消息方向与其余字段一律未动；上一版 v0.13 = 2026-10-27 **神识境界段来源订正** —— `ADR-0045`：§3.3.1 境界段的来源由「数据契约 §4.1 两列现算」改为「**§4.2 `RealmConfig.shenshi_step` 一列 · 按台阶累加**」；`shenshiPoolMax` 注明系数现值 **1** ⇒ 上限即境界段；余量结算列名订正为 `shenshi_pool_updated_ms`。★ **字段集合、消息方向、单位一律未动**；上一版 v0.12 = 2026-10-27 **技术面补全** —— `ADR-0043`：§4 补 **REST 错误码表**（0/4000/4004/4401/4403/4409/4410/4412/4503/5000）、§1 补**连接限流**（20 条/秒 · 突发 40 · 超限丢弃）、公告/版本 / HUD 布局 / 储物佩戴 / 货币余额**标 deferred**；上一版 v0.11 = **sceneId 命名规范 ＋ `delete_character` 登记为 deferred** —— `ADR-0041`：`sceneId` = **小写 snake_case** `^[a-z][a-z0-9_]*$`、缺省 **`beizhen_huaiyin`**（与实现一致；原 `main_1` 是旧默认）；`ADR-0042`：**批准做**删除角色动作，**本期标 `deferred`**（身份取会话、`confirm: true` 二次确认）；上一版 v0.10 = 神识拆两段 · ADR-0037）
+> **层**：L3 游戏侧（本仓 `contracts/`）　|　**状态**：**v0.15**（2026-11-17 **神识属性改造批** —— `ADR-0049`：§3.3.1 神识族键全量改名（`shenshiIntensity`→**`spiritFocus`**、`shenshiFromRealm`→**`spiritFocusFromRealm`**、`shenshiCultivation`→**`spiritFocusCultivation`**、`shenshiPool`/`shenshiPoolMax`→**`sp`/`spMax`**）＋ **新增四键** `psiAtk` / `divineSoulDef` / `divineSoulDmg` / `divineSoul`；§5.1 角色对象同步；§3.4 `spell_effect` 的 `shenshiPool/shenshiPoolMax` → **`sp`/`spMax`**；§6.1 `detect` 资源键 → **`sp`**；§6.3 **三路攻击**（physical/magical/psychic）；补登记 `elemPen`→**`magPen`**（2026-11-16 大人裁）。上一版 v0.14 = 2026-10-27 寿元与速度口径批 —— `ADR-0046`：§3.3.1 **新增两键** `life` / `lifeMax`（剩余／上限，单位**年**；上限取数据契约 §4.2 `RealmConfig.life_max_years`），★ 并**销掉 §8 那条「寿元是否进一级面板」待办**；`attackSpeed` / `castSpeed` 从「M1 无来源 ⇒ `null`」改成「**系数，基准 1.00**，加成来源 = 功法 / 法宝（两条线都未落地 ⇒ M1 恒 **1.00**）」；★ 消息方向与其余字段一律未动；上一版 v0.13 = 2026-10-27 **神识境界段来源订正** —— `ADR-0045`：§3.3.1 境界段的来源由「数据契约 §4.1 两列现算」改为「**§4.2 `RealmConfig.shenshi_step` 一列 · 按台阶累加**」；`shenshiPoolMax` 注明系数现值 **1** ⇒ 上限即境界段；余量结算列名订正为 `shenshi_pool_updated_ms`。★ **字段集合、消息方向、单位一律未动**；上一版 v0.12 = 2026-10-27 **技术面补全** —— `ADR-0043`：§4 补 **REST 错误码表**（0/4000/4004/4401/4403/4409/4410/4412/4503/5000）、§1 补**连接限流**（20 条/秒 · 突发 40 · 超限丢弃）、公告/版本 / HUD 布局 / 储物佩戴 / 货币余额**标 deferred**；上一版 v0.11 = **sceneId 命名规范 ＋ `delete_character` 登记为 deferred** —— `ADR-0041`：`sceneId` = **小写 snake_case** `^[a-z][a-z0-9_]*$`、缺省 **`beizhen_huaiyin`**（与实现一致；原 `main_1` 是旧默认）；`ADR-0042`：**批准做**删除角色动作，**本期标 `deferred`**（身份取会话、`confirm: true` 二次确认）；上一版 v0.10 = 神识拆两段 · ADR-0037）
 > **真源**：本文件。客户端与服务端**双向**只读消费。
 > **来源**：从 Codex 原型的 `MessageTypes` + `docs/03-protocol-and-api.md`（216 行）**提炼**，非新设计。
 > **战略地位**：服务端**重写 Go**（已定）时，**Java 侧最有价值的产出就是本契约**（协议 + 数据表）——那 22 个 Spring 服务会被丢弃，本契约不会。
@@ -213,8 +213,11 @@
 | `hpMax` / `mpMax` | 气血 / 灵力 上限 | 境界配置 `hp_max` / `mp_max` | 与 §5.1 角色对象同名同义 |
 | `physAtk` / `magAtk` | 物攻 / 法攻 | `phys_atk` / `mag_atk` | |
 | `physDef` / `magDef` | 物防 / 法防 | `phys_def` / `mag_def` | |
-| `shenshiIntensity` / `shenshiFromRealm` / `shenshiCultivation` | 神识强度 / **境界段** / **修炼段** | 境界段 = §4.2 `RealmConfig.shenshi_step` **按台阶累加**现算（★ 2026-10-27 `ADR-0045`：原 §4.1 两列已删；渡劫圆满 511000）；修炼段 = `Role.shenshi_cultivation`；强度 = 两者之和 | ★ 强度是**单值属性**，不画当前/上限；★ **两段都下发，客户端不许自己减**（那是把公式抄第二遍）。`ADR-0036` 改名 ＋ `ADR-0037` 拆段 |
-| `shenshiPool` / `shenshiPoolMax` | 神识余量 / 余量上限（**消耗池**） | `Role.shenshi_pool` ＋ `Role.shenshi_pool_updated_ms`；上限 = **境界段** × 全局系数（★ `ADR-0045`：现值 **1** ⇒ 上限就是境界段本身），不落库 | ★ 上限只看境界段 ⇒ 修炼不撑池子（`ADR-0037`）。顶栏那根条画的是这一对，★ 不是强度 |
+| `spiritFocus` / `spiritFocusFromRealm` / `spiritFocusCultivation` | 神识凝练 / **境界段** / **修炼段** | 境界段 = §4.2 `RealmConfig.spirit_focus_step` **按台阶累加**现算（渡劫圆满 511000）；修炼段 = `Role.spirit_focus_cultivation`；凝练 = 两者之和 | ★ 凝练是**单值门槛属性**（不消耗、不画条；★ 2026-11-17 `ADR-0049`：**装备可加**）；★ **两段都下发，客户端不许自己减**（那是把公式抄第二遍） |
+| `sp` / `spMax` | 神识 SP 当前 / 上限（**施法消耗池**） | `Role.sp` ＋ `Role.sp_updated_ms`；上限 = **境界段** × `sp_factor`（现值 **1** ⇒ 上限就是境界段本身），不落库 | ★ 主界面第三条资源条画的是这一对；★ **神念技能消耗它**；★ **神念伤害与 SP 上限不挂钩**（`ADR-0049`）—— SP 只做施法资源 |
+| `psiAtk` | 神念攻击（**第三路攻击**） | 境界配置 `psi_atk` **独立基准列**（现与法攻同档，待数值裁调） | ★ 2026-11-17 `ADR-0049`：攻击统一物／法／神念三路，神念走独立基准列，不复用物攻、不由 SP 派生 |
+| `divineSoulDef` / `divineSoulDmg` | 神魂防御 / 神魂伤害 | ★ **M1 无来源** ⇒ `null` | ★ 神念路**防御方** / 神念路**伤害加成**（final × (1 ＋ 值/100)）；两键都要（大人裁定 1）。判定层（命中/暴击/格挡）三路共用 |
+| `divineSoul` | 神魂底子 | `Role.divine_soul` | ★ 2026-11-17 `ADR-0049`：**本期只落字段**，生死 / 转世玩法不在本期 |
 | `hitRate` / `dodgeRate` | 命中 / 闪避 | `hit_rate` / `dodge_rate` | 百分比，见下方单位口径 |
 | `critRate` / `critDmg` / `critResist` | 暴击率 / 暴击伤害 / 暴击抗性 | `crit_rate` / `crit_dmg` / `crit_resist` | 术语已按裁定 F 统一（原「会心」） |
 | `defBreak` | 破防 | `def_break` | ⚠️ **单位待裁**（见本节末） |
@@ -223,7 +226,7 @@
 | `attackSpeed` / `castSpeed` | 攻速 / 施法速度 | ★ **基准 1.00**（v0.14 `ADR-0046`：语义 = **系数**，不是速度值） | 加成来源 = **功法（M6）／法宝（M5）**，两条线都未落地 ⇒ M1 恒发 **`1.00`**；★ 客户端见 1.00 就显示 1.00，**不许**当"没有这个数"去显「暂无来源」。★ 与 `moveSpeed`（境界裸值 100）**不是同一把尺**，不许互相顶替 |
 | `life` / `lifeMax` | 寿元**剩余 / 上限**（年） | `Role.life_current` ＋ §4.2 `RealmConfig.life_max_years` | ★ v0.14 `ADR-0046` 新增（销 §8「寿元是否进一级面板」待办）。★ 显示形态「剩余 / 上限」，**不画进度条**（寿元不是战斗中来回跳的资源）；★ 上限按**大境界**取（九境 120→6000 年），不按层 |
 | `hp` / `mp` | 当前气血 / 灵力 | `Role.hp` / `Role.mp` | 面板要显示「当前 / 上限」，故一并给 |
-| `elemAtk` / `elemRes`（**下标数组，各 8 项**）/ `elemPen` | 二级 · 八系攻防与元素穿透 | ★ **M1 无来源** | ★ 词根仍取 §7.2 的 `elemAtk0~7` / `elemRes0~7`，★ 但**传输形状是下标数组**（§7.2 自己写的「下标即灵根枚举」就是这个意思）⇒ 数组比 16 个平铺键少一半噪声，且下标语义不变。配置表无加成列，且双灵根取 `+20%/+10%` 还是 `+25%` **未裁** ⇒ 八个元素全 `null` |
+| `elemAtk` / `elemRes`（**下标数组，各 8 项**）/ `magPen` | 二级 · 八系攻防与法术穿透（★ `magPen` = 2026-11-16 大人裁「元素穿透」改名，`ADR-0049` 补登记） | ★ **M1 无来源** | ★ 词根仍取 §7.2 的 `elemAtk0~7` / `elemRes0~7`，★ 但**传输形状是下标数组**（§7.2 自己写的「下标即灵根枚举」就是这个意思）⇒ 数组比 16 个平铺键少一半噪声，且下标语义不变。配置表无加成列，且双灵根取 `+20%/+10%` 还是 `+25%` **未裁** ⇒ 八个元素全 `null` |
 | `equipment` | 已穿戴摘要 | ★ **M5** | M1 固定回**空数组**（★ 不是 `null` —— "没穿装备"与"没有装备系统"要能区分） |
 
 **三条硬口径**：
@@ -248,7 +251,7 @@
 | `combat_hit` | `{attackerId, attackerName, targetId, targetName, skill, damage, miss, isCrit, isBlock, multiplier, targetHp, targetHpMax, attackerXinmo, attackerKuangzao, attackerDandu}` | 战斗命中（**全员广播**） |
 | `combat_death` | `{targetId, killerId}` | 目标陨落（广播） |
 | `combat_resurrect` | `{id, hp, hpMax}` | 复活回满（广播） |
-| `spell_effect` | `{spell, casterId, casterName, shield/heal/hp/hpMax?, shenshiPool/shenshiPoolMax/message?}` | 法术效果广播（护盾 / 治疗 / buff ／神识探查） |
+| `spell_effect` | `{spell, casterId, casterName, shield/heal/hp/hpMax?, sp/spMax/message?}` | 法术效果广播（护盾 / 治疗 / buff ／神识探查） |
 | `spell_fail` | `{message}` | 施法失败（灵力不足 / 神识余量不足 / 目标不存在…） |
 | `chat_private` | `{fromId, fromName, text}` | 传音术私聊（**仅目标收到**） |
 | `chat_private_sent` | `{toId, fromName, text}` | 传音回执（施法者） |
@@ -356,8 +359,8 @@
   "bodyTier": 1, "bodyName": "风雷冰灵体",
   "origin": "Origin.NorthZhen.Huaiyin",
   "xinmo": 12.5, "kuangzao": 8.0, "dandu": 0.0,
-  "shenshiIntensity": 19.0,
-  "shenshiPool": 190.0, "shenshiPoolMax": 190.0,
+  "spiritFocus": 19.0,
+  "sp": 190.0, "spMax": 190.0,
   "hp": 100.0, "hpMax": 100.0
 }
 ```
@@ -395,8 +398,8 @@
 | `roots[].sortOrder` | **`0` = 主灵根 = 纯度最高者** | `data-contract.md` §3.2 |
 | `origin` | ★ **出身标签** | **v0.4 新增（`ADR-0023` ⑧）**。M1 唯一取值 `Origin.NorthZhen.Huaiyin`；**真源 = 下游全局配置的 `origin_tag` 键**（物理落点见 `qiuyuan-dalu/docs/DATA-LAYOUT.md` · `ADR-0027` ①），**由配置派生、不落库**（故**不在** `data-contract.md` §3.1 `Role` 里 —— 见下方说明） |
 | `exp` / `expMax` | 修为值 / **当前境界**突破所需修为（`expMax` **派生自境界配置，不落库**） | `data-contract.md` §3.1（`exp` 列）· §境界配置 `exp_max` · ★ **v0.6 补登记（`ADR-0029` ②）** |
-| `shenshiIntensity` | **神识强度 = 境界段 ＋ 修炼段 —— ★ 单值，不是「当前/上限」对** | `data-contract.md` §3.1（影响术法 / 施法速度 / 突破小加成 / 炼艺成功率）· ★ **v0.6 记此一条防再错（`ADR-0029` ④）**：它是**属性**不是**资源池**，界面**不得**画成 `420/520` 那种进度条；★ **ADR-0036 改名**（原 `shenshi`）· ★ **ADR-0037 拆两段**：明细走 §3.3.1 的 `shenshiFromRealm` / `shenshiCultivation`（角色对象只给总和） |
-| `shenshiPool` / `shenshiPoolMax` | **神识余量 / 余量上限（消耗池）** | `data-contract.md` §3.1（`shenshi_pool`）＋ §3.3（`shenshi_pool_factor`）· ★ **ADR-0036 新增**：上限派生、不落库；顶栏那根「神识余量」条画的是这一对，不是强度。★ **ADR-0037**：上限的输入是**境界段**（不是总强度） |
+| `spiritFocus` | **神识凝练 = 境界段 ＋ 修炼段 —— ★ 单值门槛属性，不是「当前/上限」对** | `data-contract.md` §3.1 · ★ 是**属性**不是**资源池**，界面**不得**画成 `420/520` 那种进度条；★ **2026-11-17 `ADR-0049` 改名**（神识族统一英文词根＋通用缩写）· 明细走 §3.3.1 的 `spiritFocusFromRealm` / `spiritFocusCultivation`（角色对象只给总和） |
+| `sp` / `spMax` | **神识 SP 当前 / 上限（施法消耗池）** | `data-contract.md` §3.1（`sp`）＋ §3.3（`sp_factor`）· 上限派生、不落库；主界面第三条资源条画的是这一对。★ **`ADR-0049`**：上限的输入是**境界段**（不是总凝练） |
 
 > ✅ **灵力命名已统一（v0.2 · ADR-0019 ④）**：字段由 **`spiritPower` → `mp`**（上限 `maxMp`）——
 > 与 `data-contract.md` §3.1 的同名字段一致。**原「两个名字指同一资源」的状态已消除**
@@ -441,7 +444,7 @@
 | `shield` | 灵力护盾 | 防御 | 消耗灵力生成护盾，**受击先扣盾** |
 | `impact` | 灵力冲击 | 攻击 | 远程法术伤害，与灵力/法攻挂钩 |
 | `lightstep` | 轻身术 | 辅助 | 移速/闪避提升（buff 广播） |
-| `detect` | 神识探查 | 辅助 | 以神识扫过四周 · **消耗神识余量上限的 5%**（ADR-0036 已实装；目标清单随场景内容补） |
+| `detect` | 神识探查 | 辅助（**神念路** · `attack_kind=psychic`） | 以神识扫过四周 · **消耗神识 SP 上限的 5%**（资源键 `sp`；`ADR-0049` 同步） |
 | `control` | 御物术 | 通用 | 操控物品攻击（**占位**） |
 | `spiritarray` | 聚灵阵 | 辅助 | 提升修炼速度（buff 广播；打坐 ×2） |
 | `telepathy` | 传音术 | 辅助 | 私密传音给指定玩家 |
@@ -456,6 +459,11 @@ ID 格式 **`inn_<root>_<tier>`**（如 `inn_huo_1` = 火系火球术）。
 完整规则见 `data-contract.md` §5.1。
 
 ### 6.3 功法
+
+> ★★ **三路攻击**（2026-11-17 `ADR-0049`）：攻击统一**物理 / 法术 / 神念**三路。
+> 法术表 `attack_kind` 列三值 `physical / magical / psychic` 与之对应；神念路取 `psiAtk` vs `divineSoulDef`、
+> 伤害加成吃 `divineSoulDmg`、资源耗 **SP**；法术路取 `magAtk` vs `magDef`、耗 **MP**；物理路取 `physAtk` vs `physDef`、无资源。
+> 命中 / 闪避 / 暴击 / 格挡等**判定层三路共用**。★ 神念伤害与 SP 上限**不挂钩**（SP 只做施法资源）。
 
 ID 格式 **`gong_<root>`**（`gong_jin` / `gong_mu` / `gong_shui` / `gong_huo` / `gong_tu` / `gong_feng` / `gong_lei` / `gong_bing`）。
 详见 `data-contract.md` §5.2。
@@ -519,6 +527,7 @@ ID 格式 **`gong_<root>`**（`gong_jin` / `gong_mu` / `gong_shui` / `gong_huo` 
 
 | 版本 | 日期 | 变更 |
 |---|---|---|
+| **v0.15** | **2026-11-17** | ★ **神识属性改造批**（`DECISIONS.md` **ADR-0049** · 下游 `docs/SHENSHI-ATTRIBUTES.md` 落实）：① §3.3.1 神识族改名 `spiritFocus` / `spiritFocusFromRealm` / `spiritFocusCultivation` / `sp` / `spMax`（神识族统一**英文词根＋通用缩写**，psi = psychic 通用缩写）；② **新增四键** `psiAtk` / `divineSoulDef` / `divineSoulDmg` / `divineSoul`（三路攻击 ＋ 神魂族；神魂底子本期只落字段）；③ §5.1 角色对象同步改名；④ §3.4 `spell_effect` 键改名 `sp` / `spMax`；⑤ §6.1 `detect` 资源键 → `sp`、标**神念路**；⑥ §6.3 登记**三路攻击**口径与法术表 `attack_kind` 三值列；⑦ 补登记 `elemPen` → `magPen`（2026-11-16 大人裁「元素穿透」改名「法术穿透」）。★ 消息方向未动 · 未改既有字段语义（除改名）。 |
 | **v0.13** | **2026-10-27** | ★ **神识境界段来源订正**（`DECISIONS.md` **ADR-0045** · 数据契约 **v0.14** 同批 · 下游卡 `T-0148`／`T-0149`）：① §3.3.1 `shenshiFromRealm` 的来源由「数据契约 §4.1 两列（起点＋增量）现算」改为「**§4.2 `RealmConfig.shenshi_step` 一列 · 从炼气一层按台阶累加**」（★ 层次表不再有神识列）；② `shenshiPoolMax` 的系数注明**现值 1** ⇒ **上限 = 境界段本身**（大人裁「余量上限 = 境界段」）；③ 余量结算列名订正 `shenshi_pool_updated_at` → **`shenshi_pool_updated_ms`**（随下游命名规范：epoch 毫秒 ⇒ `_ms`）。★ **未新增/删除字段 · 未改消息方向 · 未改单位**：`shenshiIntensity` / `shenshiFromRealm` / `shenshiCultivation` / `shenshiPool` / `shenshiPoolMax` 五个键原样，只是数出来的**量级**变了（建角 10 → 100、炼气三层 14 → 300、渡劫圆满 511000）。 |
 | **v0.12** | **2026-10-27** | ★ **技术面补全**（`ADR-0043` · 卡 `X-0073`）：① §4 新增 **§4.1 统一信封与错误码表**（10 个业务码，含 `4004` vs `4503` 的区分）；② §1 新增**连接限流**（单连接 20 条/秒 · 突发 40 · 超限静默丢弃）；③ §8 勾销 REST 错误码待办，登记 **公告/版本 · HUD 布局 · 储物佩戴 · 货币余额** 四项 `deferred`。★ 未改任何既有消息方向与字段语义。 |
 | **v0.11** | **2026-10-27** | ★ **sceneId 命名规范 ＋ `delete_character` 登记 deferred**（`ADR-0041` / `ADR-0042` · 卡 `X-0072`）：① §1 新增 `sceneId` 规则 —— **小写 snake_case** `^[a-z][a-z0-9_]*$`、缺省 **`beizhen_huaiyin`**（原 `main_1` 是旧默认）、上线不改名、资产侧同字符串；② §2.1 新增 **`delete_character {confirm:true}`**、§3.1 新增 `delete_ok` / `delete_fail`，★ **批准做但本期 `deferred`**（身份取会话、客户端按钮暂禁用）；③ §8 勾销 sceneId 待办、新增 delete_character 实现待办。★ 未改既有字段语义 · 未新增其它消息方向。 |
