@@ -203,6 +203,8 @@
 
 | **X-0088** | ★ **三路穿透 ＋ 道途·因果批**（2026-11-17 · 大人「破防删掉，新加物理穿透，神念穿透属性，道途属性加因果」）：删 `defBreak`；境界列 `def_break` → **`phys_pen`**（值不动）；新增 `physPen` / `psiPen`，与 `magPen` 成**三路穿透（各扣本路防御点数、不互串）**；道途新增 **`yinguo`（因果）**，落迁移 `0025` 新列 `qydl_role_aptitude.yinguo`；顺序按大人给定三处同序（表行 / `sort_order` / 字段序）。`protocol-contract` v0.18→**v0.19**、`data-contract` v0.18→**v0.19**、新增 **ADR-0051**。 | 大人 | `qiuyuan-guild`（两契约 ＋ ADR）／`qiuyuan-dalu`（T-0220：配置/迁移/服务端/UE） | 契约升版（ADR-0051） | `已完成`（待大人复核） | [reviews/X-0088.md](../reviews/X-0088.md) |
 
+| **X-0089** | ★ **词条池扩容至全属性**（2026-11-17 · 大人「都加进属性池，顺序就按这个」）：`qydl_attr_pool_config` 49 → **63 行**，把 `spMax` ＋ 进阶 7 ＋ 道途 6 开成随机词条（`is_affix=1` / `weight=100`）；池序 = 大人清单，`sort_order` 1..63。方向归组：`gengu`/`tipo`→防御、`strength`→攻击、其余 11 项→辅助。`data-contract` v0.19→**v0.20**（§7.2 +14 键）；**`protocol-contract` 零改动**。 | 大人 | `qiuyuan-guild`（data 契约 ＋ ADR-0052）／`qiuyuan-dalu`（T-0222） | 契约升版（ADR-0052） | `已完成`（待大人复核） | [reviews/X-0089.md](../reviews/X-0089.md) |
+
 ---
 
 ## 附：本表的维护纪律
