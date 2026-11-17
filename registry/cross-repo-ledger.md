@@ -205,6 +205,8 @@
 
 | **X-0089** | ★ **词条池扩容至全属性**（2026-11-17 · 大人「都加进属性池，顺序就按这个」）：`qydl_attr_pool_config` 49 → **63 行**，把 `spMax` ＋ 进阶 7 ＋ 道途 6 开成随机词条（`is_affix=1` / `weight=100`）；池序 = 大人清单，`sort_order` 1..63。方向归组：`gengu`/`tipo`→防御、`strength`→攻击、其余 11 项→辅助。`data-contract` v0.19→**v0.20**（§7.2 +14 键）；**`protocol-contract` 零改动**。 | 大人 | `qiuyuan-guild`（data 契约 ＋ ADR-0052）／`qiuyuan-dalu`（T-0222） | 契约升版（ADR-0052） | `已完成`（待大人复核） | [reviews/X-0089.md](../reviews/X-0089.md) |
 
+| **X-0090** | ★ **列名归一收口**（2026-11-17 · 大人「开工」，承接 `T-0223` 审计）：配置表 `attack_kind`/`skill_kind`/`value_kind` → **`*_type`**、`cast_time` → **`cast_sec`**；DB `qydl_role_equip_affix` / `qydl_role_artifact_affix` 的 `value_kind` → `value_type`（迁移 `0026`）；Go 字段与约 60 处引用同批改。依据 = 2026-10-26 裁定「类别一律 `*_type`」＋`0009` 只收了 DB 的漏网。`protocol-contract` v0.20→**v0.21**（§6.1/§6.3 列名提法）。 | 大人 | `qiuyuan-guild`（协议正文 ＋ 本记录）／`qiuyuan-dalu`（配置/迁移/代码/文档 · `T-0224`） | 判据执行收口（非新裁定） | `已完成`（待大人复核） | [reviews/X-0090.md](../reviews/X-0090.md) |
+
 ---
 
 ## 附：本表的维护纪律
