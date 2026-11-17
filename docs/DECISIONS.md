@@ -71,7 +71,7 @@
 | ADR-0046 | **寿元进一级面板**：协议 §3.3.1 新增 `life` / `lifeMax`（年 · 剩余与上限，上限取 §4.2 `RealmConfig.life_max_years`）· **销 §8「寿元是否进一级面板」待办** · `attackSpeed` / `castSpeed` 语义从「M1 无来源 ⇒ null」改「**系数，基准 1.00**」，加成来源 = 功法 / 法宝（两条线都未落地 ⇒ M1 恒 1.00） | `accepted` | 2026-10-27 | 大人「寿元进一级面板，攻速／施法速度按 1.00 开始算，功法和法宝加成」 |
 | ADR-0047 | **引擎锁定 5.8.1 → 5.9.0**：全队锁 **UE 5.9.0**（`F:/zxc/Epic Games/UE_5.9`）· MSVC **≥ 14.44.35211**（本机 14.44.35228 合规）· Windows SDK **≥ 10.0.22621**；**supersede ADR-0010 §六** 的版本锁 | `accepted` | 2026-11-12 | 大人「ue安装了5.9.0我们项目怎么跟进到这个版本」→「直接全量迁到 5.9」 |
 | ADR-0048 | **属性键名以 DB 列为根**：DB/配置列 `snake_case`，协议与词条键 = 同词机械 `camelCase`（`hp_max`→`hpMax`），一次改齐 17 个键 | `accepted` | 2026-11-13 | 大人「按方案 A 执行」「dandu 做为一整个单词不要中间大写了，报文语境字段一起改」 |
-| ADR-0049 | **神识属性改造批**：三路攻击（物/法/神念 · 法术表 `attack_kind` 三值）＋ 神念独立基准列 `psi_atk` ＋ 神魂族（`divineSoulDef`/`divineSoulDmg`/`divineSoul` 只落字段）＋ 神识族键全量改名（`spiritFocus`/`sp`/`spMax`，英文词根＋通用缩写 · psi = psychic 通用缩写）＋ SP 与神念伤害不挂钩 ＋ 补登记 `elemPen`→`magPen` | `accepted` | 2026-11-17 | 大人 2026-11-16 术语表＋六裁定＋「psychic 为什么不缩写」（下游 `docs/SHENSHI-ATTRIBUTES.md` · 卡 `X-0084`） |
+| ADR-0049 | **神识属性改造批**：三路攻击（物/法/神念 · 法术表 `attack_kind` 三值）＋ 神念独立基准列 `psi_atk` ＋ 神魂族（`divineSoul` 只落字段；同日修订：防御键定名 `psiDef`、神魂伤害键删除）＋ 神识族键全量改名（`spiritFocus`/`sp`/`spMax`，英文词根＋通用缩写 · psi = psychic 通用缩写）＋ SP 与神念伤害不挂钩 ＋ 补登记 `elemPen`→`magPen` | `accepted` | 2026-11-17 | 大人 2026-11-16 术语表＋六裁定＋「psychic 为什么不缩写」（下游 `docs/SHENSHI-ATTRIBUTES.md` · 卡 `X-0084`） |
 
 > ★ **索引补记（2026-09-30）**：ADR-0019 / 0020 / 0021 上线时**漏登索引**（本表此前止于 ADR-0018）。
 > 本轮补三行 + 新增 ADR-0022 行 —— 表是**导航**，漏登 = 后人翻不到。
@@ -2900,8 +2900,16 @@ UE **5.9.0** 已装（`F:/zxc/Epic Games/UE_5.9` · `Build.version` = 5.9.0 / ch
 7. **补登记**：`elemPen`→**`magPen`**（2026-11-16 大人裁「元素穿透」改名「法术穿透」，当时契约未同步）。
 8. **废弃命名不留备注**（2026-11-17 大人裁定通例）：文档/契约的**现行段**不许出现「不是 xxx」「（旧 xxx）」类旧名备注；改名表只写新名；历史 changelog 行一字不改（历史事实）。
 
+### 同日修订（2026-11-17 晚 · 大人「删神魂防御，改成神念防御，删神魂伤害」）
+
+- 原裁决 4「神魂族两键都要」**被本修订取代**：**`divineSoulDef` → `psiDef`（神念防御）**、**`divineSoulDmg` 整键删除**。
+  神念路**无独立伤害加成键**（伤害只由 `psiAtk` 结算）；判定层三路共用不变。
+- `divineSoul`（神魂底子，`Role.divine_soul`）**保留、只落字段、不参与攻防**。
+- 契约版本：`protocol-contract` v0.15 → **v0.16**、`data-contract` v0.16 → **v0.17**；记录卡 `X-0085`。
+- 词根：`psi` 已在 whitelist（ADR-0049 裁决 5），`psi_def` 按机械规则 camel↔snake 互推，无需新词根。
+
 ### 影响 / 边界
 
-- 影响两份契约：`data-contract.md`（→ **v0.16**：§3.1 列改名＋`divine_soul`、§4.1 加 `psi_atk`、§4.2 列名、§3.3 两键、§7.2 词条键）、`protocol-contract.md`（→ **v0.15**：§3.3.1 改名＋新增四键、§5.1、§3.4、§6.1、§6.3）。
+- 影响两份契约：`data-contract.md`（→ **v0.17**：§3.1 列改名＋`divine_soul`、§4.1 加 `psi_atk`、§4.2 列名、§3.3 两键、§7.2 词条键）、`protocol-contract.md`（→ **v0.15**：§3.3.1 改名＋新增四键、§5.1、§3.4、§6.1、§6.3）。
 - 既有存档：DB 列改名用 `CHANGE COLUMN`（数据原样保留）；协议键**不留旧键兼容期**（M1 单端同批发布，客户端同批改齐）。
 - 物理落点仍归下游（`ADR-0001`）：列名/键名实现细节见 `qiuyuan-dalu/docs/SHENSHI-ATTRIBUTES.md` §7/§8。
