@@ -201,6 +201,8 @@
 
 | **X-0087** | ★ **战斗扩展属性批**（2026-11-17 · 大人点名六项）：`lifesteal`（吸血率·%）· `healPower`（治疗强度·%，上游「治疗加成」）· `healAmount`（治疗量·点）· `hpRegen`/`mpRegen`/`spRegen`（恢复速度·点/秒，`spRegen` 派生 = `spMax` × `sp_regen_ppm`）进 §3.3.1 与 §7.2；通用占位 `regen` 删除（从未进契约）。`protocol-contract` v0.16→**v0.17**、`data-contract` v0.17→**v0.18**、新增 **ADR-0050**。§3.1 无对应列 ⇒ 零 DB 改动。 | 大人 | `qiuyuan-guild`（两契约 ＋ ADR）／`qiuyuan-dalu`（T-0218） | 契约升版（ADR-0050） | `已完成`（待大人复核） | [reviews/X-0087.md](../reviews/X-0087.md) |
 
+| **X-0088** | ★ **三路穿透 ＋ 道途·因果批**（2026-11-17 · 大人「破防删掉，新加物理穿透，神念穿透属性，道途属性加因果」）：删 `defBreak`；境界列 `def_break` → **`phys_pen`**（值不动）；新增 `physPen` / `psiPen`，与 `magPen` 成**三路穿透（各扣本路防御点数、不互串）**；道途新增 **`yinguo`（因果）**，落迁移 `0025` 新列 `qydl_role_aptitude.yinguo`；顺序按大人给定三处同序（表行 / `sort_order` / 字段序）。`protocol-contract` v0.18→**v0.19**、`data-contract` v0.18→**v0.19**、新增 **ADR-0051**。 | 大人 | `qiuyuan-guild`（两契约 ＋ ADR）／`qiuyuan-dalu`（T-0220：配置/迁移/服务端/UE） | 契约升版（ADR-0051） | `已完成`（待大人复核） | [reviews/X-0088.md](../reviews/X-0088.md) |
+
 ---
 
 ## 附：本表的维护纪律

@@ -1,6 +1,6 @@
 # 数据契约（Data Contract）
 
-> **层**：L3 游戏侧（本仓 `contracts/`）　|　**状态**：**v0.18**（2026-11-17 **战斗扩展属性批** —— `ADR-0050`：§7.2 词条键**新增六键** `lifesteal` / `healPower` / `healAmount` / `hpRegen` / `mpRegen` / `spRegen`（均无 §3.1 列 ⇒ M1 `null`，`spRegen` 由 `sp_regen_ppm` 派生）；上一版 v0.17 = 2026-11-17 **神识属性改造批·同日修订** —— 大人「删神魂防御，改成神念防御，删神魂伤害」：**§7.2 词条键 `divineSoulDef` → `psiDef`、`divineSoulDmg` 删除**（§3.1 无对应列，零 DB 改动）；上一版 v0.16 = 同日早先的神识属性改造批 —— `ADR-0049`：① §3.1 `Role` 神识族列改名 `spirit_focus` / `spirit_focus_cultivation` / `sp` / `sp_updated_ms`，**新增** `divine_soul`（神魂底子，本期只落字段）；② §4.1 层次表**新增 `psi_atk` 列**（神念攻击独立基准 · 现与法攻同档）；③ §4.2 列 `shenshi_step` → **`spirit_focus_step`**；④ §3.3 键 `shenshi_pool_factor`/`shenshi_pool_regen_ppm` → **`sp_factor`/`sp_regen_ppm`**；⑤ §7.2 词条键改名＋新增 `psiAtk` / `divineSoulDef` / `divineSoulDmg` / `spiritFocus`；⑥ 补登记 `elemPen`→**`magPen`**。上一版 v0.15 = 2026-10-27 寿元与速度口径批 —— `ADR-0046`：§7.2 词条键名加 **`life` / `lifeMax`**（剩余／上限，单位**年** · 上限取 §4.2 `RealmConfig.life_max_years`）；`attackSpeed` / `castSpeed` 语义从「M1 无来源 ⇒ `null`」改成「**系数，基准 1.00**，加成来源 = 功法 / 法宝」⇒ M1 恒 **1.00**（★ 与 `moveSpeed` 的 100 不是同一把尺）。★ 协议侧字段集合的变化见 `protocol-contract.md` §3.3.1；上一版 v0.14 = 2026-10-27 **神识单字段批** —— `ADR-0045`：① 境界段真源从 §4.1 层次表两列改成 **§4.2 `RealmConfig.shenshi_step` 一列 · 按台阶累加**（★ 层次表不再有神识列）；② 逐档翻倍**九境填满** 100→25600 ⇒ 建角 100、渡劫圆满 511000；③ **突破不额外大涨**（曲线连续）；④ 未定哨兵 `0/0` → **`-1`**；⑤ `shenshi_pool_factor` 现值 **10 → 1** ⇒ **余量上限 = 境界段**；★ 协议字段一字未动；上一版 v0.13 = 2026-10-27 **玩法口径批** —— `ADR-0044`：暴击 **75% / 300%**、生克上限 **×1.25**、储物等级段 **1–63**、神识**引气即有**；`ADR-0043`：§3.3 补姓名正则 **RE2**；上一版 v0.12 = 境界与寿元一揽子收口 —— `DECISIONS.md` **ADR-0039**：① 九境 × **10 层 = 90 台阶**（supersede `ADR-0004` 的 82）；② 倍率改 **×1.0772 / 跨境 ×3.0 / 无 1.13 例外**；③ 寿元改 **世界观 A 案**；④ 新增 **`RealmConfig` 大境界总表**、层次表**删 `exp_max`** 改派生；⑤ 补**天劫两实体**；⑥ 神识 **`0/0 = 未定`** 哨兵；上一版 v0.11 = 2026-10-25 **神识拆两段：境界段 ＋ 修炼段** —— `DECISIONS.md` **ADR-0037**：① §3.1 新增 `shenshi_cultivation`（永久修炼段），`shenshi_intensity` 改定义为**境界段 ＋ 修炼段**的和（派生缓存）· ② §4.1 一列绝对值 → **两列阶梯**（`shenshi_start` ＋ `shenshi_step`，境界段 = 起点 + (层-1)×增量）· ③ 余量上限改挂**境界段**（★ 修炼段不撑池子）· ④ §7.2 词条键加 `shenshiFromRealm` / `shenshiCultivation`；上一版 v0.10 = 改名 ＋ 余量池 · ADR-0036 —— `DECISIONS.md` **ADR-0036**：① §3.1 `Role` 的 `shenshi` → `shenshi_intensity`，新增 `shenshi_pool` / `shenshi_pool_updated_at` · ② §4.1 配置列 → `shenshi_intensity_base` · ③ §7.2 词条键 `shenshiIntensity` ＋ 新增 `shenshiPool` / `shenshiPoolMax` · ④ §3.3 `GameConfig` 追加两个余量系数；★ 强度仍是单值属性，余量才是消耗池；上一版 v0.9 = M5 物品域展开 · ADR-0033）
+> **层**：L3 游戏侧（本仓 `contracts/`）　|　**状态**：**v0.19**（2026-11-17 **三路穿透 ＋ 道途·因果批** —— `ADR-0051`：§4.1 列 `def_break` → **`phys_pen`（物理穿透，值不动）**；§7.2 词条键 `defBreak` → **`physPen`** ＋ 新增 **`psiPen`**（与 `magPen` 成三路）＋ 道途新增 **`yinguo`**（因果）；§3.1 `Role` 侧另加 `qydl_role_aptitude.yinguo` 列（迁移 `0025`）；上一版 v0.18 = 2026-11-17 **战斗扩展属性批** —— `ADR-0050`：§7.2 词条键**新增六键** `lifesteal` / `healPower` / `healAmount` / `hpRegen` / `mpRegen` / `spRegen`（均无 §3.1 列 ⇒ M1 `null`，`spRegen` 由 `sp_regen_ppm` 派生）；上一版 v0.17 = 2026-11-17 **神识属性改造批·同日修订** —— 大人「删神魂防御，改成神念防御，删神魂伤害」：**§7.2 词条键 `divineSoulDef` → `psiDef`、`divineSoulDmg` 删除**（§3.1 无对应列，零 DB 改动）；上一版 v0.16 = 同日早先的神识属性改造批 —— `ADR-0049`：① §3.1 `Role` 神识族列改名 `spirit_focus` / `spirit_focus_cultivation` / `sp` / `sp_updated_ms`，**新增** `divine_soul`（神魂底子，本期只落字段）；② §4.1 层次表**新增 `psi_atk` 列**（神念攻击独立基准 · 现与法攻同档）；③ §4.2 列 `shenshi_step` → **`spirit_focus_step`**；④ §3.3 键 `shenshi_pool_factor`/`shenshi_pool_regen_ppm` → **`sp_factor`/`sp_regen_ppm`**；⑤ §7.2 词条键改名＋新增 `psiAtk` / `divineSoulDef` / `divineSoulDmg` / `spiritFocus`；⑥ 补登记 `elemPen`→**`magPen`**。上一版 v0.15 = 2026-10-27 寿元与速度口径批 —— `ADR-0046`：§7.2 词条键名加 **`life` / `lifeMax`**（剩余／上限，单位**年** · 上限取 §4.2 `RealmConfig.life_max_years`）；`attackSpeed` / `castSpeed` 语义从「M1 无来源 ⇒ `null`」改成「**系数，基准 1.00**，加成来源 = 功法 / 法宝」⇒ M1 恒 **1.00**（★ 与 `moveSpeed` 的 100 不是同一把尺）。★ 协议侧字段集合的变化见 `protocol-contract.md` §3.3.1；上一版 v0.14 = 2026-10-27 **神识单字段批** —— `ADR-0045`：① 境界段真源从 §4.1 层次表两列改成 **§4.2 `RealmConfig.shenshi_step` 一列 · 按台阶累加**（★ 层次表不再有神识列）；② 逐档翻倍**九境填满** 100→25600 ⇒ 建角 100、渡劫圆满 511000；③ **突破不额外大涨**（曲线连续）；④ 未定哨兵 `0/0` → **`-1`**；⑤ `shenshi_pool_factor` 现值 **10 → 1** ⇒ **余量上限 = 境界段**；★ 协议字段一字未动；上一版 v0.13 = 2026-10-27 **玩法口径批** —— `ADR-0044`：暴击 **75% / 300%**、生克上限 **×1.25**、储物等级段 **1–63**、神识**引气即有**；`ADR-0043`：§3.3 补姓名正则 **RE2**；上一版 v0.12 = 境界与寿元一揽子收口 —— `DECISIONS.md` **ADR-0039**：① 九境 × **10 层 = 90 台阶**（supersede `ADR-0004` 的 82）；② 倍率改 **×1.0772 / 跨境 ×3.0 / 无 1.13 例外**；③ 寿元改 **世界观 A 案**；④ 新增 **`RealmConfig` 大境界总表**、层次表**删 `exp_max`** 改派生；⑤ 补**天劫两实体**；⑥ 神识 **`0/0 = 未定`** 哨兵；上一版 v0.11 = 2026-10-25 **神识拆两段：境界段 ＋ 修炼段** —— `DECISIONS.md` **ADR-0037**：① §3.1 新增 `shenshi_cultivation`（永久修炼段），`shenshi_intensity` 改定义为**境界段 ＋ 修炼段**的和（派生缓存）· ② §4.1 一列绝对值 → **两列阶梯**（`shenshi_start` ＋ `shenshi_step`，境界段 = 起点 + (层-1)×增量）· ③ 余量上限改挂**境界段**（★ 修炼段不撑池子）· ④ §7.2 词条键加 `shenshiFromRealm` / `shenshiCultivation`；上一版 v0.10 = 改名 ＋ 余量池 · ADR-0036 —— `DECISIONS.md` **ADR-0036**：① §3.1 `Role` 的 `shenshi` → `shenshi_intensity`，新增 `shenshi_pool` / `shenshi_pool_updated_at` · ② §4.1 配置列 → `shenshi_intensity_base` · ③ §7.2 词条键 `shenshiIntensity` ＋ 新增 `shenshiPool` / `shenshiPoolMax` · ④ §3.3 `GameConfig` 追加两个余量系数；★ 强度仍是单值属性，余量才是消耗池；上一版 v0.9 = M5 物品域展开 · ADR-0033）
 > **真源**：本文件。`qiuyuan-dalu` 与原型**只读消费，不得建副本**。
 > **来源（v0.2 修正）**：**需求层 `10-MMO化` 为主，原型为参考实作**。首版曾按「从原型提炼」书写，方向反了 —— 详见 `DECISIONS.md` **ADR-0002**。
 > **作用范围（v0.2 收窄）**：定义**实体、字段、类型、约束、语义**。
@@ -347,7 +347,7 @@
 | `phy_def` / `mag_def` | 物理防御 / 法术防御 |
 | `crit_rate` / `crit_dmg` / `crit_resist` | 暴击率 / 暴击伤害倍率 / 暴击抗性 |
 | `hit_rate` / `dodge_rate` | 命中率 / 闪避率 |
-| `def_break` / `block_rate` / `block_reduce` | 破防 / 格挡率 / 格挡减伤 |
+| `phys_pen` / `block_rate` / `block_reduce` | 物理穿透 / 格挡率 / 格挡减伤 |
 | `speed` | 移动速度 |
 
 > ★★ **本表没有神识凝练列**：凝练境界段的真源在 **§4.2 `RealmConfig.spirit_focus_step`**，
@@ -520,9 +520,9 @@ step = ceil(span / 层数)                   ← 层数 = 10
 
 | 级 | 内容 |
 |---|---|
-| 一级 · 基础面板 | 气血 / 灵力 / 物攻 / 法攻 / 神识 / 物防 / 法防 / 命中 / 闪避 / **暴击率** / **暴击伤害** / **暴击抗性** / 破防 / 格挡 / 格挡减伤 / 攻速 / 施法速度 / 移速 |
+| 一级 · 基础面板 | 气血 / 灵力 / 物攻 / 法攻 / 神识 / 物防 / 法防 / 命中 / 闪避 / **暴击率** / **暴击伤害** / **暴击抗性** / 物理穿透 / 法术穿透 / 神念穿透 / 格挡 / 格挡减伤 / 攻速 / 施法速度 / 移速 |
 | 二级 · 元素（8 系） | 金木水火土风雷冰 **攻击 + 抗性**，以及**元素穿透** |
-| 三级 · 隐藏 / 运营 | 装备评分、修为、灵压、因果 / 气运（**预留，暂不做**） |
+| 三级 · 隐藏 / 运营 | 装备评分、修为、灵压；★ **因果 / 气运已建**（道途属性 · 因果 2026-11-17 `ADR-0051` 新增） |
 
 > ★ **术语 v0.4 统一**：「会心 / 会心伤害 / 会心抗性」→「**暴击率 / 暴击伤害 / 暴击抗性**」——
 > 裁定 **F** · **ADR-0019 ③**。**接口键名 `crit_rate` / `crit_dmg` / `crit_resist` 不变**（零实现成本）。
@@ -634,11 +634,11 @@ c = 1 + influence × ( purity − 50.5 ) / 50.5        →  0.80 ~ 1.20
 ```
 命中判定: clamp((攻方命中 - 守方闪避) / 100, 5%, 95%)
 暴击判定: clamp(攻方暴击率 - 守方暴击抗性, 2%, 75%)
-格挡判定: clamp(守方格挡 - 攻方破防系数, 0%, 50%)
+格挡判定: clamp(守方格挡, 0%, 50%)   ← ★ 穿透不混进格挡判定（单位不同，`ADR-0051` 沿用 2026-10-19 裁定）
 
 基础伤害（物理技能）：
   attack  = 物理攻击 × 攻方灵根增益
-  defense = 物理防御 × (1 - 攻方破防%) × 守方灵根增益
+  defense = max(0, 物理防御 - 攻方物理穿透（点数）) × 守方灵根增益   ← ★ 2026-10-19 裁定：扣点数，不是乘百分比
   base    = max(1, attack - defense × 0.8)
 
 ★ 法术技能的**施放前置**（**ADR-0020** · 准入禁止）：
@@ -670,7 +670,7 @@ c = 1 + influence × ( purity − 50.5 ) / 50.5        →  0.80 ~ 1.20
 
 | 项 | 上限 / 保底 |
 |---|---|
-| 破防 | **≤ 60%**（防御收益须保底，避免防御贬值） |
+| 物理穿透 | 扣到防御为 0 为止（**守方防御保底 0**，不出现负防御） |
 | 暴击率 | **封顶 75%**；暴击抗性与命中有下限保障 |
 | 暴击伤害 | **封顶 300%**（倍率 3.0） |
 | 生克 | **上限 ×1.25 / 下限 ×0.8** |
@@ -727,10 +727,11 @@ psiAtk / psiDef    <- 神念路攻 / 防（2026-11-17 ADR-0049；同日修订删
 lifesteal / healPower / healAmount        <- 吸血 / 治疗强度 / 治疗量（ADR-0050）
 hpRegen / mpRegen / spRegen               <- 气血 / 灵力 / 神识恢复速度（点/秒；ADR-0050）
 hitRate / dodgeRate / critRate / critDmg / critResist
-defBreak / blockRate / blockReduce
+physPen / psiPen / blockRate / blockReduce
 moveSpeed / attackSpeed / castSpeed
 life / lifeMax        ← 寿元：剩余 / 上限（年；上限按大境界取 §4.2 `life_max_years`）· v0.15 `ADR-0046`
 magPen    <- 法术穿透（2026-11-16 大人裁「元素穿透」改名）
+（三路穿透：physPen / magPen / psiPen —— 各作用于本路，2026-11-17 ADR-0051）
 
 元素攻 / 抗：elemAtk0~7 / elemRes0~7   ← 下标即灵根枚举（见 §0 勘误一）
 ```
@@ -1110,6 +1111,7 @@ magPen    <- 法术穿透（2026-11-16 大人裁「元素穿透」改名）
 
 | 版本 | 日期 | 变更 |
 |---|---|---|
+| **v0.19** | **2026-11-17** | ★ **三路穿透 ＋ 道途·因果批**（`ADR-0051` · 卡 `X-0088`）：① §4.1 列 `def_break` → **`phys_pen`**（物理穿透，**值一字未动**）；② §7.2 词条键 `defBreak` → **`physPen`** ＋ 新增 **`psiPen`**（与 `magPen` 成三路）；③ 道途新增 **`yinguo`（因果）**，落 `qydl_role_aptitude.yinguo`（迁移 `0025`）；④ §6 伤害公式与 §上限表按「扣点数」口径订正（2026-10-19 裁定，非乘百分比）；⑤ §三级清单：因果/气运由「预留」转**已建**。 |
 | **v0.18** | **2026-11-17** | ★ **战斗扩展属性批**（`ADR-0050` · 卡 `X-0087`）：§7.2 词条键新增 `lifesteal` / `healPower` / `healAmount` / `hpRegen` / `mpRegen` / `spRegen`；§3.1 `Role` **无对应列**（前五键 M1 无来源恒 null；`spRegen` 由 §3.3 `sp_regen_ppm` 派生、不落库）⇒ **零 DB 改动**。★ 未改既有键语义。 |
 | **v0.17** | **2026-11-17** | ★ **神识属性改造批·同日修订**（大人「删神魂防御，改成神念防御，删神魂伤害」· `ADR-0049` 追加修订节 · 卡 `X-0085`）：§7.2 词条键 **`divineSoulDef` → `psiDef`**（神念防御）、**`divineSoulDmg` 删除**（神念路无独立伤害加成）；§3.1 `Role` 无这两列（M1 无来源恒 null）⇒ **零 DB 改动**；`divine_soul`（神魂底子）不变、不参与攻防。★ 逻辑语义未动（除键集合）。 |
 | **v0.16** | **2026-11-17** | ★ **神识属性改造批**（`DECISIONS.md` **ADR-0049** · 协议契约 **v0.15** 同批）：① §3.1 `Role` 神识族列改名（`spirit_focus` / `spirit_focus_cultivation` / `sp` / `sp_updated_ms`）＋ 新增 `divine_soul`；② §4.1 层次表新增 `psi_atk` 独立基准列；③ §4.2 列名 `spirit_focus_step`；④ §3.3 全局键 `sp_factor` / `sp_regen_ppm`；⑤ §7.2 词条键改名＋新增 `psiAtk` / `divineSoulDef` / `divineSoulDmg` / `spiritFocus`；⑥ 补登记 `magPen`。★ 逻辑语义未动（除改名）；数值现值未动。 |

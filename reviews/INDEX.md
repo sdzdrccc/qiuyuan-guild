@@ -3,7 +3,7 @@
 > ★ **本文件是视图，不是第二真源** —— 由 `scripts/gen-review-index.js` 生成，**不得手工编辑**。
 > 要改内容请改 `reviews/` 下的正文，然后重跑生成器（`node scripts/gen-review-index.js --write`）。
 >
-> 真源：审阅记录 `reviews/X-*.md`（85 篇） · 内部源材料 `reviews/work/`（23 份报告 / 5 个 agent 文件夹） · 外部源材料 `reviews/ext/`（0 份报告 / 0 个来源文件夹）
+> 真源：审阅记录 `reviews/X-*.md`（86 篇） · 内部源材料 `reviews/work/`（23 份报告 / 5 个 agent 文件夹） · 外部源材料 `reviews/ext/`（0 份报告 / 0 个来源文件夹）
 > 一行一事的台账仍在 `registry/cross-repo-ledger.md`（那边管**跨库交付**，这里管**目录视图**）。
 
 ## 一、审阅记录（`reviews/X-*.md`）
@@ -95,6 +95,7 @@
 | [`X-0085`](X-0085.md) | X-0085 神识属性改造批·同日修订：`divineSoulDef` → `psiDef`、删 `divineSoulDmg` | 已完成（待大人复核） |
 | [`X-0086`](X-0086.md) | X-0086 两池合并受理：`qydl_equip_attr_pool_config` ＋ `qydl_artifact_affix_pool_config` → `qydl_attr_pool_config` | 已完成（待大人复核） |
 | [`X-0087`](X-0087.md) | X-0087 战斗扩展属性批：吸血 / 治疗强度 / 治疗量 / 三条恢复速度 六键入契约 | 已完成（待大人复核） |
+| [`X-0088`](X-0088.md) | X-0088 三路穿透 ＋ 道途·因果批 | 已完成（待大人复核） |
 
 ## 二、内部源材料（一 agent 一文件夹 · `reviews/work/`）
 
