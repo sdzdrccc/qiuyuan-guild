@@ -112,6 +112,8 @@ const RETIRED = {
   shenshi_pool_regen_ppm: '2026-11-17 ADR-0049：改名 `sp_regen_ppm`',
   shenshi_step: '2026-11-17 ADR-0049：改名 `spirit_focus_step`',
   elemPen: '2026-11-16 大人裁「元素穿透」改名「法术穿透」→ magPen（ADR-0049 补登记）',
+  qydl_equip_attr_pool_config: '2026-11-17 大人「两池合并」：整表并入 `qydl_attr_pool_config`（装备与法宝共用一张池 · dalu T-0217）',
+  qydl_artifact_affix_pool_config: '2026-11-17 大人「两池合并」：整表并入 `qydl_attr_pool_config`（法宝词条候选改由统一池按 groupToDirection 派生 · dalu T-0217）',
 };
 
 /**

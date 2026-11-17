@@ -197,6 +197,8 @@
 
 | **X-0085** | ★ **神识属性改造批·同日修订**（2026-11-17 · 大人「删神魂防御，改成神念防御，删神魂伤害」）：`divineSoulDef` → **`psiDef`**（神念防御，第三路攻防成对）、**`divineSoulDmg` 整键删除**（神念路无独立伤害加成，伤害只由 `psiAtk` 结算）、`divineSoul` 明写不参与攻防。`protocol-contract` v0.15→**v0.16**、`data-contract` v0.16→**v0.17**、`ADR-0049` 追加同日修订节；dalu 同批改齐（配置 / 服务端 / UE）。 | 大人 | `qiuyuan-guild`（两契约 ＋ ADR 修订）／`qiuyuan-dalu`（T-0216 同日修订） | 契约升版（ADR-0049 修订节） | `已完成`（待大人复核） | [reviews/X-0085.md](../reviews/X-0085.md) |
 
+| **X-0086** | ★ **两池合并受理**（2026-11-17 · 大人「看下能不能合并」→「方向组去掉飞行，6 个键跨两组删掉，is_affix 不限于装备」）：dalu 两张属性池表 `qydl_equip_attr_pool_config`（43 行）＋ `qydl_artifact_affix_pool_config`（49 行）→ 一张 **`qydl_attr_pool_config`（43 行）**；键集合完全相同、装备池是法宝池子集、权重同为 100 ⇒ 92 行并 43 行。同时收口径：去飞行向组（飞行法宝走辅助向）· 一键一组（6 个跨组键收敛）· `is_affix` 两域通用（攻速/施法速度/控制强度三键开词条）。guild 侧只登记 `RETIRED` 两旧表名 ＋ `b8f7deb` 留证豁免；**契约零改动**（物理表名不进契约 · `ADR-0027`）。 | 大人 | `qiuyuan-guild`（RETIRED/WAIVED 登记 ＋ 本记录）／`qiuyuan-dalu`（并表真源 · `T-0217`） | 下游表结构受理（非契约） | `已完成`（待大人复核） | [reviews/X-0086.md](../reviews/X-0086.md) |
+
 ---
 
 ## 附：本表的维护纪律
