@@ -17,8 +17,8 @@
 
 | 项 | 值 | 真源 |
 |---|---|---|
-| `protocol-contract` | **v0.16** | `contracts/protocol-contract.md` |
-| `data-contract` | **v0.17** | `contracts/data-contract.md` |
+| `protocol-contract` | **v0.17** | `contracts/protocol-contract.md` |
+| `data-contract` | **v0.18** | `contracts/data-contract.md` |
 | `asset-ref-contract` | **v0.2** | `contracts/asset-ref-contract.md` |
 | `gbe-studio` | **v0.9.7** | `../gbe-studio/VERSION` |
 | `gbe-assets` | **v0.9.6** | `../gbe-assets/VERSION` |
@@ -26,6 +26,7 @@
 
 ★ **登记时间**：2026-10-27　|　★ **登记人**：`review`（`X-0063` / `X-0064`：GBE 双仓版本钉落后 2~3 版，本轮按 `VERSION` 实测更正）
 ★ **就地更新**：2026-10-25 `X-0060`（神识改名 ＋ 余量池 · **ADR-0036**）→ 同日 `X-0061`（神识拆两段 · **ADR-0037**）再升一版 ⇒ `data-contract` v0.9 → v0.10 → **v0.11**、`protocol-contract` v0.8 → v0.9 → **v0.10**。★ 两份契约同批改的是**同一件事的两面**（数据侧字段 ＋ 协议侧下行），★ **只升一份会让 `check-version-pins` 红**（判据 A）。
+★ 2026-11-17 `X-0087`（战斗扩展属性批 · **ADR-0050**）⇒ `data-contract` v0.17 → **v0.18**、`protocol-contract` v0.16 → **v0.17**（同一批两面，判据 A 同条）。
 ★ 2026-11-17 `X-0085`（神识属性改造批·同日修订 · **ADR-0049 修订节**）⇒ `data-contract` v0.16 → **v0.17**、`protocol-contract` v0.15 → **v0.16**（同一批两面，判据 A 同条）。
 ★ 2026-11-17 `X-0084`（神识属性改造批 · **ADR-0049**）⇒ `data-contract` v0.15 → **v0.16**、`protocol-contract` v0.14 → **v0.15**（同一批两面，判据 A 同条）。
 ★ 2026-10-27 `X-0075`（神识境界段收成单字段并搬进总表 · **ADR-0045**）⇒ `data-contract` v0.13 → **v0.14**、`protocol-contract` v0.12 → **v0.13**（同一批两面，判据 A 同条）。★ 另：`X-0073` 那批当时把头部版本号升到了 v0.13 却**漏登本表与变更台账行** —— 本卡随批补齐（补记行见 `data-contract` §变更记录 v0.13）。

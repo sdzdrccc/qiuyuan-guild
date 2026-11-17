@@ -199,6 +199,8 @@
 
 | **X-0086** | ★ **两池合并受理**（2026-11-17 · 大人「看下能不能合并」→「方向组去掉飞行，6 个键跨两组删掉，is_affix 不限于装备」）：dalu 两张属性池表 `qydl_equip_attr_pool_config`（43 行）＋ `qydl_artifact_affix_pool_config`（49 行）→ 一张 **`qydl_attr_pool_config`（43 行）**；键集合完全相同、装备池是法宝池子集、权重同为 100 ⇒ 92 行并 43 行。同时收口径：去飞行向组（飞行法宝走辅助向）· 一键一组（6 个跨组键收敛）· `is_affix` 两域通用（攻速/施法速度/控制强度三键开词条）。guild 侧只登记 `RETIRED` 两旧表名 ＋ `b8f7deb` 留证豁免；**契约零改动**（物理表名不进契约 · `ADR-0027`）。 | 大人 | `qiuyuan-guild`（RETIRED/WAIVED 登记 ＋ 本记录）／`qiuyuan-dalu`（并表真源 · `T-0217`） | 下游表结构受理（非契约） | `已完成`（待大人复核） | [reviews/X-0086.md](../reviews/X-0086.md) |
 
+| **X-0087** | ★ **战斗扩展属性批**（2026-11-17 · 大人点名六项）：`lifesteal`（吸血率·%）· `healPower`（治疗强度·%，上游「治疗加成」）· `healAmount`（治疗量·点）· `hpRegen`/`mpRegen`/`spRegen`（恢复速度·点/秒，`spRegen` 派生 = `spMax` × `sp_regen_ppm`）进 §3.3.1 与 §7.2；通用占位 `regen` 删除（从未进契约）。`protocol-contract` v0.16→**v0.17**、`data-contract` v0.17→**v0.18**、新增 **ADR-0050**。§3.1 无对应列 ⇒ 零 DB 改动。 | 大人 | `qiuyuan-guild`（两契约 ＋ ADR）／`qiuyuan-dalu`（T-0218） | 契约升版（ADR-0050） | `已完成`（待大人复核） | [reviews/X-0087.md](../reviews/X-0087.md) |
+
 ---
 
 ## 附：本表的维护纪律
